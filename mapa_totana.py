@@ -107,7 +107,7 @@ def generar_html(datos_estaciones):
 
             var map = L.map('map', {{
                 center: [37.76, -1.53],
-                zoom: 12,
+                zoom: 9,
                 layers: [mapaClaro]
             }});
 
