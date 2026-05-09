@@ -287,15 +287,15 @@ def generar_html(datos_estaciones):
                                     background-color: ${{bgColor}};
                                     color: white;
                                     text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-                                    border: 2px solid white;
+                                    border: 1px solid white;
                                     border-radius: 50%;
-                                    width: 36px;
-                                    height: 36px;
+                                    width: 28px;
+                                    height: 28px;
                                     display: flex;
                                     justify-content: center;
                                     align-items: center;
                                     font-weight: bold;
-                                    font-size: 11px;
+                                    font-size: 10px;
                                     box-shadow: 0 2px 4px rgba(0,0,0,0.4);
                                 ">${{textVal}}</div>`;
 
@@ -303,8 +303,8 @@ def generar_html(datos_estaciones):
                                     icon: L.divIcon({{
                                         className: 'station-badge',
                                         html: markerHtml,
-                                        iconSize: [36, 36],
-                                        iconAnchor: [18, 18]
+                                        iconSize: [28, 28],
+                                        iconAnchor: [14, 14]
                                     }})
                                 }});
                                 
