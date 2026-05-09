@@ -253,13 +253,16 @@ def generar_html(datos_estaciones):
                                 }});
                                 
                                 var nombreEstacion = est.neighborhood ? est.neighborhood : est.stationID;
+                                var wundergroundUrl = "https://www.wunderground.com/dashboard/pws/" + est.stationID;
                                 var popupHtml = `<div style="text-align:center;">
                                     <strong style="font-size:1.1rem; color:#2c3e50;">${{nombreEstacion}}</strong><br>
                                     <span style="font-size:0.85rem; color:#7f8c8d;">ID: ${{est.stationID}}</span><br>
                                     <hr style="margin:5px 0; border:0; border-top:1px solid #eee;">
-                                    <span style="font-size:1.2rem; font-weight:bold;">${{textVal}}</span>
+                                    <span style="font-size:1.2rem; font-weight:bold; display:block; margin-bottom:10px;">${{textVal}}</span>
+                                    <a href="${{wundergroundUrl}}" target="_blank" style="display:inline-block; padding:5px 10px; background-color:#3498db; color:white; text-decoration:none; border-radius:5px; font-size:0.85rem; font-weight:bold;">Ver todos los datos</a>
                                 </div>`;
                                 marker.bindPopup(popupHtml);
+                                marker.bindTooltip(nombreEstacion, {{ direction: 'top', offset: [0, -10] }});
                                 markersLayer.addLayer(marker);
                             }}
                         }});
