@@ -107,7 +107,7 @@ def generar_html(datos_estaciones):
 
             var map = L.map('map', {{
                 center: [37.76, -1.53],
-                zoom: 9,
+                zoom: 18,
                 layers: [mapaClaro]
             }});
 
@@ -277,7 +277,12 @@ def generar_html(datos_estaciones):
                             }}).addTo(map);
                             
                             markersLayer.bringToFront();
-                            map.fitBounds(L.latLngBounds(bounds).pad(0.3));
+                            
+                            // Para predefinir un zoom concreto, desactivamos el fitBounds automático
+                            // map.fitBounds(L.latLngBounds(bounds).pad(0.3));
+                            
+                            // Y usamos setView pasándole las coordenadas del centro (Totana) y el nivel de zoom (ej: 10 u 11)
+                            map.setView([37.76, -1.53], 10);
                         }}
                     }} catch (e) {{
                         console.error("Error dibujando el mapa de calor:", e);
