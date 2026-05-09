@@ -324,7 +324,7 @@ def generar_html(datos_estaciones):
                                     var val = feature.properties.value;
                                     return {{
                                         fillColor: getColor(val, param),
-                                        fillOpacity: 0.45, // <-- Aquí puedes cambiar la opacidad (0 es invisible, 1 es sólido)
+                                        fillOpacity: 0.35, // <-- Aquí puedes cambiar la opacidad (0 es invisible, 1 es sólido)
                                         stroke: false // Quitar el borde para que el difuminado sea perfecto
                                     }};
                                 }}
