@@ -280,19 +280,31 @@ def generar_html(datos_estaciones):
                                 features.push(turf.point([est.lon, est.lat], {{value: val}}));
                                 bounds.push([est.lat, est.lon]);
                                 
-                                var colorLetra = 'black';
-                                if(param === 'precip' && val > 10) colorLetra = 'white';
-                                if(param === 'temp' && (val > 35 || val < 10)) colorLetra = 'white';
-                                
-                                var textShadow = colorLetra === 'white' ? '1px 1px 2px black, -1px -1px 2px black' : '1px 1px 2px white, -1px -1px 2px white';
-
                                 var textVal = (param === 'temp') ? val.toFixed(1) + "°" : val.toString();
+                                var bgColor = getColor(val, param);
+                                
+                                var markerHtml = `<div style="
+                                    background-color: ${{bgColor}};
+                                    color: white;
+                                    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+                                    border: 2px solid white;
+                                    border-radius: 50%;
+                                    width: 36px;
+                                    height: 36px;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    font-weight: bold;
+                                    font-size: 11px;
+                                    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+                                ">${{textVal}}</div>`;
+
                                 var marker = L.marker([est.lat, est.lon], {{
                                     icon: L.divIcon({{
-                                        className: 'station-label',
-                                        html: `<div style="color:${{colorLetra}};text-shadow:${{textShadow}}">${{textVal}}</div>`,
-                                        iconSize: [30, 15],
-                                        iconAnchor: [15, 7]
+                                        className: 'station-badge',
+                                        html: markerHtml,
+                                        iconSize: [36, 36],
+                                        iconAnchor: [18, 18]
                                     }})
                                 }});
                                 
