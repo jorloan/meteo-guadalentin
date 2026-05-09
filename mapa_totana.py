@@ -144,7 +144,7 @@ def generar_html(datos_estaciones):
                 .then(data => {{
                     var lastPast = data.radar.past[data.radar.past.length - 1];
                     var radarUrl = data.host + lastPast.path + '/256/{{z}}/{{x}}/{{y}}/2/1_1.png';
-                    var realRadarLayer = L.tileLayer(radarUrl, {{ opacity: 0.7, zIndex: 400, attribution: 'RainViewer', maxNativeZoom: 10, maxZoom: 18 }});
+                    var realRadarLayer = L.tileLayer(radarUrl, {{ opacity: 0.7, zIndex: 400, attribution: 'RainViewer', maxNativeZoom: 7, maxZoom: 18 }});
                     radarLayer.addLayer(realRadarLayer);
                 }});
 
