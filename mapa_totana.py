@@ -43,6 +43,13 @@ def obtener_datos_estacion(station_id):
     return None
 
 def generar_html(datos_estaciones):
+    try:
+        from zoneinfo import ZoneInfo
+        ahora = datetime.now(ZoneInfo("Europe/Madrid"))
+    except ImportError:
+        ahora = datetime.now()
+    fecha_actualizada = ahora.strftime("%d/%m/%Y %H:%M:%S")
+
     html_content = f"""
     <!DOCTYPE html>
     <html lang="es">
@@ -79,7 +86,7 @@ def generar_html(datos_estaciones):
         <header>
             <div class="header-left">
                 <h1>Meteo Guadalentín</h1>
-                <div class="subtitle">Actualizado: {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}</div>
+                <div class="subtitle">Actualizado: {fecha_actualizada}</div>
                 <div style="font-size: 0.65rem; color: #95a5a6; margin-top: 5px; font-style: italic;">Por Jose Roque López Andreo</div>
             </div>
             <div class="controls">
