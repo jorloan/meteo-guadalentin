@@ -74,12 +74,20 @@ def generar_html(datos_estaciones):
             .container {{ display: flex; flex: 1; overflow: hidden; position: relative; }}
             #map {{ flex: 1; height: 100%; }}
             
-            .legend {{ background: rgba(255,255,255,0.95); padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 0.9rem; font-weight: bold; line-height: 1.8; color: #333; }}
-            .legend i {{ width: 24px; height: 18px; float: left; margin-right: 12px; opacity: 0.7; border: 1px solid rgba(0,0,0,0.1); }}
+            .legend {{ background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 0.8rem; font-weight: bold; line-height: 1.5; color: #333; max-height: 50vh; overflow-y: auto; }}
+            .legend i {{ width: 18px; height: 14px; float: left; margin-right: 8px; opacity: 0.7; border: 1px solid rgba(0,0,0,0.1); }}
             
             .station-label {{ background: transparent; border: none; box-shadow: none; font-size: 11px; font-weight: bold; color: black; text-shadow: 1px 1px 2px white, -1px -1px 2px white; text-align: center; }}
             
             #loading {{ display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); z-index: 2000; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; color: #2c3e50; }}
+            
+            @media (max-width: 600px) {{
+                header {{ padding: 0.8rem 1rem; flex-direction: column; align-items: flex-start; gap: 10px; }}
+                .controls {{ width: 100%; }}
+                .controls select {{ width: 100%; padding: 10px; font-size: 1rem; }}
+                .legend {{ font-size: 0.75rem; padding: 6px 8px; }}
+                .legend i {{ width: 14px; height: 12px; }}
+            }}
         </style>
     </head>
     <body>
@@ -90,7 +98,6 @@ def generar_html(datos_estaciones):
                 <div style="font-size: 0.65rem; color: #95a5a6; margin-top: 5px; font-style: italic;">Por Jose Roque López Andreo</div>
             </div>
             <div class="controls">
-                <label for="param-select">Parámetro:</label>
                 <select id="param-select" onchange="actualizarMapa()">
                     <option value="precip">Precipitación Acumulada (mm)</option>
                     <option value="temp" selected>Temperatura (°C)</option>
@@ -130,9 +137,46 @@ def generar_html(datos_estaciones):
                 "Relieve": terreno,
                 "Estándar": estandar
             }};
+
+            var radarLayer = L.layerGroup();
+            fetch('https://api.rainviewer.com/public/weather-maps.json')
+                .then(res => res.json())
+                .then(data => {{
+                    var lastPast = data.radar.past[data.radar.past.length - 1];
+                    var radarUrl = data.host + lastPast.path + '/256/{{z}}/{{x}}/{{y}}/2/1_1.png';
+                    var realRadarLayer = L.tileLayer(radarUrl, {{ opacity: 0.7, zIndex: 400, attribution: 'RainViewer' }});
+                    radarLayer.addLayer(realRadarLayer);
+                }});
+
+            var overlayMaps = {{
+                "Radar de Lluvia": radarLayer
+            }};
             
             // Selector de mapas tipo icono
-            L.control.layers(baseMaps, null, {{position: 'topright', collapsed: true}}).addTo(map);
+            L.control.layers(baseMaps, overlayMaps, {{position: 'topright', collapsed: true}}).addTo(map);
+
+            // Control de Mi Ubicación
+            var locateControl = L.control({{position: 'topleft'}});
+            locateControl.onAdd = function (map) {{
+                var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                div.innerHTML = '<a href="#" title="Mi Ubicación" style="font-size:20px; font-weight:normal; color:#2c3e50; background:white; display:flex; justify-content:center; align-items:center; text-decoration:none; width:30px; height:30px;">🎯</a>';
+                div.onclick = function(e){{
+                    e.preventDefault();
+                    map.locate({{setView: true, maxZoom: 13}});
+                }};
+                return div;
+            }};
+            locateControl.addTo(map);
+
+            var userMarker = null;
+            map.on('locationfound', function(e){{
+                if(userMarker) map.removeLayer(userMarker);
+                userMarker = L.circleMarker(e.latlng, {{radius: 8, color: '#3498db', fillColor: '#3498db', fillOpacity: 0.8}}).addTo(map)
+                 .bindPopup("Estás aquí").openPopup();
+            }});
+            map.on('locationerror', function(e){{
+                alert("No se pudo obtener tu ubicación. Verifica los permisos de localización en tu navegador o dispositivo.");
+            }});
 
             var estaciones = {json.dumps(datos_estaciones)};
             var heatmapLayer = null;
