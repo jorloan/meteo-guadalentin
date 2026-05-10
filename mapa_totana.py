@@ -440,29 +440,35 @@ def generar_html(historial_data, ahora):
                                     bounds.push([est.lat, est.lon]);
                                     
                                     var textVal = (param === 'temp') ? val.toFixed(1) + "°" : val.toString();
+                                    
+                                    var windBarbHtml = "";
                                     if (param === 'wind' && est.winddir !== null && est.winddir !== undefined) {{
-                                        textVal = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1; margin-top:2px;">
-                                            <span>${{val}}</span>
-                                            <span style="font-size:11px; transform: rotate(${{est.winddir}}deg);">↓</span>
-                                        </div>`;
+                                        // Dibujamos una "barba de viento" (wind barb) clásica usando SVG por detrás del círculo
+                                        windBarbHtml = `<svg style="position: absolute; top: -16px; left: -16px; width: 60px; height: 60px; transform: rotate(${{est.winddir}}deg); z-index: -1; pointer-events: none;" viewBox="0 0 60 60">
+                                            <line x1="30" y1="5" x2="30" y2="18" stroke="black" stroke-width="2.5" />
+                                            <line x1="30" y1="5" x2="38" y2="9" stroke="black" stroke-width="2.5" />
+                                        </svg>`;
                                     }}
                                     var bgColor = getColor(val, param);
                                     
-                                    var markerHtml = `<div style="
-                                        background-color: ${{bgColor}};
-                                        color: white;
-                                        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-                                        border: 1px solid white;
-                                        border-radius: 50%;
-                                        width: 28px;
-                                        height: 28px;
-                                        display: flex;
-                                        justify-content: center;
-                                        align-items: center;
-                                        font-weight: bold;
-                                        font-size: 10px;
-                                        box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-                                    ">${{textVal}}</div>`;
+                                    var markerHtml = `<div style="position: relative;">
+                                        <div style="
+                                            background-color: ${{bgColor}};
+                                            color: white;
+                                            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+                                            border: 1px solid white;
+                                            border-radius: 50%;
+                                            width: 28px;
+                                            height: 28px;
+                                            display: flex;
+                                            justify-content: center;
+                                            align-items: center;
+                                            font-weight: bold;
+                                            font-size: 11px;
+                                            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+                                        ">${{textVal}}</div>
+                                        ${{windBarbHtml}}
+                                    </div>`;
 
                                     var marker = L.marker([est.lat, est.lon], {{
                                         icon: L.divIcon({{
