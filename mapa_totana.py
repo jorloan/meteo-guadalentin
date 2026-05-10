@@ -11,6 +11,7 @@ ctx.check_hostname = False
 ctx.verify_mode = ssl.CERT_NONE
 
 API_KEY = "e1f10a1e78da46f5b10a1e78da96f525"
+AEMET_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb3Nlcm9xdWVAbG9wZXp5YW5kcmVvLmNvbSIsImp0aSI6ImM5OWQwMjdhLWFkOTgtNDI1Yi04ZGRiLTY3ZGNjNzdjMzRkYyIsImlzcyI6IkFFTUVUIiwiaWF0IjoxNzc4NDQ2MTgxLCJ1c2VySWQiOiJjOTlkMDI3YS1hZDk4LTQyNWItOGRkYi02N2RjYzc3YzM0ZGMiLCJyb2xlIjoiIn0.QAttE468tO9unX9oJMFIjEyhlDEr5IkBpdMOFR6-tyg"
 
 ARCHIVO_ESTACIONES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'estaciones.txt')
 
@@ -39,6 +40,68 @@ def obtener_datos_estacion(station_id):
     except Exception as e:
         print(f"Error al obtener datos de {station_id}: {e}")
     return None
+
+def obtener_datos_aemet():
+    print("Descargando datos de AEMET (Toda España)...")
+    url = "https://opendata.aemet.es/opendata/api/observacion/convencional/todas"
+    try:
+        req = urllib.request.Request(url, headers={'api_key': AEMET_KEY, 'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, context=ctx, timeout=20) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            data_url = res_data.get('datos')
+            
+        if data_url:
+            req2 = urllib.request.Request(data_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req2, context=ctx, timeout=20) as r2:
+                obs_data = json.loads(r2.read().decode('ISO-8859-15'))
+                
+                estaciones_aemet = []
+                estaciones_procesadas = set()
+                
+                # Ordenar para quedarnos con el dato más reciente de cada estación
+                obs_data.sort(key=lambda x: x.get('fint', ''), reverse=True)
+
+                for obs in obs_data:
+                    idema = obs.get('idema')
+                    if not idema or idema in estaciones_procesadas:
+                        continue
+                    
+                    lat = obs.get('lat')
+                    lon = obs.get('lon')
+                    
+                    if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+                        continue
+                        
+                    # Filtro de zona: Sureste de España (Almería, Murcia, Alicante, Albacete)
+                    if 36.5 <= lat <= 39.5 and -3.5 <= lon <= 0.5:
+                        vv_kmh = obs.get('vv', 0) * 3.6 if obs.get('vv') is not None else None
+                        vmax_kmh = obs.get('vmax', 0) * 3.6 if obs.get('vmax') is not None else None
+                        
+                        est_format = {{
+                            "stationID": idema,
+                            "neighborhood": obs.get('ubi', '').title(),
+                            "lat": lat,
+                            "lon": lon,
+                            "metric": {{
+                                "temp": obs.get('ta'),
+                                "precipTotal": obs.get('prec', 0.0),
+                                "windSpeed": vv_kmh,
+                                "windGust": vmax_kmh
+                            }},
+                            "humidity": obs.get('hr'),
+                            "winddir": obs.get('dv')
+                        }}
+                        
+                        estaciones_procesadas.add(idema)
+                        
+                        if est_format["metric"]["temp"] is not None or est_format["metric"]["precipTotal"] is not None:
+                            estaciones_aemet.append(est_format)
+                            
+                print(f"✅ {{len(estaciones_aemet)}} estaciones de AEMET cargadas en la zona sureste.")
+                return estaciones_aemet
+    except Exception as e:
+        print(f"Error al obtener datos de AEMET: {{e}}")
+    return []
 
 def gestionar_historial(nuevos_datos_estaciones):
     url_historico = "https://jorloan.github.io/meteo-guadalentin/history_24h.json"
@@ -488,7 +551,7 @@ def generar_html(historial_data, ahora):
                                     }});
                                     
                                     var nombrePersonalizado = nombresPersonalizados[est.stationID];
-                                    var nombreEstacion = nombrePersonalizado ? nombrePersonalizado : (est.neighborhood ? est.neighborhood : "Estación de Totana");
+                                    var nombreEstacion = nombrePersonalizado ? nombrePersonalizado : (est.neighborhood && est.neighborhood.trim() !== "" ? est.neighborhood : est.stationID);
                                     var wundergroundUrl = "https://www.wunderground.com/dashboard/pws/" + est.stationID;
                                     var popupHtml = `<div style="text-align:center;">
                                         <strong style="font-size:1.1rem; color:#2c3e50;">${{nombreEstacion}}</strong><br>
@@ -570,7 +633,11 @@ def principal():
             if datos:
                 datos_completos.append(datos)
                 
-    print(f"✅ Descarga completada. Se han cargado datos de {len(datos_completos)} estaciones.")
+    # Añadir datos de AEMET
+    datos_aemet = obtener_datos_aemet()
+    datos_completos.extend(datos_aemet)
+                
+    print(f"✅ Descarga completada. Se han cargado datos de {len(datos_completos)} estaciones en total.")
     if datos_completos:
         historial, ahora = gestionar_historial(datos_completos)
         ruta_html = generar_html(historial, ahora)
