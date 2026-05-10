@@ -405,11 +405,8 @@ def generar_html(historial_data, ahora):
             }});
 
             function actualizarMapa() {{
-                document.getElementById('loading').style.display = 'flex';
-                
-                setTimeout(function() {{
-                    try {{
-                        var param = document.getElementById('param-select').value;
+                try {{
+                    var param = document.getElementById('param-select').value;
                         legend.update(param);
                         
                         heatmapLayerGroup.clearLayers();
@@ -502,12 +499,9 @@ def generar_html(historial_data, ahora):
                             
                             map.setView([37.76, -1.53], 10);
                         }}
-                    }} catch (e) {{
-                        console.error("Error dibujando el mapa de calor:", e);
-                    }} finally {{
-                        document.getElementById('loading').style.display = 'none';
-                    }}
-                }}, 100);
+                }} catch (e) {{
+                    console.error("Error dibujando el mapa de calor:", e);
+                }}
             }}
 
             // Inicializar
