@@ -72,8 +72,8 @@ def obtener_datos_aemet():
                     if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
                         continue
                         
-                    # Filtro de zona: Sureste de España (Almería, Murcia, Alicante, Albacete, Granada, Jaén)
-                    if 36.5 <= lat <= 39.5 and -4.5 <= lon <= 1.5:
+                    # Filtro de zona: Mitad Sur/Este de España (Andalucía, Murcia, C.Valenciana, C.La Mancha)
+                    if 36.0 <= lat <= 41.5 and -7.5 <= lon <= 1.5:
                         vv_kmh = obs.get('vv', 0) * 3.6 if obs.get('vv') is not None else None
                         vmax_kmh = obs.get('vmax', 0) * 3.6 if obs.get('vmax') is not None else None
                         
