@@ -368,6 +368,35 @@ def generar_html(historial_data, ahora):
                 actualizarMapa();
             }});
 
+            var playInterval = null;
+            document.getElementById('play-btn').addEventListener('click', function() {{
+                var btn = this;
+                var slider = document.getElementById('time-slider');
+                
+                if (playInterval) {{
+                    clearInterval(playInterval);
+                    playInterval = null;
+                    btn.innerText = "▶️";
+                    btn.title = "Reproducir Animación";
+                }} else {{
+                    btn.innerText = "⏸️";
+                    btn.title = "Pausar Animación";
+                    
+                    if (currentTimestampIndex >= historyData.length - 1) {{
+                        currentTimestampIndex = 0; // Si está al final, vuelve al principio
+                    }}
+                    
+                    playInterval = setInterval(function() {{
+                        currentTimestampIndex++;
+                        if (currentTimestampIndex >= historyData.length) {{
+                            currentTimestampIndex = 0; // Bucle infinito
+                        }}
+                        slider.value = currentTimestampIndex;
+                        slider.dispatchEvent(new Event('input')); 
+                    }}, 1500); // 1.5 segundos por fotograma
+                }}
+            }});
+
             document.getElementById('opacity-slider').addEventListener('input', function(e) {{
                 window.globalHeatmapOpacity = parseFloat(e.target.value);
                 if (heatmapLayer) {{
@@ -426,17 +455,16 @@ def generar_html(historial_data, ahora):
                                         }})
                                     }});
                                     
-                                    var nombreEstacion = est.neighborhood ? est.neighborhood : est.stationID;
+                                    var nombreEstacion = est.neighborhood ? est.neighborhood : "Estación de Totana";
                                     var wundergroundUrl = "https://www.wunderground.com/dashboard/pws/" + est.stationID;
                                     var popupHtml = `<div style="text-align:center;">
                                         <strong style="font-size:1.1rem; color:#2c3e50;">${{nombreEstacion}}</strong><br>
-                                        <span style="font-size:0.85rem; color:#7f8c8d;">ID: ${{est.stationID}}</span><br>
                                         <hr style="margin:5px 0; border:0; border-top:1px solid #eee;">
                                         <span style="font-size:1.2rem; font-weight:bold; display:block; margin-bottom:10px;">${{textVal}}</span>
-                                        <a href="${{wundergroundUrl}}" target="_blank" style="display:inline-block; padding:5px 10px; background-color:#3498db; color:white; text-decoration:none; border-radius:5px; font-size:0.85rem; font-weight:bold;">Ver todos los datos</a>
+                                        <a href="${{wundergroundUrl}}" target="_blank" style="display:inline-block; padding:5px 10px; background-color:#3498db; color:white; text-decoration:none; border-radius:5px; font-size:0.85rem; font-weight:bold;">Ver historial completo</a>
                                     </div>`;
                                     marker.bindPopup(popupHtml);
-                                    marker.bindTooltip(nombreEstacion, {{ direction: 'top', offset: [0, -10] }});
+                                    marker.bindTooltip(`<strong>${{nombreEstacion}}</strong>`, {{ direction: 'top', offset: [0, -10], opacity: 0.9 }});
                                     markersLayer.addLayer(marker);
                                 }}
                             }}
