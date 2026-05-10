@@ -244,12 +244,37 @@ def generar_html(historial_data, ahora):
                 alert("No se pudo obtener tu ubicación. Verifica los permisos de localización en tu navegador o dispositivo.");
             }});
 
+            function interpolateColor(c1, c2, factor) {{
+                var r = Math.round(c1[0] + factor * (c2[0] - c1[0]));
+                var g = Math.round(c1[1] + factor * (c2[1] - c1[1]));
+                var b = Math.round(c1[2] + factor * (c2[2] - c1[2]));
+                return `rgb(${{r}}, ${{g}}, ${{b}})`;
+            }}
+
             function getColor(val, param) {{
                 if (param === 'temp') {{
-                    var h = 240 - (val / 40) * 240;
-                    if (h < -30) h = -30;
-                    if (h > 260) h = 260;
-                    return `hsl(${{h}}, 90%, 45%)`;
+                    var stops = [
+                        {{v: -5, c: [148, 0, 211]}},   // Violeta
+                        {{v: 0,  c: [0, 0, 200]}},     // Azul oscuro
+                        {{v: 5,  c: [0, 115, 255]}},   // Azul
+                        {{v: 10, c: [0, 200, 200]}},   // Cian
+                        {{v: 15, c: [50, 205, 50]}},   // Verde Lima
+                        {{v: 20, c: [255, 255, 0]}},   // Amarillo
+                        {{v: 25, c: [255, 140, 0]}},   // Naranja oscuro
+                        {{v: 30, c: [220, 20, 60]}},   // Rojo Carmesí
+                        {{v: 35, c: [139, 0, 0]}},     // Rojo oscuro
+                        {{v: 40, c: [200, 0, 200]}}    // Magenta
+                    ];
+                    if (val <= stops[0].v) return `rgb(${{stops[0].c.join(',')}})`;
+                    if (val >= stops[stops.length-1].v) return `rgb(${{stops[stops.length-1].c.join(',')}})`;
+                    
+                    for (var i = 0; i < stops.length - 1; i++) {{
+                        if (val >= stops[i].v && val <= stops[i+1].v) {{
+                            var factor = (val - stops[i].v) / (stops[i+1].v - stops[i].v);
+                            return interpolateColor(stops[i].c, stops[i+1].c, factor);
+                        }}
+                    }}
+
                 }} else if (param === 'precip') {{
                     return val >= 70 ? '#ff0000' :
                            val >= 50 ? '#ff99ff' :
