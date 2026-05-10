@@ -161,17 +161,17 @@ def generar_html(historial_data, ahora):
         <script>
             var nombresPersonalizados = {{
                 "ITOTAN8": "Mirador - Lebor Alto",
-                "ITOTAN2": "La Charca",
-                "ITOTAN16": "Totana Sur",
-                "ITOTAN5": "Totana Centro",
-                "ITOTAN33": "El Paretón",
-                "ITOTAN43": "Raiguero Bajo",
-                "ITOTAN31": "La R\u00f1a",
-                "ITOTAN42": "Morti Alto",
-                "ITOTAN9": "Huertos de Totana",
-                "ITOTAN41": "Santa Eulalia",
-                "ITOTAN10": "La Sierra",
-                "ITOTAN17": "Lorca - Guadalent\u00edn"
+                "ITOTAN2": "METEO UNDERWORLD",
+                "ITOTAN16": "Mortí Bajo -  Camino Aleurrosas",
+                "ITOTAN5": "Estación Meteorológica Tierno Galván",
+                "ITOTAN33": "Huerto Hostench",
+                "ITOTAN43": "Casa Totana",
+                "ITOTAN31": "CAMPING - Lebor - Totana",
+                "ITOTAN42": "Secanos",
+                "ITOTAN9": "LA CANAL - Raiguero",
+                "ITOTAN41": "Ecowitt WN1981",
+                "ITOTAN10": "WS Rancho",
+                "ITOTAN17": "La Barquilla"
             }};
 
             var historyData = {json.dumps(historial_data)};
