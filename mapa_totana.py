@@ -107,8 +107,8 @@ def generar_html(historial_data, ahora):
             .container {{ display: flex; flex: 1; overflow: hidden; position: relative; }}
             #map {{ flex: 1; height: 100%; }}
             
-            .legend {{ background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 0.8rem; font-weight: bold; line-height: 1.5; color: #333; max-height: 50vh; overflow-y: auto; }}
-            .legend i {{ width: 18px; height: 14px; float: left; margin-right: 8px; opacity: 0.7; border: 1px solid rgba(0,0,0,0.1); }}
+            .legend {{ background: rgba(255,255,255,0.95); padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 0.75rem; font-weight: bold; line-height: 1.4; color: #333; max-height: 50vh; overflow-y: auto; max-width: 110px; }}
+            .legend i {{ width: 14px; height: 12px; float: left; margin-right: 6px; opacity: 0.7; border: 1px solid rgba(0,0,0,0.1); }}
             
             .station-label {{ background: transparent; border: none; box-shadow: none; font-size: 11px; font-weight: bold; color: black; text-shadow: 1px 1px 2px white, -1px -1px 2px white; text-align: center; }}
             
@@ -346,7 +346,7 @@ def generar_html(historial_data, ahora):
                     title = 'Rachas Viento'; unit = 'km/h'; grades = [2, 5, 10, 20, 30, 40];
                 }}
 
-                let html = `<div style="margin-bottom:8px;font-size:1.1rem">${{title}}<br><span style="font-size:0.8rem;color:#666">${{unit}}</span></div>`;
+                let html = `<div style="margin-bottom:6px;font-size:0.85rem;line-height:1.1;">${{title}}<br><span style="font-size:0.7rem;color:#666">${{unit}}</span></div>`;
                 html += `<div><i style="background:${{getColor(grades[grades.length-1], param)}}"></i> > ${{grades[grades.length-1]}}</div>`;
                 for (var i = grades.length - 2; i >= 0; i--) {{
                     html += `<div><i style="background:${{getColor(grades[i], param)}}"></i> ${{grades[i]}} - ${{grades[i+1]}}</div>`;
@@ -440,6 +440,12 @@ def generar_html(historial_data, ahora):
                                     bounds.push([est.lat, est.lon]);
                                     
                                     var textVal = (param === 'temp') ? val.toFixed(1) + "°" : val.toString();
+                                    if (param === 'wind' && est.winddir !== null && est.winddir !== undefined) {{
+                                        textVal = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1; margin-top:2px;">
+                                            <span>${{val}}</span>
+                                            <span style="font-size:11px; transform: rotate(${{est.winddir}}deg);">↓</span>
+                                        </div>`;
+                                    }}
                                     var bgColor = getColor(val, param);
                                     
                                     var markerHtml = `<div style="
