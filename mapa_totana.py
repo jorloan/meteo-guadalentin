@@ -111,6 +111,7 @@ def generar_html(historial_data, ahora):
             .legend i {{ width: 14px; height: 12px; float: left; margin-right: 6px; opacity: 0.7; border: 1px solid rgba(0,0,0,0.1); }}
             
             .station-label {{ background: transparent; border: none; box-shadow: none; font-size: 11px; font-weight: bold; color: black; text-shadow: 1px 1px 2px white, -1px -1px 2px white; text-align: center; }}
+            .grayscale-map {{ filter: grayscale(100%) contrast(1.1) brightness(1.05); }}
             
             #loading {{ display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); z-index: 2000; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; color: #2c3e50; flex-direction: column; }}
             
@@ -179,9 +180,12 @@ def generar_html(historial_data, ahora):
             window.globalHeatmapOpacity = 0.35;
 
             var mapaClaro = L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; CARTO' }});
-            var mapaOscuro = L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; CARTO' }});
-            var satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}', {{ attribution: '&copy; Esri' }});
-            var terreno = L.tileLayer('https://{{s}}.tile.opentopomap.org/{{z}}/{{x}}/{{y}}.png', {{ attribution: '&copy; OpenTopoMap' }});
+            var terreno = L.tileLayer('http://{{s}}.google.com/vt/lyrs=p&x={{x}}&y={{y}}&z={{z}}', {{
+                maxZoom: 20,
+                subdomains:['mt0','mt1','mt2','mt3'],
+                attribution: '&copy; Google Terrain',
+                className: 'grayscale-map'
+            }});
             var estandar = L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{ attribution: '&copy; OpenStreetMap' }});
             
             var googleStreets = L.tileLayer('http://{{s}}.google.com/vt/lyrs=m&x={{x}}&y={{y}}&z={{z}}', {{
@@ -198,7 +202,7 @@ def generar_html(historial_data, ahora):
             var map = L.map('map', {{
                 center: [37.76, -1.53],
                 zoom: 10,
-                layers: [mapaClaro]
+                layers: [terreno]
             }});
 
             map.createPane('heatmapPane');
@@ -206,12 +210,10 @@ def generar_html(historial_data, ahora):
             map.getPane('heatmapPane').style.filter = 'blur(15px)';
 
             var baseMaps = {{
+                "Relieve": terreno,
                 "Mapa Claro": mapaClaro,
-                "Mapa Oscuro": mapaOscuro,
                 "Google Maps": googleStreets,
                 "Google Satélite": googleSatelite,
-                "Satélite (Esri)": satelite,
-                "Relieve": terreno,
                 "Estándar": estandar
             }};
 
@@ -439,7 +441,14 @@ def generar_html(historial_data, ahora):
                                     features.push(turf.point([est.lon, est.lat], {{value: val}}));
                                     bounds.push([est.lat, est.lon]);
                                     
-                                    var textVal = (param === 'temp') ? val.toFixed(1) + "°" : val.toString();
+                                    var textVal;
+                                    if (param === 'precip') {{
+                                        textVal = val.toFixed(1);
+                                    }} else if (param === 'temp') {{
+                                        textVal = Math.round(val).toString() + "°";
+                                    }} else {{
+                                        textVal = Math.round(val).toString();
+                                    }}
                                     
                                     var windBarbHtml = "";
                                     if (param === 'wind' && est.winddir !== null && est.winddir !== undefined) {{
