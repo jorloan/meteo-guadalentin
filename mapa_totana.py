@@ -608,12 +608,15 @@ def generar_html(historial_data, ahora):
                                     
                                     var nombrePersonalizado = nombresPersonalizados[est.stationID];
                                     var nombreEstacion = nombrePersonalizado ? nombrePersonalizado : (est.neighborhood && est.neighborhood.trim() !== "" ? est.neighborhood : est.stationID);
-                                    var wundergroundUrl = "https://www.wunderground.com/dashboard/pws/" + est.stationID;
+                                    var isAemet = !est.stationID.startsWith('I');
+                                    var linkUrl = isAemet ? "https://www.aemet.es/es/eltiempo/observacion/ultimosdatos" : "https://www.wunderground.com/dashboard/pws/" + est.stationID;
+                                    var linkText = isAemet ? "Ver en AEMET" : "Ver historial completo";
+                                    var linkColor = isAemet ? "#e67e22" : "#3498db";
                                     var popupHtml = `<div style="text-align:center;">
                                         <strong style="font-size:1.1rem; color:#2c3e50;">${{nombreEstacion}}</strong><br>
                                         <hr style="margin:5px 0; border:0; border-top:1px solid #eee;">
                                         <span style="font-size:1.2rem; font-weight:bold; display:block; margin-bottom:10px;">${{textVal}}</span>
-                                        <a href="${{wundergroundUrl}}" target="_blank" style="display:inline-block; padding:5px 10px; background-color:#3498db; color:white; text-decoration:none; border-radius:5px; font-size:0.85rem; font-weight:bold;">Ver historial completo</a>
+                                        <a href="${{linkUrl}}" target="_blank" style="display:inline-block; padding:5px 10px; background-color:${{linkColor}}; color:white; text-decoration:none; border-radius:5px; font-size:0.85rem; font-weight:bold;">${{linkText}}</a>
                                     </div>`;
                                     marker.bindPopup(popupHtml);
                                     marker.bindTooltip(`<strong>${{nombreEstacion}}</strong>`, {{ direction: 'top', offset: [0, -10], opacity: 0.9 }});
