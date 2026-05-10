@@ -103,6 +103,62 @@ def obtener_datos_aemet():
         print(f"Error al obtener datos de AEMET: {e}")
     return []
 
+def gestionar_historial_agricola(nuevos_datos_estaciones, ahora):
+    url_agricola = "https://jorloan.github.io/meteo-guadalentin/historial_agricola.json"
+    historico_agricola = {}
+    
+    try:
+        req = urllib.request.Request(url_agricola, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, context=ctx, timeout=5) as response:
+            if response.getcode() == 200:
+                historico_agricola = json.loads(response.read().decode('utf-8'))
+                print("✅ Historial agrícola descargado.")
+    except Exception as e:
+        print("No se encontró historial agrícola previo. Se creará uno nuevo.")
+        
+    fecha_hoy = ahora.strftime('%Y-%m-%d')
+    if fecha_hoy not in historico_agricola:
+        historico_agricola[fecha_hoy] = {}
+        
+    for est in nuevos_datos_estaciones:
+        if not est or "stationID" not in est: continue
+        sid = est["stationID"]
+        temp = est.get("metric", {}).get("temp")
+        precip = est.get("metric", {}).get("precipTotal")
+        hum = est.get("humidity")
+        
+        if sid not in historico_agricola[fecha_hoy]:
+            historico_agricola[fecha_hoy][sid] = {
+                "tempMax": temp if temp is not None else -99,
+                "tempMin": temp if temp is not None else 99,
+                "precipTotal": precip if precip is not None else 0.0,
+                "humedadAltaMinutos": 0
+            }
+        else:
+            datos_dia = historico_agricola[fecha_hoy][sid]
+            if temp is not None:
+                if temp > datos_dia.get("tempMax", -99): datos_dia["tempMax"] = temp
+                if temp < datos_dia.get("tempMin", 99): datos_dia["tempMin"] = temp
+            if precip is not None:
+                if precip > datos_dia.get("precipTotal", 0): datos_dia["precipTotal"] = precip
+                
+        # Si la humedad es >= 85%, sumamos 15 minutos de riesgo por la actualización actual
+        if hum is not None and hum >= 85:
+            historico_agricola[fecha_hoy][sid]["humedadAltaMinutos"] = historico_agricola[fecha_hoy][sid].get("humedadAltaMinutos", 0) + 15
+            
+    # Mantener solo los últimos 14 días (Fase 1 completada)
+    dias_ordenados = sorted(historico_agricola.keys())
+    if len(dias_ordenados) > 14:
+        for d in dias_ordenados[:-14]:
+            del historico_agricola[d]
+            
+    directorio_publico = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public')
+    os.makedirs(directorio_publico, exist_ok=True)
+    with open(os.path.join(directorio_publico, 'historial_agricola.json'), 'w', encoding='utf-8') as f:
+        json.dump(historico_agricola, f, ensure_ascii=False)
+        
+    return historico_agricola
+
 def gestionar_historial(nuevos_datos_estaciones):
     url_historico = "https://jorloan.github.io/meteo-guadalentin/history_24h.json"
     historial = []
@@ -192,7 +248,7 @@ def generar_html(historial_data, ahora):
             <div class="header-left">
                 <h1>Meteo Guadalentín</h1>
                 <div class="subtitle">Actualizado: <span id="time-label">{fecha_actualizada}</span></div>
-                <div style="font-size: 0.65rem; color: #95a5a6; margin-top: 5px; font-style: italic;">Por Jose Roque López Andreo</div>
+
             </div>
             <div class="controls">
                 <div style="display:flex; flex-direction:column; align-items:center;">
@@ -640,8 +696,9 @@ def principal():
     print(f"✅ Descarga completada. Se han cargado datos de {len(datos_completos)} estaciones en total.")
     if datos_completos:
         historial, ahora = gestionar_historial(datos_completos)
+        historial_agri = gestionar_historial_agricola(datos_completos, ahora)
         ruta_html = generar_html(historial, ahora)
-        print("Mapa y Máquina del Tiempo generados correctamente.")
+        print("Mapa, Máquina del Tiempo y Datos Agrícolas generados correctamente.")
     else:
         print("No se han podido cargar datos.")
 
