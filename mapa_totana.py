@@ -414,19 +414,17 @@ def generar_html(historial_data, ahora):
                             }}
                         }});
                         
-                        if (features.length > 0) {{
+                        if (features.length > 2) {{
                             var collection = turf.featureCollection(features);
                             var isTemp = (param === 'temp');
                             var gridOptions = {{
+                                gridType: 'square',
+                                property: 'value',
                                 units: 'kilometers',
                                 weight: isTemp ? 2 : 4
                             }};
                             
-                            var bbox = turf.bbox(collection);
-                            var expandedBbox = [bbox[0] - 0.2, bbox[1] - 0.2, bbox[2] + 0.2, bbox[3] + 0.2];
-                            var cellSide = 1.0; 
-                            var grid = turf.pointGrid(expandedBbox, cellSide, {{units: 'kilometers'}});
-                            
+                            var cellSide = 2.5; 
                             var interpolatedGrid = turf.interpolate(collection, cellSide, gridOptions);
                             
                             var finalGrid = turf.featureCollection(
