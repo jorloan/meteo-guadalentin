@@ -197,7 +197,7 @@ def generar_html(historial_data, ahora):
 
             var map = L.map('map', {{
                 center: [37.76, -1.53],
-                zoom: 18,
+                zoom: 10,
                 layers: [mapaClaro]
             }});
 
@@ -443,10 +443,8 @@ def generar_html(historial_data, ahora):
                                     
                                     var windBarbHtml = "";
                                     if (param === 'wind' && est.winddir !== null && est.winddir !== undefined) {{
-                                        // Dibujamos una "barba de viento" (wind barb) clásica usando SVG por detrás del círculo
-                                        windBarbHtml = `<svg style="position: absolute; top: -16px; left: -16px; width: 60px; height: 60px; transform: rotate(${{est.winddir}}deg); z-index: -1; pointer-events: none;" viewBox="0 0 60 60">
-                                            <line x1="30" y1="5" x2="30" y2="18" stroke="black" stroke-width="2.5" />
-                                            <line x1="30" y1="5" x2="38" y2="9" stroke="black" stroke-width="2.5" />
+                                        windBarbHtml = `<svg style="position: absolute; top: -13px; left: -13px; width: 50px; height: 50px; transform: rotate(${{est.winddir}}deg); z-index: -1; pointer-events: none;" viewBox="0 0 50 50">
+                                            <line x1="25" y1="2" x2="25" y2="13" stroke="black" stroke-width="2.5" />
                                         </svg>`;
                                     }}
                                     var bgColor = getColor(val, param);
@@ -458,13 +456,14 @@ def generar_html(historial_data, ahora):
                                             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
                                             border: 1px solid white;
                                             border-radius: 50%;
-                                            width: 28px;
-                                            height: 28px;
+                                            width: 24px;
+                                            height: 24px;
                                             display: flex;
                                             justify-content: center;
                                             align-items: center;
                                             font-weight: bold;
                                             font-size: 11px;
+                                            letter-spacing: -0.5px;
                                             box-shadow: 0 2px 4px rgba(0,0,0,0.4);
                                         ">${{textVal}}</div>
                                         ${{windBarbHtml}}
@@ -474,8 +473,8 @@ def generar_html(historial_data, ahora):
                                         icon: L.divIcon({{
                                             className: 'station-badge',
                                             html: markerHtml,
-                                            iconSize: [28, 28],
-                                            iconAnchor: [14, 14]
+                                            iconSize: [24, 24],
+                                            iconAnchor: [12, 12]
                                         }})
                                     }});
                                     
@@ -524,8 +523,6 @@ def generar_html(historial_data, ahora):
                                 }}
                             }});
                             heatmapLayerGroup.addLayer(heatmapLayer);
-                            
-                            map.setView([37.76, -1.53], 10);
                         }}
                 }} catch (e) {{
                     console.error("Error dibujando el mapa de calor:", e);
