@@ -72,35 +72,35 @@ def obtener_datos_aemet():
                     if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
                         continue
                         
-                    # Filtro de zona: Sureste de España (Almería, Murcia, Alicante, Albacete)
-                    if 36.5 <= lat <= 39.5 and -3.5 <= lon <= 0.5:
+                    # Filtro de zona: Sureste de España (Almería, Murcia, Alicante, Albacete, Granada, Jaén)
+                    if 36.5 <= lat <= 39.5 and -4.5 <= lon <= 1.5:
                         vv_kmh = obs.get('vv', 0) * 3.6 if obs.get('vv') is not None else None
                         vmax_kmh = obs.get('vmax', 0) * 3.6 if obs.get('vmax') is not None else None
                         
-                        est_format = {{
+                        est_format = {
                             "stationID": idema,
                             "neighborhood": obs.get('ubi', '').title(),
                             "lat": lat,
                             "lon": lon,
-                            "metric": {{
+                            "metric": {
                                 "temp": obs.get('ta'),
                                 "precipTotal": obs.get('prec', 0.0),
                                 "windSpeed": vv_kmh,
                                 "windGust": vmax_kmh
-                            }},
+                            },
                             "humidity": obs.get('hr'),
                             "winddir": obs.get('dv')
-                        }}
+                        }
                         
                         estaciones_procesadas.add(idema)
                         
                         if est_format["metric"]["temp"] is not None or est_format["metric"]["precipTotal"] is not None:
                             estaciones_aemet.append(est_format)
                             
-                print(f"✅ {{len(estaciones_aemet)}} estaciones de AEMET cargadas en la zona sureste.")
+                print(f"✅ {len(estaciones_aemet)} estaciones de AEMET cargadas en la zona sureste.")
                 return estaciones_aemet
     except Exception as e:
-        print(f"Error al obtener datos de AEMET: {{e}}")
+        print(f"Error al obtener datos de AEMET: {e}")
     return []
 
 def gestionar_historial(nuevos_datos_estaciones):
