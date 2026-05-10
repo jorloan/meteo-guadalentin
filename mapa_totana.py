@@ -118,6 +118,17 @@ def generar_html(datos_estaciones):
             var satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}', {{ attribution: '&copy; Esri' }});
             var terreno = L.tileLayer('https://{{s}}.tile.opentopomap.org/{{z}}/{{x}}/{{y}}.png', {{ attribution: '&copy; OpenTopoMap' }});
             var estandar = L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{ attribution: '&copy; OpenStreetMap' }});
+            
+            var googleStreets = L.tileLayer('http://{{s}}.google.com/vt/lyrs=m&x={{x}}&y={{y}}&z={{z}}', {{
+                maxZoom: 20,
+                subdomains:['mt0','mt1','mt2','mt3'],
+                attribution: '&copy; Google'
+            }});
+            var googleSatelite = L.tileLayer('http://{{s}}.google.com/vt/lyrs=s,h&x={{x}}&y={{y}}&z={{z}}', {{
+                maxZoom: 20,
+                subdomains:['mt0','mt1','mt2','mt3'],
+                attribution: '&copy; Google'
+            }});
 
             var map = L.map('map', {{
                 center: [37.76, -1.53],
@@ -133,7 +144,9 @@ def generar_html(datos_estaciones):
             var baseMaps = {{
                 "Mapa Claro": mapaClaro,
                 "Mapa Oscuro": mapaOscuro,
-                "Satélite": satelite,
+                "Google Maps": googleStreets,
+                "Google Satélite": googleSatelite,
+                "Satélite (Esri)": satelite,
                 "Relieve": terreno,
                 "Estándar": estandar
             }};
