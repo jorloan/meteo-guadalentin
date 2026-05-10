@@ -159,6 +159,21 @@ def generar_html(historial_data, ahora):
         </div>
 
         <script>
+            var nombresPersonalizados = {{
+                "ITOTAN8": "Mirador - Lebor Alto",
+                "ITOTAN2": "La Charca",
+                "ITOTAN16": "Totana Sur",
+                "ITOTAN5": "Totana Centro",
+                "ITOTAN33": "El Paretón",
+                "ITOTAN43": "Raiguero Bajo",
+                "ITOTAN31": "La R\u00f1a",
+                "ITOTAN42": "Morti Alto",
+                "ITOTAN9": "Huertos de Totana",
+                "ITOTAN41": "Santa Eulalia",
+                "ITOTAN10": "La Sierra",
+                "ITOTAN17": "Lorca - Guadalent\u00edn"
+            }};
+
             var historyData = {json.dumps(historial_data)};
             var currentTimestampIndex = historyData.length - 1;
             window.globalHeatmapOpacity = 0.35;
@@ -452,7 +467,8 @@ def generar_html(historial_data, ahora):
                                         }})
                                     }});
                                     
-                                    var nombreEstacion = est.neighborhood ? est.neighborhood : "Estación de Totana";
+                                    var nombrePersonalizado = nombresPersonalizados[est.stationID];
+                                    var nombreEstacion = nombrePersonalizado ? nombrePersonalizado : (est.neighborhood ? est.neighborhood : "Estación de Totana");
                                     var wundergroundUrl = "https://www.wunderground.com/dashboard/pws/" + est.stationID;
                                     var popupHtml = `<div style="text-align:center;">
                                         <strong style="font-size:1.1rem; color:#2c3e50;">${{nombreEstacion}}</strong><br>
