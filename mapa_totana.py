@@ -133,7 +133,10 @@ def generar_html(historial_data, ahora):
             <div class="controls">
                 <div style="display:flex; flex-direction:column; align-items:center;">
                     <span style="font-size:0.75rem; color:#ecf0f1; font-weight:bold;">Máquina del Tiempo</span>
-                    <input type="range" id="time-slider" min="0" max="0" value="0" style="width: 120px; cursor: pointer;" title="Desliza para ver el historial">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <button id="play-btn" style="background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.8rem; padding:2px 8px;" title="Reproducir Animación">▶️</button>
+                        <input type="range" id="time-slider" min="0" max="0" value="0" style="width: 100px; cursor: pointer;" title="Desliza para ver el historial">
+                    </div>
                 </div>
                 <div style="display:flex; flex-direction:column; align-items:center;">
                     <span style="font-size:0.75rem; color:#ecf0f1; font-weight:bold;">Transparencia</span>
