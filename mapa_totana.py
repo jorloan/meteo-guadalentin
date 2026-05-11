@@ -72,8 +72,8 @@ def obtener_datos_aemet():
                     if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
                         continue
                         
-                    # Filtro de zona: Mitad Sur/Este de España (Andalucía, Murcia, C.Valenciana, C.La Mancha)
-                    if 36.0 <= lat <= 41.5 and -7.5 <= lon <= 1.5:
+                    # Filtro de zona: Almería, Murcia y Alicante para evitar saturar el mapa
+                    if 36.6 <= lat <= 38.9 and -3.2 <= lon <= 0.3:
                         vv_kmh = obs.get('vv', 0) * 3.6 if obs.get('vv') is not None else None
                         vmax_kmh = obs.get('vmax', 0) * 3.6 if obs.get('vmax') is not None else None
                         
@@ -169,6 +169,11 @@ def gestionar_historial(nuevos_datos_estaciones):
             if response.getcode() == 200:
                 historial = json.loads(response.read().decode('utf-8'))
                 print(f"✅ Historial descargado. Contenía {len(historial)} registros.")
+                
+                # Reset automático: Si el historial descargado tiene un exceso de estaciones (mapa antiguo), lo borramos.
+                if historial and len(historial[0].get('stations', [])) > 300:
+                    print("⚠️ Detectado historial sobrecargado. Borrando datos antiguos para agilizar la web...")
+                    historial = []
     except Exception as e:
         print(f"No se pudo descargar historial previo (es normal si es la primera vez): {e}")
     
