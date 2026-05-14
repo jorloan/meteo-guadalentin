@@ -144,6 +144,45 @@ def gestionar_historial(nuevos_datos_estaciones):
         
     return historial_limpio, ahora
 
+def generar_json(datos_estaciones, ahora):
+    """Genera public/data.json con datos actuales de todas las estaciones para la app L&A"""
+    estaciones_json = []
+    for est in datos_estaciones:
+        m = est.get('metric', {})
+        estaciones_json.append({
+            "id":          est.get('stationID', ''),
+            "nombre":      est.get('neighborhood', est.get('stationID', '')),
+            "lat":         est.get('lat'),
+            "lon":         est.get('lon'),
+            "temp":        m.get('temp'),
+            "tempMin":     m.get('tempLow'),
+            "tempMax":     m.get('tempHigh'),
+            "humedad":     est.get('humidity'),
+            "lluvia":      m.get('precipTotal', 0),
+            "lluviaHora":  m.get('precipRate', 0),
+            "viento":      m.get('windSpeed'),
+            "rachaViento": m.get('windGust'),
+            "presion":     m.get('pressure'),
+            "dewPoint":    m.get('dewpt'),
+            "uv":          est.get('uv'),
+            "solar":       est.get('solarRadiation'),
+            "actualizado": ahora.strftime("%d/%m/%Y %H:%M:%S")
+        })
+
+    payload = {
+        "actualizado": ahora.strftime("%d/%m/%Y %H:%M:%S"),
+        "timestamp":   ahora.isoformat(),
+        "estaciones":  estaciones_json
+    }
+
+    directorio_publico = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'public')
+    os.makedirs(directorio_publico, exist_ok=True)
+    ruta_json = os.path.join(directorio_publico, 'data.json')
+    with open(ruta_json, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    print(f"✅ data.json generado con {len(estaciones_json)} estaciones")
+
+
 def generar_html(historial_data, ahora):
     fecha_actualizada = ahora.strftime("%d/%m/%Y %H:%M:%S")
 
@@ -643,6 +682,7 @@ def principal():
     if datos_completos:
         historial, ahora = gestionar_historial(datos_completos)
         historial_agri = gestionar_historial_agricola(datos_completos, ahora)
+        generar_json(datos_completos, ahora)
         ruta_html = generar_html(historial, ahora)
         print("Mapa, Máquina del Tiempo y Datos Agrícolas generados correctamente.")
     else:
