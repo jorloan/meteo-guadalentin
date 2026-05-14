@@ -1,49 +1,34 @@
-name: Actualizar Mapa Meteo
+name: Actualizar Meteo Guadalentín
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
-  build-map:
+  actualizar-meteo:
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar el repositorio
+      - name: Checkout repositorio
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Instalar Python
+      - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: Generar nuevo mapa
+      - name: Ejecutar mapa_totana.py
         run: python mapa_totana.py
+        env:
+          DISPLAY: ''
 
-      - name: Configurar GitHub Pages
-        uses: actions/configure-pages@v4
-
-      - name: Empaquetar web
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './public'
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build-map
-    steps:
-      - name: Publicar en GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Commit y push
+        run: |
+          git config --local user.email "meteo-bot@lya-agricola.com"
+          git config --local user.name "Meteo Bot"
+          git add -A
+          git diff --staged --quiet || git commit -m "Meteo actualizada $(date +'%Y-%m-%d %H:%M')"
+          git push
+        continue-on-error: true
