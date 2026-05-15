@@ -9,16 +9,34 @@ WU_KEY    = "6532d6454b8aa370768e63d6ba5a832e"
 AEMET_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb3Nlcm9xdWVAbG9wZXp5YW5kcmVvLmNvbSIsImp0aSI6ImM5OWQwMjdhLWFkOTgtNDI1Yi04ZGRiLTY3ZGNjNzdjMzRkYyIsImlzcyI6IkFFTUVUIiwiaWF0IjoxNzc4NDQ2MTgxLCJ1c2VySWQiOiJjOTlkMDI3YS1hZDk4LTQyNWItOGRkYi02N2RjYzc3YzM0ZGMiLCJyb2xlIjoiIn0.QAttE468tO9unX9oJMFIjEyhlDEr5IkBpdMOFR6-tyg"
 
 # ── Rutas ─────────────────────────────────────────────────────
-BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-REPO_DIR   = os.path.expanduser("~/Documents/meteo-guadalentin")
-DIR_PUB    = os.path.join(BASE_DIR, 'public')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# REPO_DIR: funciona tanto en Mac (~/Documents/meteo-guadalentin)
+# como en GitHub Actions (el script ya está dentro del repo clonado)
+def _detectar_repo():
+    # 1. Si el propio script está dentro de un repo git, usarlo directamente
+    candidato = BASE_DIR
+    for _ in range(4):
+        if os.path.isdir(os.path.join(candidato, '.git')):
+            return candidato
+        candidato = os.path.dirname(candidato)
+    # 2. Ruta Mac local
+    mac_path = os.path.expanduser("~/Documents/meteo-guadalentin")
+    if os.path.isdir(mac_path):
+        return mac_path
+    # 3. Fallback: usar el mismo directorio del script
+    return BASE_DIR
+
+REPO_DIR = _detectar_repo()
+DIR_PUB  = os.path.join(REPO_DIR, 'public')
 
 # Datos se guardan EN EL REPO (para subirlos a GitHub)
-F_H24    = os.path.join(REPO_DIR, 'history_24h.json')
-F_AGRI   = os.path.join(REPO_DIR, 'historial_agricola.json')
-F_AEMET  = os.path.join(REPO_DIR, 'historial_aemet.json')
+F_H24   = os.path.join(REPO_DIR, 'history_24h.json')
+F_AGRI  = os.path.join(REPO_DIR, 'historial_agricola.json')
+F_AEMET = os.path.join(REPO_DIR, 'historial_aemet.json')
 
 os.makedirs(DIR_PUB, exist_ok=True)
+print(f"  📁 REPO_DIR: {REPO_DIR}")
 
 MIN_DIAS = 3
 
@@ -117,23 +135,39 @@ def cargar_aemet(dias=14):
         except: return None
 
     for idema, nombre, lat, lon in AEMET_EST:
+        # AEMET requiere que la fecha fin no sea hoy — siempre usar ayer como máximo
         path = (f"/api/valores/climatologicos/diarios/datos"
                 f"/fechaini/{fi}/fechafin/{ff}/estacion/{idema}")
         try:
             req = urllib.request.Request(
                 "https://opendata.aemet.es/opendata/api"+path,
-                headers={'api_key': AEMET_KEY})
-            with urllib.request.urlopen(req, context=ctx, timeout=12) as r:
+                headers={'api_key': AEMET_KEY, 'cache-control': 'no-cache'})
+            with urllib.request.urlopen(req, context=ctx, timeout=15) as r:
                 meta = json.loads(r.read().decode('utf-8'))
-            if meta.get('estado') != 200:
-                raise Exception(meta.get('descripcion',''))
+            estado = meta.get('estado')
+            # 404 = no hay datos para ese período (estación sin datos ese mes)
+            # 200 = OK, hay datos
+            if estado == 404:
+                print(f"    ⚠ AEMET {idema} ({nombre}): sin datos para este período")
+                continue
+            if estado != 200:
+                raise Exception(f"estado={estado}: {meta.get('descripcion','')}")
             with urllib.request.urlopen(
                     urllib.request.Request(meta['datos']),
-                    context=ctx, timeout=12) as r2:
-                datos = json.loads(r2.read().decode('ISO-8859-15'))
+                    context=ctx, timeout=15) as r2:
+                raw = r2.read()
+                try:
+                    datos = json.loads(raw.decode('utf-8'))
+                except Exception:
+                    datos = json.loads(raw.decode('ISO-8859-15'))
+            if not isinstance(datos, list) or not datos:
+                print(f"    ⚠ AEMET {idema}: respuesta vacía")
+                continue
             if idema not in cache: cache[idema] = {}
             for d in datos:
-                cache[idema][d.get('fecha','')] = {
+                fecha = d.get('fecha','')
+                if not fecha: continue
+                cache[idema][fecha] = {
                     'tmax':pf(d.get('tmax')), 'tmin':pf(d.get('tmin')),
                     'prec':pf(d.get('prec')), 'hrmax':pf(d.get('hrmax')),
                     'lat':lat, 'lon':lon, 'nombre':nombre}
@@ -141,7 +175,7 @@ def cargar_aemet(dias=14):
             cache[idema] = {k:v for k,v in cache[idema].items() if k>=lim}
             print(f"    ✅ {idema} ({nombre}): {len(datos)} días")
         except Exception as e:
-            print(f"    ⚠ AEMET {idema}: {e}")
+            print(f"    ⚠ AEMET {idema} ({nombre}): {e}")
 
     guardar(F_AEMET, cache)
     return _fmt(cache)
@@ -523,21 +557,30 @@ def principal():
         print("  ❌ Sin datos WU."); return
 
     print("\n📡 Cargando datos AEMET (14 días)...")
-    hae = cargar_aemet(dias=14)
+    try:
+        hae = cargar_aemet(dias=14)
+        total = sum(len(v) for v in hae.values()) if hae else 0
+        if total:
+            print(f"  ✅ AEMET: {len(hae)} estaciones, {total} entradas")
+        else:
+            print("  ⚠ AEMET sin datos — se usará WU propio y vecinos")
+    except Exception as e:
+        print(f"  ⚠ AEMET falló ({e}) — continuando sin AEMET")
+        hae = {}
 
     print("\n📚 Historial 24h...")
     h24 = hist24(datos_wu, ahora)
 
     print("\n🌾 Historial agrícola...")
     hagri = hist_agri(datos_wu, ahora)
-    print(f"  📊 {len(hagri)} días acumulados en GitHub")
+    print(f"  📊 {len(hagri)} días acumulados")
 
     print("\n🔬 Calculando riesgo Oídio/Mildiu...")
     r = calcular_riesgo(hagri, hae, datos_wu)
-    niveles=['Sin riesgo','Bajo','Medio','ALTO']
-    for sid,rv in r.items():
-        ot=niveles[rv['oidio']]  if rv['oidio'] >=0 else '⚠ Insuf.'
-        mt=niveles[rv['mildiu']] if rv['mildiu']>=0 else '⚠ Insuf.'
+    niveles = ['Sin riesgo','Bajo','Medio','ALTO']
+    for sid, rv in r.items():
+        ot = niveles[rv['oidio']]  if rv['oidio']  >= 0 else '⚠ Insuf.'
+        mt = niveles[rv['mildiu']] if rv['mildiu'] >= 0 else '⚠ Insuf.'
         print(f"  {sid}: Oídio={ot} | Mildiu={mt} | {rv['fuente_datos']}")
 
     print("\n🗺  Generando HTML...")
@@ -547,8 +590,9 @@ def principal():
     git_push(ahora)
 
     print(f"\n✅ Listo → {ruta}")
-    print(f"🌐 Web pública: https://jorloan.github.io/meteo-guadalentin/")
-    webbrowser.open('file://'+ruta)
+    print(f"🌐 Web: https://jorloan.github.io/meteo-guadalentin/")
+    if not os.environ.get('CI'):
+        webbrowser.open('file://'+ruta)
 
 if __name__ == "__main__":
     principal()
