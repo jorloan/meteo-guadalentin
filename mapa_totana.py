@@ -16,28 +16,30 @@ F_AGRI    = os.path.join(DIR_DATOS, 'historial_agricola.json')
 F_AEMET   = os.path.join(DIR_DATOS, 'historial_aemet.json')
 os.makedirs(DIR_DATOS, exist_ok=True)
 os.makedirs(DIR_PUB,   exist_ok=True)
-MIN_DIAS = 5
+
+MIN_DIAS = 3   # reducido a 3 para que funcione desde el primer día con AEMET
 
 AEMET_EST = [
-    ("7228",  "Totana",           37.769, -1.504),
-    ("7228B", "Lorca",            37.679, -1.701),
-    ("7213",  "Alhama de Murcia", 37.852, -1.425),
-    ("7031",  "Mazarrón",         37.631, -1.316),
-    ("7209",  "Lorca/Zarzilla",   37.901, -1.810),
+    ("7228",  "Totana AEMET",         37.769, -1.504),
+    ("7228B", "Lorca AEMET",          37.679, -1.701),
+    ("7213",  "Alhama AEMET",         37.852, -1.425),
+    ("7031",  "Mazarrón AEMET",       37.631, -1.316),
+    ("7209",  "Lorca/Zarzilla AEMET", 37.901, -1.810),
 ]
 
 F_EST = os.path.join(BASE_DIR, 'estaciones.txt')
 if not os.path.exists(F_EST):
-    with open(F_EST,'w',encoding='utf-8') as f:
-        for e in ["ITOTAN8","ITOTAN2","ITOTAN16","ITOTAN5","ITOTAN33","ITOTAN43",
-                  "ITOTAN31","ITOTAN42","ITOTAN9","ITOTAN41","ITOTAN10","ITOTAN17"]:
+    with open(F_EST,'w') as f:
+        for e in ["ITOTAN8","ITOTAN2","ITOTAN16","ITOTAN5","ITOTAN33",
+                  "ITOTAN43","ITOTAN31","ITOTAN42","ITOTAN9","ITOTAN41","ITOTAN10","ITOTAN17"]:
             f.write(e+"\n")
-ESTACIONES = [l.split('#')[0].strip() for l in open(F_EST,'r',encoding='utf-8') if l.split('#')[0].strip()]
 
+ESTACIONES = [l.split('#')[0].strip() for l in open(F_EST) if l.split('#')[0].strip()]
+
+# ── Utilidades ────────────────────────────────────────────────
 def leer(ruta, default):
     if os.path.exists(ruta):
-        try:
-            return json.load(open(ruta,'r',encoding='utf-8'))
+        try: return json.load(open(ruta,'r',encoding='utf-8'))
         except: pass
     return default
 
@@ -45,11 +47,17 @@ def guardar(ruta, data):
     with open(ruta,'w',encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-# ── WU ──────────────────────────────────────────────────────
+def dist(la1,lo1,la2,lo2):
+    return ((la1-la2)**2+(lo1-lo2)**2)**0.5
+
+# ── WU: observación actual ────────────────────────────────────
 def wu(sid):
-    url = f"https://api.weather.com/v2/pws/observations/current?stationId={sid}&format=json&units=m&numericPrecision=decimal&apiKey={WU_KEY}"
+    url = (f"https://api.weather.com/v2/pws/observations/current"
+           f"?stationId={sid}&format=json&units=m&numericPrecision=decimal&apiKey={WU_KEY}")
     try:
-        req = urllib.request.Request(url, headers={'User-Agent':'Mozilla/5.0','Referer':'https://www.wunderground.com/'})
+        req = urllib.request.Request(url, headers={
+            'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+            'Referer':'https://www.wunderground.com/'})
         with urllib.request.urlopen(req, context=ctx, timeout=6) as r:
             obs = json.loads(r.read().decode('utf-8')).get('observations',[])
             return obs[0] if obs else None
@@ -57,17 +65,18 @@ def wu(sid):
         print(f"  ⚠ WU {sid}: {e}")
     return None
 
-# ── AEMET ────────────────────────────────────────────────────
-def aemet_diarios(dias=14):
+# ── AEMET: datos diarios, guardados localmente ────────────────
+def cargar_aemet(dias=14):
     cache = leer(F_AEMET, {})
     ahora = datetime.now()
-    dias_nec = [(ahora-timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1,dias+1)]
-    dias_cache = set(d for v in cache.values() for d in v.keys())
-    faltantes  = [d for d in dias_nec if d not in dias_cache]
+    # Días que necesitamos
+    dias_nec = [(ahora-timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1, dias+1)]
+    en_cache  = set(d for v in cache.values() for d in v.keys())
+    faltantes = [d for d in dias_nec if d not in en_cache]
 
     if not faltantes:
-        print(f"  ✅ AEMET: caché local ({len(dias_cache)} días)")
-        return {k:[dict(fecha=f,**v) for f,v in sorted(vv.items())] for k,vv in cache.items()}
+        print(f"  ✅ AEMET: {len(en_cache)} días en caché local")
+        return _aemet_fmt(cache)
 
     fi = min(faltantes)+'T00:00:00UTC'
     ff = max(faltantes)+'T23:59:59UTC'
@@ -79,17 +88,27 @@ def aemet_diarios(dias=14):
         except: return None
 
     for idema, nombre, lat, lon in AEMET_EST:
-        path = f"/api/valores/climatologicos/diarios/datos/fechaini/{fi}/fechafin/{ff}/estacion/{idema}"
+        path = (f"/api/valores/climatologicos/diarios/datos"
+                f"/fechaini/{fi}/fechafin/{ff}/estacion/{idema}")
         try:
-            req = urllib.request.Request("https://opendata.aemet.es/opendata/api"+path, headers={'api_key':AEMET_KEY})
-            with urllib.request.urlopen(req, context=ctx, timeout=10) as r:
+            req = urllib.request.Request(
+                "https://opendata.aemet.es/opendata/api"+path,
+                headers={'api_key': AEMET_KEY})
+            with urllib.request.urlopen(req, context=ctx, timeout=12) as r:
                 meta = json.loads(r.read().decode('utf-8'))
-            if meta.get('estado') != 200: raise Exception(meta.get('descripcion',''))
-            with urllib.request.urlopen(urllib.request.Request(meta['datos']), context=ctx, timeout=10) as r2:
+            if meta.get('estado') != 200:
+                raise Exception(meta.get('descripcion',''))
+            with urllib.request.urlopen(
+                    urllib.request.Request(meta['datos']),
+                    context=ctx, timeout=12) as r2:
                 datos = json.loads(r2.read().decode('ISO-8859-15'))
             if idema not in cache: cache[idema] = {}
             for d in datos:
-                cache[idema][d.get('fecha','')] = {'tmax':pf(d.get('tmax')),'tmin':pf(d.get('tmin')),'prec':pf(d.get('prec')),'hrmax':pf(d.get('hrmax')),'lat':lat,'lon':lon,'nombre':nombre}
+                cache[idema][d.get('fecha','')] = {
+                    'tmax':pf(d.get('tmax')), 'tmin':pf(d.get('tmin')),
+                    'prec':pf(d.get('prec')), 'hrmax':pf(d.get('hrmax')),
+                    'lat':lat, 'lon':lon, 'nombre':nombre}
+            # Limpiar > 30 días
             lim = (ahora-timedelta(days=30)).strftime('%Y-%m-%d')
             cache[idema] = {k:v for k,v in cache[idema].items() if k>=lim}
             print(f"    ✅ {idema} ({nombre}): {len(datos)} días")
@@ -97,9 +116,13 @@ def aemet_diarios(dias=14):
             print(f"    ⚠ AEMET {idema}: {e}")
 
     guardar(F_AEMET, cache)
-    return {k:[dict(fecha=f,**v) for f,v in sorted(vv.items())] for k,vv in cache.items()}
+    return _aemet_fmt(cache)
 
-# ── Historial 24h local ──────────────────────────────────────
+def _aemet_fmt(cache):
+    return {k:[dict(fecha=f,**v) for f,v in sorted(vv.items())]
+            for k,vv in cache.items()}
+
+# ── Historial 24h (local) ─────────────────────────────────────
 def hist24(nuevos, ahora):
     h = leer(F_H24, [])
     lim = ahora - timedelta(hours=24)
@@ -110,12 +133,12 @@ def hist24(nuevos, ahora):
             if t.tzinfo is None: t = t.replace(tzinfo=ahora.tzinfo)
             if t > lim: limpio.append(e)
         except: pass
-    limpio.append({'timestamp':ahora.isoformat(),'stations':nuevos})
+    limpio.append({'timestamp': ahora.isoformat(), 'stations': nuevos})
     guardar(F_H24, limpio)
-    print(f"  ✅ Historial 24h: {len(limpio)} registros locales.")
+    print(f"  ✅ Historial 24h: {len(limpio)} entradas guardadas en {F_H24}")
     return limpio
 
-# ── Historial agrícola local ─────────────────────────────────
+# ── Historial agrícola (local) ────────────────────────────────
 def hist_agri(nuevos, ahora):
     h = leer(F_AGRI, {})
     hoy = ahora.strftime('%Y-%m-%d')
@@ -127,305 +150,389 @@ def hist_agri(nuevos, ahora):
         p   = est.get('metric',{}).get('precipTotal')
         hm  = est.get('humidity')
         if sid not in h[hoy]:
-            h[hoy][sid] = {'tempMax':t if t is not None else -99,'tempMin':t if t is not None else 99,'precipTotal':p if p is not None else 0,'humedadAltaMinutos':0}
+            h[hoy][sid] = {
+                'tempMax':  t if t is not None else -99,
+                'tempMin':  t if t is not None else  99,
+                'precipTotal': p if p is not None else 0,
+                'humedadAltaMinutos': 0,
+                'lat': est.get('lat',0), 'lon': est.get('lon',0)}
         else:
             d = h[hoy][sid]
             if t is not None:
-                if t > d.get('tempMax',-99): d['tempMax']=t
-                if t < d.get('tempMin', 99): d['tempMin']=t
-            if p is not None and p > d.get('precipTotal',0): d['precipTotal']=p
+                if t > d.get('tempMax',-99): d['tempMax'] = t
+                if t < d.get('tempMin', 99): d['tempMin'] = t
+            if p is not None and p > d.get('precipTotal',0):
+                d['precipTotal'] = p
         if hm is not None and hm >= 85:
             h[hoy][sid]['humedadAltaMinutos'] = h[hoy][sid].get('humedadAltaMinutos',0)+15
+    # Mantener 14 días
     for d in sorted(h.keys())[:-14]: del h[d]
     guardar(F_AGRI, h)
-    print(f"  ✅ Historial agrícola: {len(h)} días locales.")
+    print(f"  ✅ Historial agrícola: {len(h)} días guardados en {F_AGRI}")
     return h
 
-# ── Riesgo ───────────────────────────────────────────────────
-def riesgo(hwu, hae, actuales_list):
+# ── Riesgo Oídio / Mildiu ─────────────────────────────────────
+def calcular_riesgo(hwu, hae, actuales_list):
+    """
+    Para cada estación activa:
+    1. Usa su historial WU propio
+    2. Si faltan días, rellena con WU de estaciones cercanas
+    3. Si aún faltan, rellena con AEMET más cercana
+    Modelos: Gubler-Thomas (oídio) + 10-10-10/EPI (mildiu)
+    """
     act  = {e['stationID']:e for e in actuales_list if e and 'stationID' in e}
     dias = sorted(hwu.keys())
     res  = {}
+
+    # Índice de posición de todas las estaciones WU (para vecinos)
+    posiciones = {}
+    for fecha in dias:
+        for sid, dd in hwu[fecha].items():
+            if sid not in posiciones and dd.get('lat'):
+                posiciones[sid] = (dd['lat'], dd['lon'])
+    # También de las estaciones actuales
+    for sid, est in act.items():
+        if sid not in posiciones and est.get('lat'):
+            posiciones[sid] = (est['lat'], est['lon'])
+
     for sid, est in act.items():
         ta = est.get('metric',{}).get('temp')
         ha = est.get('humidity')
-        la = est.get('lat',0)
-        lo = est.get('lon',0)
+        la = est.get('lat', posiciones.get(sid,(37.77,0))[0])
+        lo = est.get('lon', posiciones.get(sid,(0,-1.5))[1])
         if ta is None: continue
 
+        # ── 1. Historial WU propio ───────────────────────────
         filas = []
         for f in (dias[-14:] if len(dias)>=14 else dias):
             dd = hwu[f].get(sid)
-            if dd: filas.append({'fecha':f,'tmax':dd.get('tempMax'),'tmin':dd.get('tempMin'),'prec':dd.get('precipTotal',0),'hum_min':dd.get('humedadAltaMinutos',0),'src':'WU'})
+            if dd:
+                filas.append({'fecha':f,'tmax':dd.get('tempMax'),'tmin':dd.get('tempMin'),
+                              'prec':dd.get('precipTotal',0),'hum_min':dd.get('humedadAltaMinutos',0),
+                              'src':'WU-propio'})
 
+        # ── 2. Rellenar con WU de estaciones cercanas ────────
+        if len(filas) < MIN_DIAS and la and lo:
+            fechas_ok = {f['fecha'] for f in filas}
+            # Ordenar otras estaciones WU por distancia
+            vecinos = sorted(
+                [(s, dist(la,lo,p[0],p[1])) for s,p in posiciones.items() if s!=sid],
+                key=lambda x: x[1])
+            for vsid, vd in vecinos[:4]:  # máx 4 vecinos
+                if vd > 0.3: break  # ~30km
+                for f in (dias[-14:] if len(dias)>=14 else dias):
+                    if f in fechas_ok: continue
+                    dd = hwu[f].get(vsid)
+                    if dd:
+                        filas.append({'fecha':f,'tmax':dd.get('tempMax'),'tmin':dd.get('tempMin'),
+                                      'prec':dd.get('precipTotal',0),'hum_min':dd.get('humedadAltaMinutos',0),
+                                      'src':f'WU-vecino:{vsid}'})
+                        fechas_ok.add(f)
+                if len(filas) >= MIN_DIAS: break
+
+        # ── 3. Rellenar con AEMET más cercana ────────────────
         ae_src = None
         if len(filas) < MIN_DIAS and hae:
-            best_d, best_id = 999, None
-            for idema,(_,_,alat,alon) in zip([e[0] for e in AEMET_EST], AEMET_EST):
-                d2 = ((la-alat)**2+(lo-alon)**2)**0.5
-                if d2 < best_d and idema in hae: best_d,best_id = d2,idema
-            if best_id:
-                ae_src = best_id
-                fe_set = {f['fecha'] for f in filas}
-                for da in hae[best_id]:
-                    if da['fecha'] not in fe_set:
-                        filas.append({'fecha':da['fecha'],'tmax':da.get('tmax'),'tmin':da.get('tmin'),'prec':da.get('prec') or 0,'hum_min':240 if (da.get('hrmax') or 0)>=85 else 0,'src':f"AE:{best_id}"})
-                filas.sort(key=lambda x:x['fecha'])
-                filas = filas[-14:]
+            mejor = min(hae.keys(),
+                        key=lambda k: dist(la, lo,
+                            hae[k][0].get('lat',99), hae[k][0].get('lon',99)))
+            ae_src = mejor
+            fechas_ok = {f['fecha'] for f in filas}
+            for da in hae[mejor]:
+                if da['fecha'] not in fechas_ok:
+                    filas.append({'fecha':da['fecha'],
+                                  'tmax':da.get('tmax'), 'tmin':da.get('tmin'),
+                                  'prec':da.get('prec') or 0,
+                                  'hum_min': 240 if (da.get('hrmax') or 0)>=85 else 0,
+                                  'src':f'AEMET:{mejor}'})
 
-        nd = len(filas)
-        nae = sum(1 for f in filas if f['src'].startswith('AE'))
-        if ae_src and nae:
-            nb = next((e[1] for e in AEMET_EST if e[0]==ae_src), ae_src)
-            flbl = f"WU({nd-nae}d)+AEMET {nb}({nae}d)"
-        else:
-            flbl = f"WU propio ({nd}d)"
+        filas.sort(key=lambda x: x['fecha'])
+        filas = filas[-14:]
+        nd    = len(filas)
+
+        # Etiqueta de fuente
+        n_wu_p  = sum(1 for f in filas if f['src']=='WU-propio')
+        n_wu_v  = sum(1 for f in filas if f['src'].startswith('WU-vecino'))
+        n_ae    = sum(1 for f in filas if f['src'].startswith('AEMET'))
+        partes  = []
+        if n_wu_p: partes.append(f"WU propio {n_wu_p}d")
+        if n_wu_v: partes.append(f"WU vecinos {n_wu_v}d")
+        if n_ae:
+            nb = next((e[1] for e in AEMET_EST if e[0]==ae_src), ae_src) if ae_src else '?'
+            partes.append(f"AEMET {nb} {n_ae}d")
+        flbl = " + ".join(partes) if partes else "Sin datos"
 
         ok = nd >= MIN_DIAS
+
+        # Métricas acumuladas
         p10   = sum(f['prec'] or 0 for f in filas[-10:])
         tminm = min((f['tmin'] for f in filas if f['tmin'] is not None), default=99)
-        dt15  = sum(1 for f in filas if f['tmax'] is not None and f['tmin'] is not None and (f['tmax']+f['tmin'])/2>=15)
-        h85   = sum(f.get('hum_min',0) for f in filas[-7:])/60.0
+        dt15  = sum(1 for f in filas
+                    if f['tmax'] is not None and f['tmin'] is not None
+                    and (f['tmax']+f['tmin'])/2 >= 15)
+        h85   = sum(f.get('hum_min',0) for f in filas[-7:]) / 60.0
 
-        # Oídio
+        # ── OÍDIO (Gubler-Thomas UC Davis) ───────────────────
         no, do = 0, []
         if not ok:
-            no=-1; do.append(f"⚠ {nd} días disponibles (mínimo {MIN_DIAS})")
+            no = -1
+            do.append(f"⚠ Solo {nd} días disponibles (mínimo {MIN_DIAS})")
         else:
-            if ta>=15 and dt15>=5:
-                do.append(f"{dt15} días Tmed≥15°C")
-                if 15<=ta<19:   no=1; do.append(f"T={ta:.1f}°C — rango bajo")
-                elif 19<=ta<=26: no=3 if h85>=4 else 2; do.append(f"T={ta:.1f}°C — rango óptimo"); (do.append(f"{h85:.1f}h HR≥85% (7d)") if h85>=4 else None)
-                else:            no=3 if (ha or 0)>=70 else 2; do.append(f"T={ta:.1f}°C + HR={ha}%")
-            elif ta>=18: no=1; do.append(f"Solo {dt15} días cálidos acumulados")
-            else: do.append(f"T={ta:.1f}°C — por debajo umbral")
+            if ta >= 15 and dt15 >= MIN_DIAS:
+                do.append(f"{dt15} días con Tmed≥15°C")
+                if 15 <= ta < 19:
+                    no = 1; do.append(f"T={ta:.1f}°C — rango bajo (15-19°C)")
+                elif 19 <= ta <= 26:
+                    no = 3 if h85 >= 4 else 2
+                    do.append(f"T={ta:.1f}°C — rango óptimo (19-26°C)")
+                    if h85 >= 4: do.append(f"{h85:.1f}h HR≥85% en últimos 7d")
+                else:
+                    no = 3 if (ha or 0) >= 70 else 2
+                    do.append(f"T={ta:.1f}°C + HR={ha}% — calor favorece esporulación nocturna")
+            elif ta >= 18:
+                no = 1; do.append(f"Solo {dt15} días cálidos — riesgo inicial")
+            else:
+                do.append(f"T={ta:.1f}°C — por debajo umbral de 15°C")
 
-        # Mildiu
+        # ── MILDIU (10-10-10 + EPI) ───────────────────────────
         nm, dm = 0, []
         if not ok:
-            nm=-1; dm.append(f"⚠ {nd} días disponibles (mínimo {MIN_DIAS})")
+            nm = -1
+            dm.append(f"⚠ Solo {nd} días disponibles (mínimo {MIN_DIAS})")
         else:
-            ct=tminm>10 or ta>10; cl=p10>=10; cd=nd>=7
-            if ct: dm.append("Tmin>10°C ✓")
-            if cl: dm.append(f"Lluvia 10d={p10:.1f}mm ✓")
-            if cd: dm.append(f"{nd} días historial ✓")
-            nc=sum([ct,cl,cd])
-            if nc==3:
-                nm=3 if (18<=ta<=24 and (ha or 0)>=85) else 2
-                if ta>30: nm=max(0,nm-1); dm.append("T>30°C inhibe esporulación")
-            elif nc==2: nm=1
+            ct = tminm > 10 or ta > 10
+            cl = p10 >= 10
+            cd = nd >= MIN_DIAS
+            if ct: dm.append(f"✓ Tmin>{10}°C")
+            if cl: dm.append(f"✓ Lluvia 10d={p10:.1f}mm (≥10mm)")
+            if cd: dm.append(f"✓ {nd} días de historial")
+            nc = sum([ct, cl, cd])
+            if nc == 3:
+                nm = 3 if (18<=ta<=24 and (ha or 0)>=85) else 2
+                if ta > 30:
+                    nm = max(0, nm-1)
+                    dm.append("T>30°C — inhibe esporulación")
+                elif 18<=ta<=24 and (ha or 0)>=85:
+                    dm.append(f"T={ta:.1f}°C + HR={ha}% — condiciones óptimas")
+            elif nc == 2:
+                nm = 1
             if not cl: dm.append(f"Lluvia 10d={p10:.1f}mm (necesita ≥10mm)")
-            if not cd: dm.append(f"Acumulando historial ({nd}/{MIN_DIAS} días)")
+            if not ct: dm.append(f"Temperatura aún baja para infección")
 
-        res[sid] = {'lat':la,'lon':lo,'oidio':no,'mildiu':nm,'datos_ok':ok,'dias_disponibles':nd,'fuente_datos':flbl,
-                    'detalles':{'oidio':do,'mildiu':dm,'temp_actual':ta,'hum_actual':ha,'precip_10dias':round(p10,1),'dias_tmed_sobre15':dt15,'horas_hum_alta_7d':round(h85,1)}}
+        res[sid] = {
+            'lat':la, 'lon':lo, 'oidio':no, 'mildiu':nm,
+            'datos_ok':ok, 'dias_disponibles':nd, 'fuente_datos':flbl,
+            'detalles':{'oidio':do,'mildiu':dm,
+                        'temp_actual':ta,'hum_actual':ha,
+                        'precip_10dias':round(p10,1),
+                        'dias_tmed_sobre15':dt15,
+                        'horas_hum_alta_7d':round(h85,1)}}
     return res
 
-# ── HTML ─────────────────────────────────────────────────────
+# ── HTML ──────────────────────────────────────────────────────
 def generar_html(historial, riesgo_data, ahora):
     fa = ahora.strftime("%d/%m/%Y %H:%M:%S")
-    NOMBRES = {"ITOTAN8":"Mirador - Lebor Alto","ITOTAN2":"METEO UNDERWORLD","ITOTAN16":"Mortí Bajo - Camino Aleurrosas","ITOTAN5":"Estación Tierno Galván","ITOTAN33":"Huerto Hostench","ITOTAN43":"Casa Totana","ITOTAN31":"CAMPING Lebor","ITOTAN42":"Secanos","ITOTAN9":"LA CANAL - Raiguero","ITOTAN41":"Ecowitt WN1981","ITOTAN10":"WS Rancho","ITOTAN17":"La Barquilla","IALHAM13":"Alhama Norte","IALHAM81":"Alhama Centro","ILORCA22":"Lorca Sur","IMAZAR7":"Puerto Mazarrón"}
+    NOMBRES = {
+        "ITOTAN8":"Mirador - Lebor Alto","ITOTAN2":"METEO UNDERWORLD",
+        "ITOTAN16":"Mortí Bajo","ITOTAN5":"Tierno Galván",
+        "ITOTAN33":"Huerto Hostench","ITOTAN43":"Casa Totana",
+        "ITOTAN31":"CAMPING Lebor","ITOTAN42":"Secanos",
+        "ITOTAN9":"LA CANAL","ITOTAN41":"Ecowitt WN1981",
+        "ITOTAN10":"WS Rancho","ITOTAN17":"La Barquilla",
+        "IALHAM13":"Alhama Norte","IALHAM81":"Alhama Centro",
+        "ILORCA22":"Lorca Sur","IMAZAR7":"Puerto Mazarrón"}
 
     js = ("var NOMBRES="+json.dumps(NOMBRES,ensure_ascii=False)+";\n"
          +"var historyData="+json.dumps(historial,ensure_ascii=False)+";\n"
          +"var riesgoData="+json.dumps(riesgo_data,ensure_ascii=False)+";\n"
-         +open(os.path.join(BASE_DIR,'_map_logic.js'),'r',encoding='utf-8').read()
-          if os.path.exists(os.path.join(BASE_DIR,'_map_logic.js')) else
-          "var NOMBRES="+json.dumps(NOMBRES,ensure_ascii=False)+";\n"
-         +"var historyData="+json.dumps(historial,ensure_ascii=False)+";\n"
-         +"var riesgoData="+json.dumps(riesgo_data,ensure_ascii=False)+";\n"
-         +MAP_LOGIC_JS)
+         + JS_LOGICA)
 
-    html = HTML_TEMPLATE.replace('__FECHA__', fa).replace('__JS__', js)
+    html = HTML_BASE.replace('__FECHA__', fa).replace('__JS__', js)
     ruta = os.path.join(DIR_PUB, 'index.html')
     with open(ruta,'w',encoding='utf-8') as f: f.write(html)
     return ruta
 
-MAP_LOGIC_JS = r"""
-var RIESGO_COLORS=['#27ae60','#f39c12','#e67e22','#c0392b'];
-var RIESGO_LABELS=['Sin riesgo','Riesgo bajo','Riesgo medio','Riesgo ALTO'];
-var currentIndex=historyData.length-1;
-window.heatOpacity=0.35;
+JS_LOGICA = r"""
+var RC=['#27ae60','#f39c12','#e67e22','#c0392b'];
+var RL=['Sin riesgo','Riesgo bajo','Riesgo medio','Riesgo ALTO'];
+var CI=historyData.length-1;
+window.HO=0.35;
 
-var terreno=L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google',className:'grayscale-map'});
-var mapaClaro=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO'});
-var estandar=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'});
-var googleSat=L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google'});
-
+var terreno=L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google',className:'gmap'});
+var claro=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO'});
+var osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'});
+var sat=L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google'});
 var map=L.map('map',{center:[37.76,-1.53],zoom:10,layers:[terreno]});
-map.createPane('heatPane');map.getPane('heatPane').style.zIndex=390;map.getPane('heatPane').style.filter='blur(14px)';
+map.createPane('hp');map.getPane('hp').style.zIndex=390;map.getPane('hp').style.filter='blur(14px)';
 
-var radarLG=L.layerGroup();
-fetch('https://api.rainviewer.com/public/weather-maps.json').then(function(r){return r.json();}).then(function(d){var last=d.radar.past[d.radar.past.length-1];radarLG.addLayer(L.tileLayer(d.host+last.path+'/256/{z}/{x}/{y}/2/1_1.png',{opacity:0.7,zIndex:400,attribution:'RainViewer',maxNativeZoom:7,maxZoom:18}));}).catch(function(){});
+var rLG=L.layerGroup();
+fetch('https://api.rainviewer.com/public/weather-maps.json').then(function(r){return r.json();}).then(function(d){var l=d.radar.past[d.radar.past.length-1];rLG.addLayer(L.tileLayer(d.host+l.path+'/256/{z}/{x}/{y}/2/1_1.png',{opacity:0.7,zIndex:400,maxNativeZoom:7,maxZoom:18}));}).catch(function(){});
+var mLG=L.layerGroup(),hLG=L.layerGroup(),HL=null;
+L.control.layers({'Relieve':terreno,'Claro':claro,'Satélite':sat,'OSM':osm},{'Radar':rLG,'Calor':hLG,'Marcadores':mLG},{position:'topright',collapsed:true}).addTo(map);
+hLG.addTo(map);mLG.addTo(map);
 
-var markersLG=L.layerGroup(),heatLG=L.layerGroup(),heatLayer=null;
-L.control.layers({'Relieve':terreno,'Mapa Claro':mapaClaro,'Satélite':googleSat,'Estándar':estandar},{'Radar Lluvia':radarLG,'Mapa Calor':heatLG,'Etiquetas':markersLG},{position:'topright',collapsed:true}).addTo(map);
-heatLG.addTo(map);markersLG.addTo(map);
-
-(function(){var btn=L.control({position:'topleft'});btn.onAdd=function(){var d=L.DomUtil.create('div','leaflet-bar leaflet-control');d.innerHTML='<a href="#" style="font-size:18px;background:white;display:flex;justify-content:center;align-items:center;width:30px;height:30px;text-decoration:none;">🎯</a>';L.DomEvent.on(d,'click',function(e){L.DomEvent.preventDefault(e);map.locate({setView:true,maxZoom:13});});return d;};btn.addTo(map);})();
-var userMk=null;map.on('locationfound',function(e){if(userMk)map.removeLayer(userMk);userMk=L.circleMarker(e.latlng,{radius:8,color:'#3498db',fillColor:'#3498db',fillOpacity:0.8}).addTo(map).bindPopup('Estás aquí').openPopup();});
-
-function lerpC(c1,c2,t){return 'rgb('+Math.round(c1[0]+t*(c2[0]-c1[0]))+','+Math.round(c1[1]+t*(c2[1]-c1[1]))+','+Math.round(c1[2]+t*(c2[2]-c1[2]))+')'; }
-function getColor(v,p){
-  if(p==='oidio'||p==='mildiu'){if(v<0)return '#aaa';return RIESGO_COLORS[Math.min(3,Math.max(0,Math.round(v)))];}
-  if(p==='temp'){var s=[{v:-5,c:[148,0,211]},{v:0,c:[0,0,200]},{v:5,c:[0,115,255]},{v:10,c:[0,200,200]},{v:15,c:[50,205,50]},{v:20,c:[255,255,0]},{v:25,c:[255,140,0]},{v:30,c:[220,20,60]},{v:35,c:[139,0,0]},{v:40,c:[200,0,200]}];if(v<=s[0].v)return 'rgb('+s[0].c+')';if(v>=s[s.length-1].v)return 'rgb('+s[s.length-1].c+')';for(var i=0;i<s.length-1;i++){if(v>=s[i].v&&v<=s[i+1].v)return lerpC(s[i].c,s[i+1].c,(v-s[i].v)/(s[i+1].v-s[i].v));}}
-  if(p==='precip')return v>=70?'#ff0000':v>=50?'#ff99ff':v>=40?'#cc66ff':v>=30?'#993399':v>=20?'#660099':v>=10?'#0000ff':v>=4?'#3366ff':v>=2?'#00ccff':v>=0.5?'#99ffff':v>0?'#e6ffff':'transparent';
+function lerp(c1,c2,t){return 'rgb('+Math.round(c1[0]+t*(c2[0]-c1[0]))+','+Math.round(c1[1]+t*(c2[1]-c1[1]))+','+Math.round(c1[2]+t*(c2[2]-c1[2]))+')'; }
+function col(v,p){
+  if(p==='oidio'||p==='mildiu'){if(v<0)return '#aaa';return RC[Math.min(3,Math.max(0,Math.round(v)))];}
+  if(p==='temp'){var s=[{v:-5,c:[148,0,211]},{v:0,c:[0,0,200]},{v:5,c:[0,115,255]},{v:10,c:[0,200,200]},{v:15,c:[50,205,50]},{v:20,c:[255,255,0]},{v:25,c:[255,140,0]},{v:30,c:[220,20,60]},{v:35,c:[139,0,0]},{v:40,c:[200,0,200]}];if(v<=s[0].v)return 'rgb('+s[0].c+')';if(v>=s[s.length-1].v)return 'rgb('+s[s.length-1].c+')';for(var i=0;i<s.length-1;i++)if(v>=s[i].v&&v<=s[i+1].v)return lerp(s[i].c,s[i+1].c,(v-s[i].v)/(s[i+1].v-s[i].v));}
+  if(p==='precip')return v>=70?'#f00':v>=50?'#f9f':v>=40?'#c6f':v>=30?'#939':v>=20?'#609':v>=10?'#00f':v>=4?'#36f':v>=2?'#0cf':v>=0.5?'#9ff':v>0?'#eff':'transparent';
   if(p==='humidity')return v>=90?'#0d47a1':v>=70?'#1976d2':v>=50?'#42a5f5':'#90caf9';
   if(p==='wind')return v>=40?'#b71c1c':v>=30?'#e65100':v>=20?'#f57f17':v>=10?'#fbc02d':v>=5?'#81c784':'#b2dfdb';
   return '#aaa';
 }
-function getRaw(est,p){if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}var m=est.metric;if(!m)return null;if(p==='precip')return m.precipTotal;if(p==='temp')return m.temp;if(p==='humidity')return est.humidity;if(p==='wind')return m.windGust;return null;}
-function wdirL(d){if(d==null)return '—';return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'][Math.round(d/22.5)%16];}
-function fmtT(iso){var d=new Date(iso),n=new Date();return(d.getDate()===n.getDate()&&d.getMonth()===n.getMonth()?'Hoy':'Ayer')+', '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});}
+function raw(e,p){if(p==='oidio'||p==='mildiu'){var r=riesgoData[e.stationID];return r?r[p]:null;}var m=e.metric;if(!m)return null;if(p==='precip')return m.precipTotal;if(p==='temp')return m.temp;if(p==='humidity')return e.humidity;if(p==='wind')return m.windGust;return null;}
+function wd(d){if(d==null)return '—';return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'][Math.round(d/22.5)%16];}
+function ft(iso){var d=new Date(iso),n=new Date();return(d.getDate()===n.getDate()&&d.getMonth()===n.getMonth()?'Hoy':'Ayer')+', '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});}
 
-var legend=L.control({position:'bottomleft'});
-legend.onAdd=function(){this._div=L.DomUtil.create('div','legend');return this._div;};
-legend.update=function(p){
+var leg=L.control({position:'bottomleft'});
+leg.onAdd=function(){this._d=L.DomUtil.create('div','legend');return this._d;};
+leg.upd=function(p){
   var h='';
-  if(p==='oidio'||p==='mildiu'){h='<div style="margin-bottom:5px;font-weight:bold;">'+(p==='oidio'?'🍇 Oídio':'🍃 Mildiu')+'</div><div><i style="background:#aaa"></i>Sin datos</div>';for(var i=3;i>=0;i--)h+='<div><i style="background:'+RIESGO_COLORS[i]+'"></i>'+RIESGO_LABELS[i]+'</div>';h+='<div style="margin-top:4px;font-size:0.65rem;color:#666;">'+(p==='oidio'?'Gubler-Thomas':'10-10-10+EPI')+'</div>';}
-  else{var g,ti,u;if(p==='precip'){ti='🌧 Precipitación';u='mm';g=[0.5,2,4,10,20,30,40,50,70];}if(p==='temp'){ti='🌡 Temperatura';u='°C';g=[5,10,15,20,25,30,35,40];}if(p==='humidity'){ti='💧 Humedad';u='%';g=[30,50,70,90];}if(p==='wind'){ti='💨 Viento';u='km/h';g=[2,5,10,20,30,40];}h='<div style="margin-bottom:4px;font-weight:bold;">'+ti+'<br><span style="font-size:0.7rem;color:#666">'+u+'</span></div><div><i style="background:'+getColor(g[g.length-1],p)+'"></i>&gt;'+g[g.length-1]+'</div>';for(var i=g.length-2;i>=0;i--)h+='<div><i style="background:'+getColor(g[i],p)+'"></i>'+g[i]+'-'+g[i+1]+'</div>';}
-  this._div.innerHTML=h;
-};legend.addTo(map);
+  if(p==='oidio'||p==='mildiu'){h='<b>'+(p==='oidio'?'🍇 Oídio':'🍃 Mildiu')+'</b><br><i style="background:#aaa"></i>Sin datos<br>';for(var i=3;i>=0;i--)h+='<i style="background:'+RC[i]+'"></i>'+RL[i]+'<br>';h+='<small>'+(p==='oidio'?'Gubler-Thomas':'10-10-10+EPI')+'</small>';}
+  else{var g,ti,u;if(p==='precip'){ti='🌧 Precipitación';u='mm';g=[0.5,2,4,10,20,30,40,50,70];}else if(p==='temp'){ti='🌡 Temperatura';u='°C';g=[5,10,15,20,25,30,35,40];}else if(p==='humidity'){ti='💧 Humedad';u='%';g=[30,50,70,90];}else{ti='💨 Viento';u='km/h';g=[2,5,10,20,30,40];}h='<b>'+ti+'</b> <small>'+u+'</small><br><i style="background:'+col(g[g.length-1],p)+'"></i>&gt;'+g[g.length-1]+'<br>';for(var i=g.length-2;i>=0;i--)h+='<i style="background:'+col(g[i],p)+'"></i>'+g[i]+'-'+g[i+1]+'<br>';}
+  this._d.innerHTML=h;
+};leg.addTo(map);
 
-var panelSid=null;
-function mostrarPanel(sid,html){document.getElementById('detail-content').innerHTML=html;document.getElementById('detail-panel').style.display='flex';panelSid=sid;}
-function cerrarPanel(){document.getElementById('detail-panel').style.display='none';panelSid=null;}
+var PS=null;
+function showPanel(sid,html){document.getElementById('dc').innerHTML=html;document.getElementById('dp').style.display='flex';PS=sid;}
+function hidePanel(){document.getElementById('dp').style.display='none';PS=null;}
 
-function actualizarMapa(){
-  var p=document.getElementById('param-select').value;
+function render(){
+  var p=document.getElementById('ps').value;
   var isR=p==='oidio'||p==='mildiu';
-  legend.update(p);heatLG.clearLayers();markersLG.clearLayers();heatLayer=null;
-  var snap=isR?historyData[historyData.length-1]:historyData[currentIndex];
+  leg.upd(p);hLG.clearLayers();mLG.clearLayers();HL=null;
+  var snap=isR?historyData[historyData.length-1]:historyData[CI];
   if(!snap)return;
   var feats=[];
   (snap.stations||[]).forEach(function(est){
     if(!est||est.lat==null||est.lon==null)return;
-    var val=getRaw(est,p);if(val==null)return;
-    var bg=getColor(val,p);
-    var lbl=isR?(val<0?'?':['0','B','M','A'][Math.min(3,Math.max(0,Math.round(val)))]):(p==='precip'?val.toFixed(1):p==='temp'?Math.round(val)+'°':Math.round(val)+'');
-    var ws='';if(p==='wind'&&est.winddir!=null)ws='<svg style="position:absolute;top:-13px;left:-13px;width:50px;height:50px;transform:rotate('+est.winddir+'deg);z-index:-1;pointer-events:none;" viewBox="0 0 50 50"><line x1="25" y1="2" x2="25" y2="13" stroke="black" stroke-width="2.5"/></svg>';
-    var ih='<div style="position:relative;"><div style="background:'+bg+';color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.8);border:1.5px solid white;border-radius:50%;width:26px;height:26px;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:10px;box-shadow:0 2px 5px rgba(0,0,0,0.4);cursor:pointer;">'+lbl+'</div>'+ws+'</div>';
+    var v=raw(est,p);if(v==null)return;
+    var bg=col(v,p);
+    var lb=isR?(v<0?'?':['0','B','M','A'][Math.min(3,Math.max(0,Math.round(v)))]):(p==='precip'?v.toFixed(1):p==='temp'?Math.round(v)+'°':Math.round(v)+'');
+    var ws='';if(p==='wind'&&est.winddir!=null)ws='<svg style="position:absolute;top:-13px;left:-13px;width:50px;height:50px;transform:rotate('+est.winddir+'deg);z-index:-1;pointer-events:none;"viewBox="0 0 50 50"><line x1="25"y1="2"x2="25"y2="13"stroke="black"stroke-width="2.5"/></svg>';
+    var ih='<div style="position:relative;"><div style="background:'+bg+';color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,.8);border:1.5px solid #fff;border-radius:50%;width:26px;height:26px;display:flex;justify-content:center;align-items:center;font-weight:700;font-size:10px;box-shadow:0 2px 5px rgba(0,0,0,.4);cursor:pointer;">'+lb+'</div>'+ws+'</div>';
     var mk=L.marker([est.lat,est.lon],{icon:L.divIcon({className:'',html:ih,iconSize:[26,26],iconAnchor:[13,13]})});
     var nm=NOMBRES[est.stationID]||(est.neighborhood&&est.neighborhood.trim()!==''?est.neighborhood:est.stationID);
 
-    // Panel
+    // ── Contenido panel ──
     var ph;
     if(isR){
       var r=riesgoData[est.stationID];
       if(r){
         var nO=r.oidio,nM=r.mildiu,det=r.detalles||{};
-        var dO=(det.oidio||[]).join('<br>&bull; '),dM=(det.mildiu||[]).join('<br>&bull; ');
+        var dO=(det.oidio||[]).join('<br>&bull; ');
+        var dM=(det.mildiu||[]).join('<br>&bull; ');
         var av='';
-        if(!r.datos_ok)av='<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;">⚠️ <b>Datos insuficientes</b><br><span style="color:#555;">'+r.dias_disponibles+' días disponibles de 5 necesarios.<br>Ejecuta el script diariamente para acumular historial.</span></div>';
-        ph=av+'<div style="margin-bottom:8px;"><b>🍇 Oídio:</b> <span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:12px;font-weight:bold;color:white;background:'+(nO<0?'#aaa':RIESGO_COLORS[nO])+'">'+(nO<0?'Sin datos':RIESGO_LABELS[nO])+'</span></div><div style="font-size:12px;color:#555;margin-bottom:12px;">&bull; '+(dO||'—')+'</div>'
-          +'<div style="margin-bottom:8px;"><b>🍃 Mildiu:</b> <span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:12px;font-weight:bold;color:white;background:'+(nM<0?'#aaa':RIESGO_COLORS[nM])+'">'+(nM<0?'Sin datos':RIESGO_LABELS[nM])+'</span></div><div style="font-size:12px;color:#555;margin-bottom:12px;">&bull; '+(dM||'—')+'</div>'
-          +'<hr style="border:0;border-top:1px solid #eee;margin:8px 0;"><div style="font-size:12px;color:#666;">🌡 T='+(det.temp_actual!=null?det.temp_actual.toFixed(1)+'°C':'—')+' &nbsp;💧 HR='+(det.hum_actual!=null?det.hum_actual+'%':'—')+'<br>🌧 Lluvia 10d='+(det.precip_10dias||0)+'mm &nbsp;⏱ HR alta='+(det.horas_hum_alta_7d||0)+'h (7d)</div>'
+        if(!r.datos_ok){av='<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:8px;margin-bottom:10px;font-size:12px;">⚠️ <b>Datos limitados</b> ('+r.dias_disponibles+' días)<br><span style="color:#666;">Se usaron estaciones vecinas y/o AEMET como respaldo.</span></div>';}
+        ph=av
+          +'<div style="margin-bottom:6px;"><b>🍇 Oídio:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;font-weight:700;color:#fff;background:'+(nO<0?'#aaa':RC[nO])+'">'+(nO<0?'Sin datos':RL[nO])+'</span></div>'
+          +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dO||'—')+'</div>'
+          +'<div style="margin-bottom:6px;"><b>🍃 Mildiu:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;font-weight:700;color:#fff;background:'+(nM<0?'#aaa':RC[nM])+'">'+(nM<0?'Sin datos':RL[nM])+'</span></div>'
+          +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dM||'—')+'</div>'
+          +'<hr style="border:0;border-top:1px solid #eee;margin:8px 0;">'
+          +'<div style="font-size:12px;color:#666;">'
+          +'🌡 '+(det.temp_actual!=null?det.temp_actual.toFixed(1)+'°C':'—')
+          +' &nbsp;💧 '+(det.hum_actual!=null?det.hum_actual+'%':'—')+'<br>'
+          +'🌧 Lluvia 10d='+(det.precip_10dias||0)+'mm'
+          +' &nbsp;⏱ HR alta='+(det.horas_hum_alta_7d||0)+'h (7d)</div>'
           +'<div style="font-size:11px;color:#aaa;margin-top:8px;">📊 '+r.fuente_datos+'</div>';
-      }else{ph='<div style="color:#999;font-size:13px;line-height:1.7;">Sin datos de riesgo.<br>Ejecuta el script diariamente.</div>';}
+      }else{ph='<div style="color:#999;font-size:13px;">Sin datos de riesgo.<br>Ejecuta el script diariamente.</div>';}
     }else{
       var m=est.metric||{};
-      ph='<table style="width:100%;border-collapse:collapse;font-size:13px;line-height:2;">'
-        +'<tr><td style="color:#888;">🌡 Temperatura</td><td style="font-weight:bold;">'+(m.temp!=null?m.temp.toFixed(1)+'°C':'—')+'</td></tr>'
-        +'<tr><td style="color:#888;">🌧 Precipitación</td><td style="font-weight:bold;">'+(m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—')+'</td></tr>'
-        +'<tr><td style="color:#888;">💨 Viento</td><td style="font-weight:bold;">'+(m.windSpeed!=null?m.windSpeed.toFixed(0)+' km/h':'—')+' '+wdirL(est.winddir)+'</td></tr>'
-        +'<tr><td style="color:#888;">⬆ Racha</td><td style="font-weight:bold;">'+(m.windGust!=null?m.windGust.toFixed(0)+' km/h':'—')+'</td></tr>'
-        +'<tr><td style="color:#888;">💧 Humedad</td><td style="font-weight:bold;">'+(est.humidity!=null?est.humidity+'%':'—')+'</td></tr>'
-        +'<tr><td style="color:#888;">🕒 Última obs.</td><td>'+(est.obsTimeLocal?est.obsTimeLocal.slice(11,16):'—')+'</td></tr>'
-        +'</table><a href="https://www.wunderground.com/dashboard/pws/'+est.stationID+'" target="_blank" style="display:inline-block;margin-top:12px;padding:7px 16px;background:#3498db;color:white;text-decoration:none;border-radius:6px;font-size:12px;">Ver historial WU ↗</a>';
+      ph='<table style="width:100%;font-size:13px;border-collapse:collapse;line-height:2;">'
+        +'<tr><td style="color:#888">🌡 Temperatura</td><td style="font-weight:700">'+(m.temp!=null?m.temp.toFixed(1)+'°C':'—')+'</td></tr>'
+        +'<tr><td style="color:#888">🌧 Precipitación</td><td style="font-weight:700">'+(m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—')+'</td></tr>'
+        +'<tr><td style="color:#888">💨 Viento</td><td style="font-weight:700">'+(m.windSpeed!=null?m.windSpeed.toFixed(0)+' km/h':'—')+' '+wd(est.winddir)+'</td></tr>'
+        +'<tr><td style="color:#888">⬆ Racha</td><td style="font-weight:700">'+(m.windGust!=null?m.windGust.toFixed(0)+' km/h':'—')+'</td></tr>'
+        +'<tr><td style="color:#888">💧 Humedad</td><td style="font-weight:700">'+(est.humidity!=null?est.humidity+'%':'—')+'</td></tr>'
+        +'<tr><td style="color:#888">🕒 Obs.</td><td>'+(est.obsTimeLocal?est.obsTimeLocal.slice(11,16):'—')+'</td></tr>'
+        +'</table>'
+        +'<a href="https://www.wunderground.com/dashboard/pws/'+est.stationID+'" target="_blank" style="display:inline-block;margin-top:12px;padding:7px 16px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px;font-size:12px;">Ver historial WU ↗</a>';
     }
-    var fh='<div style="font-size:15px;font-weight:bold;color:#2c3e50;margin-bottom:6px;">'+nm+'</div>'
-      +'<div style="font-size:11px;color:#bbb;margin-bottom:12px;">'+est.stationID+(est.lat?' &nbsp;'+est.lat.toFixed(3)+'°N ':' ')+(est.lon?Math.abs(est.lon).toFixed(3)+'°W':'')+'</div>'+ph;
-    (function(id,h){mk.on('click',function(){mostrarPanel(id,h);});})(est.stationID,fh);
+
+    var fh='<div style="font-size:15px;font-weight:700;color:#2c3e50;margin-bottom:4px;">'+nm+'</div>'
+      +'<div style="font-size:11px;color:#bbb;margin-bottom:12px;">'+est.stationID+'</div>'+ph;
+    (function(id,h){mk.on('click',function(){showPanel(id,h);});})(est.stationID,fh);
     mk.bindTooltip('<b>'+nm+'</b>',{direction:'top',offset:[0,-16],opacity:0.9});
-    markersLG.addLayer(mk);
-    if(!isR)feats.push(turf.point([est.lon,est.lat],{value:val}));
+    mLG.addLayer(mk);
+    if(!isR)feats.push(turf.point([est.lon,est.lat],{value:v}));
   });
 
-  if(!isR&&feats.length>2){try{var col=turf.featureCollection(feats);var grid=turf.interpolate(col,2.5,{gridType:'square',property:'value',units:'kilometers',weight:p==='temp'?2:4});var clean=turf.featureCollection(grid.features.filter(function(f){return f.properties.value!=null&&!isNaN(f.properties.value);}));heatLayer=L.geoJSON(clean,{pane:'heatPane',style:function(f){return{fillColor:getColor(f.properties.value,p),fillOpacity:window.heatOpacity,stroke:false};}});heatLG.addLayer(heatLayer);}catch(e){console.error('Heatmap:',e);}}
+  if(!isR&&feats.length>2){try{var c=turf.featureCollection(feats);var g=turf.interpolate(c,2.5,{gridType:'square',property:'value',units:'kilometers',weight:p==='temp'?2:4});var cl=turf.featureCollection(g.features.filter(function(f){return f.properties.value!=null&&!isNaN(f.properties.value);}));HL=L.geoJSON(cl,{pane:'hp',style:function(f){return{fillColor:col(f.properties.value,p),fillOpacity:window.HO,stroke:false};}});hLG.addLayer(HL);}catch(e){console.error(e);}}
 }
 
-var slider=document.getElementById('time-slider');
-var tlbl=document.getElementById('time-label');
-function initSlider(){var n=historyData.length;if(n===0){tlbl.innerText='Sin datos';return;}slider.min=0;slider.max=n-1;slider.value=n-1;currentIndex=n-1;tlbl.innerText=fmtT(historyData[n-1].timestamp)+' (Actual)';actualizarMapa();}
-slider.addEventListener('input',function(){currentIndex=parseInt(this.value);var last=currentIndex===historyData.length-1;tlbl.innerText=fmtT(historyData[currentIndex].timestamp)+(last?' (Actual)':' (Histórico)');actualizarMapa();});
-var pt=null;
-document.getElementById('play-btn').addEventListener('click',function(){if(pt){clearInterval(pt);pt=null;this.textContent='▶️';}else{this.textContent='⏸️';if(currentIndex>=historyData.length-1)currentIndex=0;var s=this;pt=setInterval(function(){currentIndex=(currentIndex+1)%historyData.length;slider.value=currentIndex;slider.dispatchEvent(new Event('input'));if(currentIndex===historyData.length-1){clearInterval(pt);pt=null;s.textContent='▶️';}},1500);}});
-document.getElementById('opacity-slider').addEventListener('input',function(){window.heatOpacity=parseFloat(this.value);if(heatLayer)heatLayer.setStyle({fillOpacity:window.heatOpacity});});
-initSlider();
+var sl=document.getElementById('sl'),tl=document.getElementById('tl');
+function initSl(){var n=historyData.length;if(!n){tl.innerText='Sin datos';return;}sl.min=0;sl.max=n-1;sl.value=n-1;CI=n-1;tl.innerText=ft(historyData[n-1].timestamp)+' (Actual)';render();}
+sl.addEventListener('input',function(){CI=parseInt(this.value);var last=CI===historyData.length-1;tl.innerText=ft(historyData[CI].timestamp)+(last?' (Actual)':' (Histórico)');render();});
+var PT=null;
+document.getElementById('pb').addEventListener('click',function(){if(PT){clearInterval(PT);PT=null;this.textContent='▶️';}else{this.textContent='⏸️';if(CI>=historyData.length-1)CI=0;var s=this;PT=setInterval(function(){CI=(CI+1)%historyData.length;sl.value=CI;sl.dispatchEvent(new Event('input'));if(CI===historyData.length-1){clearInterval(PT);PT=null;s.textContent='▶️';}},1500);}});
+document.getElementById('op').addEventListener('input',function(){window.HO=parseFloat(this.value);if(HL)HL.setStyle({fillOpacity:window.HO});});
+initSl();
 """
 
-HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang='es'>
+HTML_BASE = """<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta charset='UTF-8'>
-  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Meteo Guadalentín</title>
-  <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'/>
-  <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
-  <script src='https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js'></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
   <style>
-    *{box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;margin:0;padding:0;display:flex;flex-direction:column;height:100vh}
-    header{background:#1a252f;color:white;padding:0.6rem 1rem;display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 3px 8px rgba(0,0,0,0.25);flex-wrap:wrap;gap:8px;flex-shrink:0}
-    .header-left h1{margin:0;font-size:1.1rem;font-weight:600}.subtitle{font-size:0.72rem;color:#bdc3c7;margin-top:2px}
-    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .controls select{padding:5px 9px;border-radius:6px;border:none;background:#ecf0f1;color:#2c3e50;font-weight:bold;font-size:0.82rem;cursor:pointer}
-    .main-area{display:flex;flex:1;overflow:hidden}
+    *{box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;margin:0;display:flex;flex-direction:column;height:100vh}
+    header{background:#1a252f;color:#fff;padding:.6rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.3)}
+    h1{margin:0;font-size:1.1rem}.sub{font-size:.72rem;color:#bdc3c7;margin-top:2px}
+    .ct{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    select{padding:5px 9px;border-radius:6px;border:none;background:#ecf0f1;color:#2c3e50;font-weight:700;font-size:.82rem;cursor:pointer}
+    .ma{display:flex;flex:1;overflow:hidden}
     #map{flex:1;height:100%}
-    #detail-panel{display:none;flex-direction:column;width:285px;min-width:240px;background:#fff;border-left:1px solid #e0e0e0;overflow:hidden;flex-shrink:0}
-    #detail-header{background:#1a252f;color:white;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-    #detail-header span{font-size:13px;font-weight:600}
-    #close-panel{background:none;border:none;color:white;font-size:18px;cursor:pointer;line-height:1;padding:0 4px}
-    #detail-content{padding:14px;font-size:13px;overflow-y:auto;flex:1}
-    .legend{background:rgba(255,255,255,0.95);padding:7px 10px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.2);font-size:0.75rem;line-height:1.6;color:#333;max-height:55vh;overflow-y:auto;max-width:145px}
-    .legend i{width:14px;height:12px;float:left;margin-right:6px;opacity:0.85;border:1px solid rgba(0,0,0,0.1)}
-    .grayscale-map{filter:grayscale(100%) contrast(1.1) brightness(1.05)}
-    @media(max-width:600px){header{flex-direction:column;align-items:flex-start}.controls{width:100%}#detail-panel{width:100%;max-height:45vh}}
+    #dp{display:none;flex-direction:column;width:285px;min-width:240px;background:#fff;border-left:1px solid #e0e0e0;overflow:hidden;flex-shrink:0}
+    #dh{background:#1a252f;color:#fff;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;font-size:13px;font-weight:600}
+    #cp{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 4px}
+    #dc{padding:14px;font-size:13px;overflow-y:auto;flex:1}
+    .legend{background:rgba(255,255,255,.95);padding:7px 10px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.2);font-size:.75rem;line-height:1.8;color:#333;max-height:55vh;overflow-y:auto;max-width:145px}
+    .legend i{width:14px;height:12px;float:left;margin-right:6px;opacity:.85;border:1px solid rgba(0,0,0,.1)}
+    .gmap{filter:grayscale(100%) contrast(1.1) brightness(1.05)}
+    @media(max-width:600px){header{flex-direction:column;align-items:flex-start}.ct{width:100%}#dp{width:100%;max-height:45vh}}
   </style>
 </head>
 <body>
 <header>
-  <div class='header-left'><h1>🌿 Meteo Guadalentín</h1><div class='subtitle'>Actualizado: <span id='time-label'>__FECHA__</span></div></div>
-  <div class='controls'>
-    <div style='display:flex;flex-direction:column;align-items:center;gap:2px;'>
-      <span style='font-size:0.68rem;color:#ecf0f1;font-weight:bold;'>⏱ Máquina del Tiempo</span>
-      <div style='display:flex;align-items:center;gap:4px;'>
-        <button id='play-btn' style='background:transparent;color:white;border:none;cursor:pointer;font-size:1rem;padding:0 3px;'>▶️</button>
-        <input type='range' id='time-slider' min='0' max='0' value='0' style='width:120px;cursor:pointer;'>
+  <div><h1>🌿 Meteo Guadalentín</h1><div class="sub">Actualizado: <span id="tl">__FECHA__</span></div></div>
+  <div class="ct">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <span style="font-size:.68rem;color:#ecf0f1;font-weight:700">⏱ Máquina del Tiempo</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button id="pb" style="background:transparent;color:#fff;border:none;cursor:pointer;font-size:1rem;padding:0 3px">▶️</button>
+        <input type="range" id="sl" min="0" max="0" value="0" style="width:120px;cursor:pointer">
       </div>
     </div>
-    <div style='display:flex;flex-direction:column;align-items:center;gap:2px;'>
-      <span style='font-size:0.68rem;color:#ecf0f1;font-weight:bold;'>🔆 Opacidad</span>
-      <input type='range' id='opacity-slider' min='0' max='1' step='0.05' value='0.35' style='width:75px;cursor:pointer;'>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <span style="font-size:.68rem;color:#ecf0f1;font-weight:700">🔆 Opacidad</span>
+      <input type="range" id="op" min="0" max="1" step="0.05" value="0.35" style="width:75px;cursor:pointer">
     </div>
-    <select id='param-select' onchange='actualizarMapa()'>
-      <option value='temp' selected>🌡 Temperatura (°C)</option>
-      <option value='precip'>🌧 Precipitación (mm)</option>
-      <option value='humidity'>💧 Humedad (%)</option>
-      <option value='wind'>💨 Viento (km/h)</option>
-      <option value='oidio'>🍇 Riesgo Oídio</option>
-      <option value='mildiu'>🍃 Riesgo Mildiu</option>
+    <select id="ps" onchange="render()">
+      <option value="temp" selected>🌡 Temperatura (°C)</option>
+      <option value="precip">🌧 Precipitación (mm)</option>
+      <option value="humidity">💧 Humedad (%)</option>
+      <option value="wind">💨 Viento (km/h)</option>
+      <option value="oidio">🍇 Riesgo Oídio</option>
+      <option value="mildiu">🍃 Riesgo Mildiu</option>
     </select>
   </div>
 </header>
-<div class='main-area'>
-  <div id='map'></div>
-  <div id='detail-panel'>
-    <div id='detail-header'>
-      <span>Detalle de estación</span>
-      <button id='close-panel' onclick='cerrarPanel()' title='Cerrar'>✕</button>
-    </div>
-    <div id='detail-content'>
-      <p style='color:#aaa;font-size:13px;line-height:1.7;'>Haz clic en cualquier estación del mapa para ver sus datos aquí.</p>
-    </div>
+<div class="ma">
+  <div id="map"></div>
+  <div id="dp">
+    <div id="dh"><span>Detalle de estación</span><button id="cp" onclick="hidePanel()">✕</button></div>
+    <div id="dc"><p style="color:#aaa;font-size:13px;line-height:1.7">Haz clic en una estación del mapa para ver sus datos aquí.</p></div>
   </div>
 </div>
-<script>
-__JS__
-</script>
+<script>__JS__</script>
 </body>
 </html>"""
 
-# ── Principal ────────────────────────────────────────────────
+# ── Principal ─────────────────────────────────────────────────
 def principal():
     try:
         from zoneinfo import ZoneInfo
@@ -435,33 +542,36 @@ def principal():
 
     print(f"\n🚀 Obteniendo datos WU de {len(ESTACIONES)} estaciones...")
     datos_wu = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=25) as executor:
-        for d in executor.map(wu, ESTACIONES):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=25) as ex:
+        for d in ex.map(wu, ESTACIONES):
             if d: datos_wu.append(d)
-    print(f"  ✅ {len(datos_wu)}/{len(ESTACIONES)} estaciones con datos.")
+    print(f"  ✅ {len(datos_wu)}/{len(ESTACIONES)} con datos.")
     if not datos_wu:
-        print("  ❌ Sin datos. Comprueba la conexión."); return
+        print("  ❌ Sin datos WU. Comprueba la conexión."); return
 
-    print("\n📡 Cargando datos AEMET (14 días)...")
-    hae = aemet_diarios(dias=14)
+    print("\n📡 Cargando datos AEMET (últimos 14 días)...")
+    hae = cargar_aemet(dias=14)
+    if hae:
+        total = sum(len(v) for v in hae.values())
+        print(f"  ✅ AEMET: {len(hae)} estaciones, {total} entradas totales")
+    else:
+        print("  ⚠ Sin datos AEMET")
 
-    print("\n📚 Historial 24h local...")
+    print("\n📚 Historial 24h...")
     h24 = hist24(datos_wu, ahora)
 
-    print("\n🌾 Historial agrícola local...")
+    print("\n🌾 Historial agrícola...")
     hagri = hist_agri(datos_wu, ahora)
 
-    dias_acum = len(hagri)
-    print(f"\n  📊 Historial local acumulado: {dias_acum} días")
-    if dias_acum < MIN_DIAS:
-        print(f"  ⚠ Faltan {MIN_DIAS-dias_acum} días más para riesgo propio — usando AEMET como respaldo")
+    print(f"\n📊 Historial local: {len(hagri)} días acumulados")
 
     print("\n🔬 Calculando riesgo Oídio/Mildiu...")
-    r = riesgo(hagri, hae, datos_wu)
+    r = calcular_riesgo(hagri, hae, datos_wu)
+
     niveles = ['Sin riesgo','Bajo','Medio','ALTO']
     for sid, rv in r.items():
-        ot = niveles[rv['oidio']]  if rv['oidio']  >= 0 else '⚠ Insuficiente'
-        mt = niveles[rv['mildiu']] if rv['mildiu'] >= 0 else '⚠ Insuficiente'
+        ot = niveles[rv['oidio']]  if rv['oidio']  >= 0 else '⚠ Insuf.'
+        mt = niveles[rv['mildiu']] if rv['mildiu'] >= 0 else '⚠ Insuf.'
         print(f"  {sid}: Oídio={ot} | Mildiu={mt} | {rv['fuente_datos']}")
 
     print("\n🗺  Generando HTML...")
