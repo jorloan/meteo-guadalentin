@@ -41,11 +41,13 @@ print(f"  📁 REPO_DIR: {REPO_DIR}")
 MIN_DIAS = 3
 
 AEMET_EST = [
-    ("7228",  "Totana AEMET",         37.769, -1.504),
-    ("7228B", "Lorca AEMET",          37.679, -1.701),
-    ("7213",  "Alhama AEMET",         37.852, -1.425),
-    ("7031",  "Mazarrón AEMET",       37.631, -1.316),
-    ("7209",  "Lorca/Zarzilla AEMET", 37.901, -1.810),
+    ("7218Y", "Totana",           37.769, -1.504),
+    ("7209",  "Lorca",            37.679, -1.701),
+    ("7203A", "Lorca/Zarcilla",   37.901, -1.810),
+    ("7227X", "Alhama de Murcia", 37.852, -1.425),
+    ("7007Y", "Mazarrón",         37.598, -1.314),
+    ("7211B", "Pto. Lumbreras",   37.561, -1.803),
+    ("7023X", "Fuente Álamo",     37.712, -1.176),
 ]
 
 F_EST = os.path.join(BASE_DIR, 'estaciones.txt')
