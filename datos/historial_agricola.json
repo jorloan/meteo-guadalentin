@@ -91,13 +91,13 @@
       "humedadAltaMinutos": 0
     },
     "ILORCA104": {
-      "tempMax": 21.9,
+      "tempMax": 22.9,
       "tempMin": 13.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA106": {
-      "tempMax": 13.9,
+      "tempMax": 15.0,
       "tempMin": 5.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 15
@@ -109,13 +109,13 @@
       "humedadAltaMinutos": 0
     },
     "ILORCA108": {
-      "tempMax": 23.0,
+      "tempMax": 24.9,
       "tempMin": 15.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA109": {
-      "tempMax": 25.8,
+      "tempMax": 26.1,
       "tempMin": 16.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
@@ -145,7 +145,7 @@
       "humedadAltaMinutos": 0
     },
     "ILORCA18": {
-      "tempMax": 20.5,
+      "tempMax": 21.2,
       "tempMin": 10.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
@@ -157,7 +157,7 @@
       "humedadAltaMinutos": 0
     },
     "ILORCA22": {
-      "tempMax": 23.7,
+      "tempMax": 25.0,
       "tempMin": 16.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
@@ -181,31 +181,31 @@
       "humedadAltaMinutos": 0
     },
     "ILORCA46": {
-      "tempMax": 19.5,
+      "tempMax": 19.7,
       "tempMin": 10.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA49": {
-      "tempMax": 20.7,
+      "tempMax": 22.1,
       "tempMin": 11.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA50": {
-      "tempMax": 20.4,
+      "tempMax": 22.9,
       "tempMin": 17.5,
       "precipTotal": 0,
       "humedadAltaMinutos": 0
     },
     "ILORCA55": {
-      "tempMax": 22.1,
+      "tempMax": 24.3,
       "tempMin": 15.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA56": {
-      "tempMax": 23.3,
+      "tempMax": 23.9,
       "tempMin": 14.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
@@ -217,25 +217,25 @@
       "humedadAltaMinutos": 0
     },
     "ILORCA62": {
-      "tempMax": 25.0,
+      "tempMax": 25.5,
       "tempMin": 15.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA66": {
-      "tempMax": 23.3,
+      "tempMax": 25.3,
       "tempMin": 15.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA69": {
-      "tempMax": 19.6,
+      "tempMax": 21.2,
       "tempMin": 10.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA77": {
-      "tempMax": 24.3,
+      "tempMax": 25.1,
       "tempMin": 16.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
@@ -247,31 +247,31 @@
       "humedadAltaMinutos": 0
     },
     "ILORCA84": {
-      "tempMax": 19.4,
+      "tempMax": 20.6,
       "tempMin": 12.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA86": {
-      "tempMax": 19.3,
+      "tempMax": 22.9,
       "tempMin": 11.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA89": {
-      "tempMax": 23.7,
+      "tempMax": 25.6,
       "tempMin": 14.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA98": {
-      "tempMax": 24.6,
+      "tempMax": 25.1,
       "tempMin": 16.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
     "ILORCA99": {
-      "tempMax": 20.0,
+      "tempMax": 20.8,
       "tempMin": 11.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
@@ -368,7 +368,7 @@
     },
     "IMULA35": {
       "tempMax": 22.0,
-      "tempMin": 22.0,
+      "tempMin": 21.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0
     },
