@@ -798,7 +798,7 @@
       "tempMax": 14.7,
       "tempMin": 6.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 60,
+      "humedadAltaMinutos": 75,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -1046,7 +1046,7 @@
       "tempMax": 22.2,
       "tempMin": 11.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 15,
+      "humedadAltaMinutos": 30,
       "lat": 37.646405,
       "lon": -1.249082
     },
@@ -1324,7 +1324,7 @@
     },
     "IMAZAR111": {
       "tempMax": 25.0,
-      "tempMin": 19.6,
+      "tempMin": 19.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.571,
