@@ -138,11 +138,22 @@ def calcular_riesgo(hwu, actuales_list):
             pos[sid] = (est['lat'], est['lon'])
 
     for sid, est in act.items():
-        ta = est.get('metric', {}).get('temp')
+        ta_inst = est.get('metric', {}).get('temp')  # temperatura instantánea
         ha = est.get('humidity')
         la = est.get('lat', pos.get(sid, (37.77, 0))[0])
         lo = est.get('lon', pos.get(sid, (0, -1.5))[1])
-        if ta is None: continue
+        if ta_inst is None: continue
+
+        # Usar temperatura media diaria del historial para el modelo de riesgo
+        # Es más representativa que la temperatura instantánea (evita oscilaciones día/noche)
+        hoy = sorted(hwu.keys())[-1] if hwu else None
+        tmed_hoy = None
+        if hoy and hwu.get(hoy, {}).get(sid):
+            dd = hwu[hoy][sid]
+            if dd.get('tempMax') is not None and dd.get('tempMin') is not None:
+                tmed_hoy = round((dd['tempMax'] + dd['tempMin']) / 2, 1)
+        # Si no hay media de hoy, usar temperatura instantánea como fallback
+        ta = tmed_hoy if tmed_hoy is not None else ta_inst
 
         # 1. Historial WU propio
         filas = []
@@ -210,21 +221,21 @@ def calcular_riesgo(hwu, actuales_list):
                 do.append(f"{dt15} días con Tmed≥15°C")
                 if 15 <= ta < 19:
                     no = 1
-                    do.append(f"T={ta:.1f}°C — rango bajo (15-19°C)")
+                    do.append(f"Tmed={ta:.1f}°C — rango bajo (15-19°C)")
                 elif 19 <= ta <= 26:
                     no = 3 if h85 >= 4 else 2
-                    do.append(f"T={ta:.1f}°C — rango óptimo (19-26°C)")
+                    do.append(f"Tmed={ta:.1f}°C — rango óptimo (19-26°C)")
                     if h85 >= 4:
                         do.append(f"{h85:.1f}h HR≥85% en últimos 7d")
                 else:
                     no = 3 if (ha or 0) >= 70 else 2
-                    do.append(f"T={ta:.1f}°C — calor, esporulación nocturna")
+                    do.append(f"Tmed={ta:.1f}°C — calor, esporulación nocturna")
                     do.append(f"HR={ha}%")
             elif ta >= 18:
                 no = 1
                 do.append(f"Solo {dt15} días cálidos acumulados")
             else:
-                do.append(f"T={ta:.1f}°C — por debajo del umbral (15°C)")
+                do.append(f"Tmed={ta:.1f}°C — por debajo del umbral (15°C)")
 
         # ── MILDIU ──────────────────────────────────────────
         nm, dm = 0, []
