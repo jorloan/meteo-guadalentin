@@ -1,4 +1,4 @@
-name: Actualizar Meteo Guadalentín
+name: Actualizar Meteo Guadalentin
 
 on:
   schedule:
@@ -20,38 +20,20 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Sincronizar historial desde GitHub
-        run: |
-          git config pull.rebase false
-          git pull origin main --no-edit || true
+      - name: Sincronizar historial
+        run: git config pull.rebase false && git pull origin main --no-edit || true
 
-      - name: Rellenar historial si faltan datos
-        run: |
-          python3 -c "
-import json, os, sys
-f = 'historial_agricola.json'
-if not os.path.exists(f):
-    print('Sin historial - ejecutar fix')
-    sys.exit(1)
-h = json.load(open(f))
-dias_con_temp = sum(1 for d in h.values() for v in d.values() if v.get('tempMax') is not None)
-print(f'Entradas con temperatura: {dias_con_temp}')
-if dias_con_temp < 50:
-    print('Historial insuficiente - ejecutar fix')
-    sys.exit(1)
-print('Historial OK')
-" && echo "HISTORIAL_OK=true" >> $GITHUB_ENV || python3 fix_historial.py
+      - name: Verificar y rellenar historial
+        run: python3 check_historial.py || python3 fix_historial.py
 
-      - name: Ejecutar mapa_totana.py
+      - name: Ejecutar mapa
         run: python3 mapa_totana.py
-        env:
-          DISPLAY: ''
 
-      - name: Commit y push
+      - name: Publicar cambios
         run: |
           git config --local user.email "meteo-bot@lya-agricola.com"
           git config --local user.name "Meteo Bot"
           git add -A
-          git diff --staged --quiet || git commit -m "Meteo actualizada $(date +'%Y-%m-%d %H:%M')"
+          git diff --staged --quiet || git commit -m "Auto $(date +'%Y-%m-%d %H:%M')"
           git push
         continue-on-error: true
