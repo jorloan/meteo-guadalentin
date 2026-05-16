@@ -307,6 +307,10 @@ NOMBRES = {
     "IALHAM88":"Alhama Sierra","IALHAM90":"Alhama Río",
     "IALHAM92":"Las Canales",
     "ILORCA22":"Lorca Sur","IMAZAR7":"Puerto Mazarrón",
+    "IGUILA10":"Club Náutico de Águilas",
+    "IPULP6":"Meteobaraza Pulpí",
+    "IVERA31":"Thalassa",
+    "ICARTA267":"Palmasol",
 }
 
 def generar_html(historial, riesgo_data, ahora, dias_acum):
