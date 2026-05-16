@@ -2,7 +2,7 @@ name: Actualizar Meteo Guadalentín
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -13,11 +13,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Recuperar historial agricola guardado
+        run: |
+          git config pull.rebase false
+          git pull origin main --no-edit || true
 
       - name: Ejecutar mapa_totana.py
         run: python mapa_totana.py
