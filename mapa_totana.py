@@ -360,34 +360,22 @@ fetch('https://api.rainviewer.com/public/weather-maps.json')
       {opacity:0.7,zIndex:400,maxNativeZoom:7,maxZoom:18}));
   }).catch(function(){});
 
-var mLG=L.layerGroup(),HL=null;
-// Capas de calor separadas por variable
-var hLayers={
-  temp:     L.layerGroup(),
-  precip:   L.layerGroup(),
-  humidity: L.layerGroup(),
-  wind:     L.layerGroup(),
-  oidio:    L.layerGroup(),
-  mildiu:   L.layerGroup()
-};
-var radarLG2=L.layerGroup();
+var mLG=L.layerGroup(),hLG=L.layerGroup(),HL=null;
+var heatActive=true; // mapa de calor activo por defecto
 L.control.layers(
   {'Relieve':terreno,'Claro':claro,'Satélite':sat,'OSM':osm},
   {
     'Radar lluvia':rLG,
-    '🌡 Calor Temperatura':hLayers.temp,
-    '🌧 Calor Precipitación':hLayers.precip,
-    '💧 Calor Humedad':hLayers.humidity,
-    '💨 Calor Viento':hLayers.wind,
-    '🍇 Calor Oídio':hLayers.oidio,
-    '🍃 Calor Mildiu':hLayers.mildiu,
+    '🌈 Mapa de calor':hLG,
     '📍 Marcadores':mLG
   },
   {position:'topright',collapsed:true}
 ).addTo(map);
-// Activar por defecto temperatura y marcadores
-hLayers.temp.addTo(map);
+hLG.addTo(map);
 mLG.addTo(map);
+// Detectar cuando el usuario activa/desactiva el mapa de calor
+map.on('overlayadd',   function(e){ if(e.name==='🌈 Mapa de calor'){ heatActive=true;  render(); }});
+map.on('overlayremove',function(e){ if(e.name==='🌈 Mapa de calor'){ heatActive=false; hLG.clearLayers(); }});
 
 // Botón ubicación
 (function(){
@@ -494,7 +482,7 @@ function render(){
   var p=document.getElementById('ps').value;
   var isR=p==='oidio'||p==='mildiu';
   leg.upd(p);
-  hLayers[p].clearLayers(); mLG.clearLayers(); HL=null;
+  if(heatActive) hLG.clearLayers(); mLG.clearLayers(); HL=null;
 
   var snap=isR?historyData[historyData.length-1]:historyData[CI];
   if(!snap) return;
@@ -617,8 +605,10 @@ function render(){
         return{fillColor:col(v,p),fillOpacity:window.HO,stroke:false};
       }});
       // Añadir a la capa correspondiente
-      hLayers[p].clearLayers();
-      hLayers[p].addLayer(HL);
+      if(heatActive){
+        hLG.clearLayers();
+        hLG.addLayer(HL);
+      }
     }catch(e){console.error('Heatmap:',e);}
   }
 }
@@ -657,10 +647,6 @@ document.getElementById('pb').addEventListener('click',function(){
 document.getElementById('op').addEventListener('input',function(){
   window.HO=parseFloat(this.value);
   if(HL) HL.setStyle({fillOpacity:window.HO});
-  // Aplicar a todas las capas activas
-  Object.values(hLayers).forEach(function(lg){
-    lg.eachLayer(function(l){if(l.setStyle) l.setStyle({fillOpacity:window.HO});});
-  });
 });
 
 initSl();
@@ -754,6 +740,10 @@ HTML_BASE = """<!DOCTYPE html>
   </div>
 </div>
 <script>__JS__</script>
+<script>
+// Auto-recarga de datos cada 5 minutos
+setTimeout(function(){ location.reload(); }, 5*60*1000);
+</script>
 </body>
 </html>"""
 
