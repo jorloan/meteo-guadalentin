@@ -671,6 +671,38 @@
       "humedadAltaMinutos": 0,
       "lat": 37.775914,
       "lon": -1.52123
+    },
+    "IPULP6": {
+      "tempMax": 27.4,
+      "tempMin": 16.9,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.402118,
+      "lon": -1.748503
+    },
+    "IVERA31": {
+      "tempMax": 29.4,
+      "tempMin": 17.6,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.230999,
+      "lon": -1.822
+    },
+    "ICARTA267": {
+      "tempMax": 26.2,
+      "tempMin": 12.2,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 195,
+      "lat": 37.695322,
+      "lon": -0.935908
+    },
+    "IGUILA10": {
+      "tempMax": 24.8,
+      "tempMin": 17.4,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.407152,
+      "lon": -1.572191
     }
   },
   "2026-05-16": {
@@ -1046,7 +1078,7 @@
       "tempMax": 21.0,
       "tempMin": 11.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 15,
       "lat": 37.646405,
       "lon": -1.249082
     },
@@ -1329,6 +1361,38 @@
       "humedadAltaMinutos": 0,
       "lat": 37.571,
       "lon": -1.259
+    },
+    "IGUILA10": {
+      "tempMax": 18.4,
+      "tempMin": 18.4,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.407152,
+      "lon": -1.572191
+    },
+    "IPULP6": {
+      "tempMax": 21.2,
+      "tempMin": 21.2,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.402118,
+      "lon": -1.748503
+    },
+    "IVERA31": {
+      "tempMax": 20.3,
+      "tempMin": 20.3,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.230999,
+      "lon": -1.822
+    },
+    "ICARTA267": {
+      "tempMax": 18.7,
+      "tempMin": 18.7,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.695322,
+      "lon": -0.935908
     }
   },
   "2026-05-14": {
@@ -1947,6 +2011,38 @@
       "humedadAltaMinutos": 0,
       "lat": 37.747905,
       "lon": -1.510252
+    },
+    "IPULP6": {
+      "tempMax": 25.2,
+      "tempMin": 15.8,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.402118,
+      "lon": -1.748503
+    },
+    "IVERA31": {
+      "tempMax": 26.7,
+      "tempMin": 16.9,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 105,
+      "lat": 37.230999,
+      "lon": -1.822
+    },
+    "ICARTA267": {
+      "tempMax": 27.4,
+      "tempMin": 13.4,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 530,
+      "lat": 37.695322,
+      "lon": -0.935908
+    },
+    "IGUILA10": {
+      "tempMax": 22.4,
+      "tempMin": 16.3,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 200,
+      "lat": 37.407152,
+      "lon": -1.572191
     }
   },
   "2026-05-13": {
@@ -2557,6 +2653,38 @@
       "humedadAltaMinutos": 0,
       "lat": 37.747905,
       "lon": -1.510252
+    },
+    "IPULP6": {
+      "tempMax": 24.9,
+      "tempMin": 17.1,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.402118,
+      "lon": -1.748503
+    },
+    "IVERA31": {
+      "tempMax": 26.6,
+      "tempMin": 18.0,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.230999,
+      "lon": -1.822
+    },
+    "ICARTA267": {
+      "tempMax": 26.1,
+      "tempMin": 11.8,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 215,
+      "lat": 37.695322,
+      "lon": -0.935908
+    },
+    "IGUILA10": {
+      "tempMax": 22.6,
+      "tempMin": 17.0,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.407152,
+      "lon": -1.572191
     }
   },
   "2026-05-12": {
@@ -3167,6 +3295,38 @@
       "humedadAltaMinutos": 410,
       "lat": 37.747905,
       "lon": -1.510252
+    },
+    "IPULP6": {
+      "tempMax": 26.3,
+      "tempMin": 14.1,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.402118,
+      "lon": -1.748503
+    },
+    "IVERA31": {
+      "tempMax": 29.0,
+      "tempMin": 14.8,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.230999,
+      "lon": -1.822
+    },
+    "ICARTA267": {
+      "tempMax": 26.5,
+      "tempMin": 12.0,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 535,
+      "lat": 37.695322,
+      "lon": -0.935908
+    },
+    "IGUILA10": {
+      "tempMax": 27.9,
+      "tempMin": 15.7,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 55,
+      "lat": 37.407152,
+      "lon": -1.572191
     }
   },
   "2026-05-11": {
@@ -3777,6 +3937,38 @@
       "humedadAltaMinutos": 25,
       "lat": 37.747905,
       "lon": -1.510252
+    },
+    "IPULP6": {
+      "tempMax": 24.1,
+      "tempMin": 12.9,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.402118,
+      "lon": -1.748503
+    },
+    "IVERA31": {
+      "tempMax": 25.4,
+      "tempMin": 16.7,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.230999,
+      "lon": -1.822
+    },
+    "ICARTA267": {
+      "tempMax": 24.4,
+      "tempMin": 12.3,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 670,
+      "lat": 37.695322,
+      "lon": -0.935908
+    },
+    "IGUILA10": {
+      "tempMax": 22.4,
+      "tempMin": 16.2,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.407152,
+      "lon": -1.572191
     }
   },
   "2026-05-10": {
@@ -4395,6 +4587,38 @@
       "humedadAltaMinutos": 500,
       "lat": 37.747905,
       "lon": -1.510252
+    },
+    "IPULP6": {
+      "tempMax": 26.2,
+      "tempMin": 12.8,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 140,
+      "lat": 37.402118,
+      "lon": -1.748503
+    },
+    "IVERA31": {
+      "tempMax": 27.2,
+      "tempMin": 14.6,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 145,
+      "lat": 37.230999,
+      "lon": -1.822
+    },
+    "ICARTA267": {
+      "tempMax": 23.1,
+      "tempMin": 12.1,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 750,
+      "lat": 37.695322,
+      "lon": -0.935908
+    },
+    "IGUILA10": {
+      "tempMax": 21.5,
+      "tempMin": 15.5,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 390,
+      "lat": 37.407152,
+      "lon": -1.572191
     }
   },
   "2026-05-09": {
@@ -5021,6 +5245,38 @@
       "humedadAltaMinutos": 610,
       "lat": 37.747905,
       "lon": -1.510252
+    },
+    "IPULP6": {
+      "tempMax": 22.0,
+      "tempMin": 14.5,
+      "precipTotal": 0.5,
+      "humedadAltaMinutos": 125,
+      "lat": 37.402118,
+      "lon": -1.748503
+    },
+    "IVERA31": {
+      "tempMax": 22.5,
+      "tempMin": 14.9,
+      "precipTotal": 1.5,
+      "humedadAltaMinutos": 525,
+      "lat": 37.230999,
+      "lon": -1.822
+    },
+    "ICARTA267": {
+      "tempMax": 22.3,
+      "tempMin": 13.9,
+      "precipTotal": 22.3,
+      "humedadAltaMinutos": 1105,
+      "lat": 37.695322,
+      "lon": -0.935908
+    },
+    "IGUILA10": {
+      "tempMax": 20.7,
+      "tempMin": 16.4,
+      "precipTotal": 1.0,
+      "humedadAltaMinutos": 50,
+      "lat": 37.407152,
+      "lon": -1.572191
     }
   }
 }
