@@ -5284,7 +5284,7 @@
       "tempMax": 20.1,
       "tempMin": 8.8,
       "precipTotal": 5.59,
-      "humedadAltaMinutos": 15,
+      "humedadAltaMinutos": 30,
       "lat": 37.771905,
       "lon": -1.575828
     },
@@ -5473,7 +5473,7 @@
       "lon": -1.884168
     },
     "ILORCA19": {
-      "tempMax": 19.9,
+      "tempMax": 20.0,
       "tempMin": 13.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 75,
@@ -5507,7 +5507,7 @@
     "ILORCA45": {
       "tempMax": 17.7,
       "tempMin": 9.7,
-      "precipTotal": 0.0,
+      "precipTotal": 0.3,
       "humedadAltaMinutos": 0,
       "lat": 37.949817,
       "lon": -1.811834
@@ -5537,7 +5537,7 @@
       "lon": -1.829139
     },
     "ILORCA55": {
-      "tempMax": 19.6,
+      "tempMax": 20.0,
       "tempMin": 10.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -5593,7 +5593,7 @@
       "lon": -1.656607
     },
     "ILORCA84": {
-      "tempMax": 17.8,
+      "tempMax": 18.6,
       "tempMin": 9.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -5649,7 +5649,7 @@
       "lon": -1.305008
     },
     "IMAZAR114": {
-      "tempMax": 22.4,
+      "tempMax": 22.6,
       "tempMin": 14.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 30,
@@ -5723,7 +5723,7 @@
     "IMULA10": {
       "tempMax": 21.9,
       "tempMin": 7.2,
-      "precipTotal": 0.0,
+      "precipTotal": 0.25,
       "humedadAltaMinutos": 90,
       "lat": 38.100582,
       "lon": -1.525336
@@ -5739,7 +5739,7 @@
     "IMULA25": {
       "tempMax": 21.1,
       "tempMin": 7.9,
-      "precipTotal": 0.71,
+      "precipTotal": 2.21,
       "humedadAltaMinutos": 0,
       "lat": 37.986859,
       "lon": -1.533938
@@ -5763,23 +5763,23 @@
     "IMULA40": {
       "tempMax": 20.9,
       "tempMin": 8.1,
-      "precipTotal": 1.5,
-      "humedadAltaMinutos": 105,
+      "precipTotal": 4.6,
+      "humedadAltaMinutos": 120,
       "lat": 38.005746,
       "lon": -1.600633
     },
     "IMULA41": {
       "tempMax": 20.9,
       "tempMin": 8.5,
-      "precipTotal": 2.49,
-      "humedadAltaMinutos": 15,
+      "precipTotal": 7.39,
+      "humedadAltaMinutos": 30,
       "lat": 37.924439,
       "lon": -1.597045
     },
     "IMULA49": {
       "tempMax": 20.0,
       "tempMin": 9.6,
-      "precipTotal": 2.11,
+      "precipTotal": 2.31,
       "humedadAltaMinutos": 30,
       "lat": 38.138751,
       "lon": -1.565616
@@ -5787,16 +5787,16 @@
     "IMULACOP3": {
       "tempMax": 20.0,
       "tempMin": 6.8,
-      "precipTotal": 0.0,
-      "humedadAltaMinutos": 75,
+      "precipTotal": 0.51,
+      "humedadAltaMinutos": 90,
       "lat": 38.095196,
       "lon": -1.674757
     },
     "ITOTAN2": {
       "tempMax": 20.9,
       "tempMin": 11.5,
-      "precipTotal": 2.11,
-      "humedadAltaMinutos": 15,
+      "precipTotal": 3.1,
+      "humedadAltaMinutos": 30,
       "lat": 37.788956,
       "lon": -1.523104
     },
@@ -5809,7 +5809,7 @@
       "lon": -1.499
     },
     "ITOTAN8": {
-      "tempMax": 21.0,
+      "tempMax": 21.2,
       "tempMin": 12.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -5817,7 +5817,7 @@
       "lon": -1.533232
     },
     "ITOTAN9": {
-      "tempMax": 21.8,
+      "tempMax": 22.2,
       "tempMin": 11.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 30,
@@ -5835,8 +5835,8 @@
     "ITOTAN13": {
       "tempMax": 20.0,
       "tempMin": 8.3,
-      "precipTotal": 3.0,
-      "humedadAltaMinutos": 15,
+      "precipTotal": 3.3,
+      "humedadAltaMinutos": 30,
       "lat": 37.824391,
       "lon": -1.599507
     },
@@ -5851,7 +5851,7 @@
     "ITOTAN16": {
       "tempMax": 21.0,
       "tempMin": 10.6,
-      "precipTotal": 2.31,
+      "precipTotal": 2.79,
       "humedadAltaMinutos": 15,
       "lat": 37.783714,
       "lon": -1.514744
@@ -5883,8 +5883,8 @@
     "ITOTAN28": {
       "tempMax": 18.4,
       "tempMin": 7.3,
-      "precipTotal": 1.5,
-      "humedadAltaMinutos": 15,
+      "precipTotal": 2.31,
+      "humedadAltaMinutos": 30,
       "lat": 37.822313,
       "lon": -1.585495
     },
@@ -5908,7 +5908,7 @@
       "tempMax": 21.2,
       "tempMin": 10.2,
       "precipTotal": 3.61,
-      "humedadAltaMinutos": 30,
+      "humedadAltaMinutos": 45,
       "lat": 37.775319,
       "lon": -1.517814
     },
@@ -5931,13 +5931,13 @@
     "ITOTAN43": {
       "tempMax": 24.1,
       "tempMin": 10.8,
-      "precipTotal": 2.54,
-      "humedadAltaMinutos": 15,
+      "precipTotal": 2.79,
+      "humedadAltaMinutos": 30,
       "lat": 37.775914,
       "lon": -1.52123
     },
     "IGUILA10": {
-      "tempMax": 18.7,
+      "tempMax": 18.9,
       "tempMin": 15.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
