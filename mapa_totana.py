@@ -22,6 +22,7 @@ REPO_DIR = _repo()
 DIR_PUB  = os.path.join(REPO_DIR, 'public')
 F_H24    = os.path.join(REPO_DIR, 'history_24h.json')
 F_AGRI   = os.path.join(REPO_DIR, 'historial_agricola.json')
+F_DSV    = os.path.join(REPO_DIR, 'historial_dsv.json')
 os.makedirs(DIR_PUB, exist_ok=True)
 
 MIN_DIAS = 5   # días mínimos para calcular riesgo
@@ -122,12 +123,48 @@ def hist_agri(nuevos, ahora):
 # Oídio:  Modelo Gubler-Thomas (UC Davis)
 # Mildiu: Regla 10-10-10 + EPI
 # Si faltan datos propios → usa WU de estaciones vecinas dentro del historial
+# ── Tabla DSV diario Gubler-Thomas (UC Davis 1982) ───────────────────────────
+# DSV = Disease Severity Value
+# Filas: rangos Tmed | Columnas: horas de humectación foliar (HR≥85%)
+# Ref: Gubler & Thomas, Plant Disease 66:4 (1982)
+DSV_TABLE = {
+    (15, 19): {(0,6):1,  (7,12):2,  (13,18):3,  (19,24):4},
+    (19, 22): {(0,6):2,  (7,12):3,  (13,18):4,  (19,24):5},
+    (22, 26): {(0,6):3,  (7,12):4,  (13,18):5,  (19,24):6},
+    (26, 40): {(0,6):2,  (7,12):3,  (13,18):4,  (19,24):5},
+}
+
+def dsv_dia(tmed, horas_hum):
+    """Calcula DSV para un día según Gubler-Thomas."""
+    if tmed is None or tmed < 15: return 0
+    for (tmin_r, tmax_r), cols in DSV_TABLE.items():
+        if tmin_r <= tmed < tmax_r:
+            for (h_min, h_max), val in cols.items():
+                if h_min <= horas_hum <= h_max:
+                    return val
+            return list(cols.values())[-1]
+    return 0
+
+def periodo_incubacion_mildiu(tmed):
+    """Días de incubación de Plasmopara viticola según temperatura."""
+    if tmed is None or tmed < 12: return None   # no hay desarrollo
+    if tmed < 15: return 21
+    if tmed < 18: return 15
+    if tmed < 21: return 10
+    if tmed < 25: return 7
+    if tmed < 30: return 6
+    return None  # >30°C inhibe
+
 def calcular_riesgo(hwu, actuales_list):
     act  = {e['stationID']: e for e in actuales_list if e and 'stationID' in e}
     dias = sorted(hwu.keys())
     res  = {}
 
-    # Mapa de posiciones de todas las estaciones con historial
+    # Cargar historial DSV acumulado (temporada)
+    dsv_hist = leer(F_DSV, {})
+    hoy_str  = dias[-1] if dias else ''
+
+    # Mapa de posiciones
     pos = {}
     for fecha in dias:
         for sid, dd in hwu[fecha].items():
@@ -138,11 +175,20 @@ def calcular_riesgo(hwu, actuales_list):
             pos[sid] = (est['lat'], est['lon'])
 
     for sid, est in act.items():
-        ta = est.get('metric', {}).get('temp')
-        ha = est.get('humidity')
-        la = est.get('lat', pos.get(sid, (37.77, 0))[0])
-        lo = est.get('lon', pos.get(sid, (0, -1.5))[1])
-        if ta is None: continue
+        ta_inst = est.get('metric', {}).get('temp')
+        ha      = est.get('humidity')
+        la      = est.get('lat', pos.get(sid, (37.77, 0))[0])
+        lo      = est.get('lon', pos.get(sid, (0, -1.5))[1])
+        if ta_inst is None: continue
+
+        # Temperatura media del día actual
+        hoy = sorted(hwu.keys())[-1] if hwu else None
+        tmed_hoy = None
+        if hoy and hwu.get(hoy, {}).get(sid):
+            dd = hwu[hoy][sid]
+            if dd.get('tempMax') is not None and dd.get('tempMin') is not None:
+                tmed_hoy = round((dd['tempMax'] + dd['tempMin']) / 2, 1)
+        ta = tmed_hoy if tmed_hoy is not None else ta_inst
 
         # 1. Historial WU propio
         filas = []
@@ -150,32 +196,32 @@ def calcular_riesgo(hwu, actuales_list):
             dd = hwu[f].get(sid)
             if dd:
                 filas.append({
-                    'fecha': f,
-                    'tmax':  dd.get('tempMax'),
-                    'tmin':  dd.get('tempMin'),
-                    'prec':  dd.get('precipTotal', 0),
+                    'fecha':   f,
+                    'tmax':    dd.get('tempMax'),
+                    'tmin':    dd.get('tempMin'),
+                    'prec':    dd.get('precipTotal', 0),
                     'hum_min': dd.get('humedadAltaMinutos', 0),
-                    'src':  'propio'})
+                    'src':     'propio'})
 
-        # 2. Rellenar con WU vecinos si faltan días
+        # 2. Vecinos WU si faltan días
         if len(filas) < MIN_DIAS and la and lo:
             fechas_ok = {f['fecha'] for f in filas}
             vecinos   = sorted(
                 [(s, dist(la, lo, p[0], p[1])) for s, p in pos.items() if s != sid],
                 key=lambda x: x[1])
             for vsid, vd in vecinos[:5]:
-                if vd > 0.5: break   # ~55 km máx
+                if vd > 0.5: break
                 for f in (dias[-14:] if len(dias) >= 14 else dias):
                     if f in fechas_ok: continue
                     dd = hwu[f].get(vsid)
                     if dd:
                         filas.append({
-                            'fecha': f,
-                            'tmax':  dd.get('tempMax'),
-                            'tmin':  dd.get('tempMin'),
-                            'prec':  dd.get('precipTotal', 0),
+                            'fecha':   f,
+                            'tmax':    dd.get('tempMax'),
+                            'tmin':    dd.get('tempMin'),
+                            'prec':    dd.get('precipTotal', 0),
                             'hum_min': dd.get('humedadAltaMinutos', 0),
-                            'src':  f'vecino:{vsid}'})
+                            'src':     f'vecino:{vsid}'})
                         fechas_ok.add(f)
                 if len(filas) >= MIN_DIAS: break
 
@@ -191,43 +237,79 @@ def calcular_riesgo(hwu, actuales_list):
         flbl = " + ".join(partes) if partes else "Sin datos"
         ok   = nd >= MIN_DIAS
 
-        # Métricas
+        # Métricas base
         p10   = sum(f['prec'] or 0 for f in filas[-10:])
         tminm = min((f['tmin'] for f in filas if f['tmin'] is not None), default=99)
-        dt15  = sum(1 for f in filas
-                    if f['tmax'] is not None and f['tmin'] is not None
-                    and (f['tmax'] + f['tmin']) / 2 >= 15)
         h85   = sum(f.get('hum_min', 0) for f in filas[-7:]) / 60.0
 
-        # ── OÍDIO ───────────────────────────────────────────
+        # ── OÍDIO: Modelo Gubler-Thomas completo con DSV ─────
         no, do = 0, []
+        dsv_temporada = 0
+        dsv_7d        = 0
+        dsv_hoy_val   = 0
+
         if not ok:
             no = -1
             falt = MIN_DIAS - nd
             do.append(f"⚠ {nd} días disponibles — faltan {falt} día{'s' if falt>1 else ''} más")
         else:
-            if ta >= 15 and dt15 >= MIN_DIAS:
-                do.append(f"{dt15} días con Tmed≥15°C")
-                if 15 <= ta < 19:
-                    no = 1
-                    do.append(f"T={ta:.1f}°C — rango bajo (15-19°C)")
-                elif 19 <= ta <= 26:
-                    no = 3 if h85 >= 4 else 2
-                    do.append(f"T={ta:.1f}°C — rango óptimo (19-26°C)")
-                    if h85 >= 4:
-                        do.append(f"{h85:.1f}h HR≥85% en últimos 7d")
-                else:
-                    no = 3 if (ha or 0) >= 70 else 2
-                    do.append(f"T={ta:.1f}°C — calor, esporulación nocturna")
-                    do.append(f"HR={ha}%")
-            elif ta >= 18:
-                no = 1
-                do.append(f"Solo {dt15} días cálidos acumulados")
-            else:
-                do.append(f"T={ta:.1f}°C — por debajo del umbral (15°C)")
+            # Calcular DSV de cada día del historial
+            dsv_dias = []
+            for f in filas:
+                tm = f['tmax']
+                tn = f['tmin']
+                tmed_f = round((tm + tn) / 2, 1) if tm is not None and tn is not None else None
+                horas_f = f.get('hum_min', 0) / 60.0
+                # Inhibición por lluvia: >2.5mm lava esporas → DSV=0 ese día
+                prec_f = f.get('prec', 0) or 0
+                d = 0 if prec_f > 2.5 else dsv_dia(tmed_f, horas_f)
+                dsv_dias.append({'fecha': f['fecha'], 'dsv': d, 'tmed': tmed_f})
 
-        # ── MILDIU ──────────────────────────────────────────
+            # DSV acumulado en temporada (desde inicio de marzo)
+            dsv_prev = dsv_hist.get(sid, {}).get('dsv_acumulado', 0)
+            # Sumar DSV de días nuevos no contabilizados antes
+            fechas_contadas = set(dsv_hist.get(sid, {}).get('fechas', []))
+            nuevos_dsv = sum(d['dsv'] for d in dsv_dias if d['fecha'] not in fechas_contadas)
+            dsv_temporada = dsv_prev + nuevos_dsv
+
+            # Actualizar historial DSV
+            if sid not in dsv_hist:
+                dsv_hist[sid] = {'dsv_acumulado': 0, 'fechas': []}
+            dsv_hist[sid]['dsv_acumulado'] = dsv_temporada
+            dsv_hist[sid]['fechas'] = list(set(
+                dsv_hist[sid].get('fechas', []) + [d['fecha'] for d in dsv_dias]))
+
+            dsv_7d      = sum(d['dsv'] for d in dsv_dias[-7:])
+            dsv_hoy_val = dsv_dias[-1]['dsv'] if dsv_dias else 0
+
+            # Nivel de riesgo según DSV acumulado (temporada)
+            # Umbrales estándar Gubler-Thomas para viticultura española
+            if dsv_temporada < 20:
+                no = 0
+                do.append(f"DSV temporada={dsv_temporada} (umbral tratamiento: 20)")
+            elif dsv_temporada < 40:
+                no = 1
+                do.append(f"DSV temporada={dsv_temporada} ⚠ Zona de vigilancia (20-40)")
+            elif dsv_temporada < 60:
+                no = 2
+                do.append(f"DSV temporada={dsv_temporada} 🔶 Tratar pronto (40-60)")
+            else:
+                no = 3
+                do.append(f"DSV temporada={dsv_temporada} 🔴 Tratamiento urgente (>60)")
+
+            do.append(f"DSV últimos 7d={dsv_7d} | DSV hoy={dsv_hoy_val}")
+            do.append(f"Tmed hoy={ta:.1f}°C | HR alta={h85:.1f}h (7d)")
+            if dsv_hoy_val == 0 and ta and ta >= 15:
+                do.append("Lluvia >2.5mm lavó esporas hoy")
+
+        # Guardar DSV actualizado
+        guardar(F_DSV, dsv_hist)
+
+        # ── MILDIU: 10-10-10 + período de incubación EPI ────
         nm, dm = 0, []
+        incubacion_dias = None
+        fecha_sintomas  = None
+
         if not ok:
             nm = -1
             falt = MIN_DIAS - nd
@@ -236,34 +318,58 @@ def calcular_riesgo(hwu, actuales_list):
             ct = tminm > 10 or ta > 10
             cl = p10 >= 10
             cd = nd >= MIN_DIAS
+
             if ct: dm.append(f"✓ Tmin>10°C")
             if cl: dm.append(f"✓ Lluvia 10d={p10:.1f}mm")
-            if cd: dm.append(f"✓ {nd} días de historial")
+            if cd: dm.append(f"✓ {nd} días historial")
+
             nc = sum([ct, cl, cd])
             if nc == 3:
-                nm = 3 if (18 <= ta <= 24 and (ha or 0) >= 85) else 2
+                # Condiciones de infección cumplidas
+                nm = 2
+                # Temperatura óptima + humedad alta → riesgo alto
+                if 18 <= ta <= 24 and (ha or 0) >= 85:
+                    nm = 3
+                    dm.append(f"Tmed={ta:.1f}°C + HR={ha}% — condiciones óptimas infección")
+                elif 15 <= ta <= 30:
+                    dm.append(f"Tmed={ta:.1f}°C — condiciones favorables")
                 if ta > 30:
-                    nm = max(0, nm - 1)
-                    dm.append("T>30°C — inhibe esporulación")
-                elif 18 <= ta <= 24 and (ha or 0) >= 85:
-                    dm.append(f"T={ta:.1f}°C + HR={ha}% — condiciones óptimas")
+                    nm = max(1, nm - 1)
+                    dm.append("T>30°C — reduce esporulación")
+
+                # Calcular período de incubación
+                incubacion_dias = periodo_incubacion_mildiu(ta)
+                if incubacion_dias:
+                    from datetime import datetime, timedelta
+                    fecha_inf = datetime.strptime(filas[-1]['fecha'], '%Y-%m-%d')
+                    fecha_sint = fecha_inf + timedelta(days=incubacion_dias)
+                    fecha_sintomas = fecha_sint.strftime('%d/%m/%Y')
+                    dm.append(f"⏱ Período incubación: {incubacion_dias} días")
+                    dm.append(f"📅 Síntomas esperados: {fecha_sintomas}")
             elif nc == 2:
                 nm = 1
+                dm.append("Condiciones parcialmente cumplidas")
+
             if not cl:
                 dm.append(f"Lluvia 10d={p10:.1f}mm (necesita ≥10mm)")
             if not ct:
-                dm.append("Temperatura aún baja")
+                dm.append("Temperatura mínima aún baja")
 
         res[sid] = {
             'lat': la, 'lon': lo,
             'oidio':  no, 'mildiu': nm,
             'datos_ok': ok, 'dias_disponibles': nd, 'fuente_datos': flbl,
+            'dsv_temporada':  dsv_temporada,
+            'dsv_7d':         dsv_7d,
+            'dsv_hoy':        dsv_hoy_val,
+            'incubacion_dias': incubacion_dias,
+            'fecha_sintomas':  fecha_sintomas,
             'detalles': {
                 'oidio':  do, 'mildiu': dm,
                 'temp_actual':       ta,
                 'hum_actual':        ha,
                 'precip_10dias':     round(p10, 1),
-                'dias_tmed_sobre15': dt15,
+                'dias_tmed_sobre15': sum(1 for f in filas if f['tmax'] is not None and f['tmin'] is not None and (f['tmax']+f['tmin'])/2 >= 15),
                 'horas_hum_alta_7d': round(h85, 1)}}
     return res
 
@@ -538,20 +644,36 @@ function render(){
             +nd+' de 5 días necesarios. Faltan <b>'+falt+'</b> día'+(falt>1?'s':'')+'.<br>'
             +'<span style="color:#666;">El mapa calculará el riesgo automáticamente.</span></div>';
         }
-        ph=av
-          +'<div style="margin-bottom:8px;">'
+        // Barra de progreso DSV
+        var dsv=r.dsv_temporada||0;
+        var dsvPct=Math.min(100,Math.round(dsv/60*100));
+        var dsvCol=dsv<20?'#27ae60':dsv<40?'#f39c12':dsv<60?'#e67e22':'#c0392b';
+        var dsvLabel=dsv<20?'Sin riesgo':dsv<40?'Vigilancia':dsv<60?'Tratar pronto':'Urgente';
+        var dsvBar='<div style="margin-bottom:10px;">'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:3px;">'
+          +'<span>🍇 DSV Oídio temporada</span><span style="font-weight:700;color:'+dsvCol+'">'+dsv+' pts — '+dsvLabel+'</span></div>'
+          +'<div style="background:#eee;border-radius:4px;height:8px;overflow:hidden;">'
+          +'<div style="background:'+dsvCol+';width:'+dsvPct+'%;height:100%;border-radius:4px;transition:width .5s;"></div></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:10px;color:#bbb;margin-top:2px;">'
+          +'<span>0</span><span>20 ⚠</span><span>40 🔶</span><span>60 🔴</span></div>'
+          +'<div style="font-size:11px;color:#aaa;margin-top:3px;">DSV 7d='+(r.dsv_7d||0)+' | DSV hoy='+(r.dsv_hoy||0)+'</div>'
+          +'</div>';
+
+        ph=av+dsvBar
+          +'<div style="margin-bottom:6px;">'
           +'<b>🍇 Oídio:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;'
           +'font-weight:700;color:#fff;background:'+(nO<0?'#aaa':RC[nO])+'">'
           +(nO<0?'Pendiente':RL[nO])+'</span></div>'
-          +'<div style="font-size:12px;color:#555;margin-bottom:12px;">&bull; '+(dO||'—')+'</div>'
-          +'<div style="margin-bottom:8px;">'
+          +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dO||'—')+'</div>'
+          +'<div style="margin-bottom:6px;">'
           +'<b>🍃 Mildiu:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;'
           +'font-weight:700;color:#fff;background:'+(nM<0?'#aaa':RC[nM])+'">'
           +(nM<0?'Pendiente':RL[nM])+'</span></div>'
-          +'<div style="font-size:12px;color:#555;margin-bottom:12px;">&bull; '+(dM||'—')+'</div>'
+          +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dM||'—')+'</div>'
+          +(r.fecha_sintomas?'<div style="background:#fef9e7;border:1px solid #f39c12;border-radius:6px;padding:6px 10px;font-size:12px;margin-bottom:10px;">📅 Síntomas mildiu estimados: <b>'+r.fecha_sintomas+'</b></div>':'')
           +'<hr style="border:0;border-top:1px solid #eee;margin:8px 0;">'
           +'<div style="font-size:12px;color:#666;">'
-          +'🌡 '+(det.temp_actual!=null?det.temp_actual.toFixed(1)+'°C':'—')
+          +'🌡 '+(det.temp_actual!=null?det.temp_actual.toFixed(1)+'°C Tmed':'—')
           +' &nbsp;💧 '+(det.hum_actual!=null?det.hum_actual+'%':'—')+'<br>'
           +'🌧 Lluvia 10d='+(det.precip_10dias||0)+'mm'
           +' &nbsp;⏱ HR alta='+(det.horas_hum_alta_7d||0)+'h (7d)</div>'
