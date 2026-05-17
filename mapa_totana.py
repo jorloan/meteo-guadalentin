@@ -23,6 +23,7 @@ DIR_PUB  = os.path.join(REPO_DIR, 'public')
 F_H24    = os.path.join(REPO_DIR, 'history_24h.json')
 F_AGRI   = os.path.join(REPO_DIR, 'historial_agricola.json')
 F_DSV    = os.path.join(REPO_DIR, 'historial_dsv.json')
+F_RIESGO = os.path.join(REPO_DIR, 'historial_riesgo.json')
 os.makedirs(DIR_PUB, exist_ok=True)
 
 MIN_DIAS = 5   # días mínimos para calcular riesgo
@@ -373,6 +374,112 @@ def calcular_riesgo(hwu, actuales_list):
                 'horas_hum_alta_7d': round(h85, 1)}}
     return res
 
+# ── Guardar snapshot de riesgo diario ────────────────────────
+def guardar_riesgo_dia(riesgo_data, ahora):
+    """
+    Guarda un snapshot del riesgo calculado hoy en historial_riesgo.json
+    Formato: {fecha: {stationID: {oidio, mildiu, dsv, lat, lon}}}
+    """
+    hist = leer(F_RIESGO, {})
+    fecha_hoy = ahora.strftime('%Y-%m-%d')
+
+    snapshot = {}
+    for sid, r in riesgo_data.items():
+        snapshot[sid] = {
+            'oidio':          r.get('oidio', -1),
+            'mildiu':         r.get('mildiu', -1),
+            'dsv_temporada':  r.get('dsv_temporada', 0),
+            'dsv_7d':         r.get('dsv_7d', 0),
+            'lat':            r.get('lat'),
+            'lon':            r.get('lon'),
+            'datos_ok':       r.get('datos_ok', False),
+            'fuente_datos':   r.get('fuente_datos', ''),
+        }
+
+    hist[fecha_hoy] = snapshot
+
+    # Mantener solo 90 días (temporada completa)
+    for d in sorted(hist.keys())[:-90]:
+        del hist[d]
+
+    guardar(F_RIESGO, hist)
+    print(f"  ✅ Riesgo diario guardado: {len(hist)} días en {F_RIESGO}")
+    return hist
+
+# ── Recalcular riesgo para días anteriores ────────────────────
+def recalcular_riesgo_dias_anteriores(hwu, dsv_hist_orig, actuales_list, ahora, n_dias=3):
+    """
+    Recalcula el riesgo para los N días anteriores usando el historial agrícola.
+    Útil para rellenar historial_riesgo.json con datos pasados.
+    """
+    from datetime import timedelta
+    hist_riesgo = leer(F_RIESGO, {})
+    act = {e['stationID']: e for e in actuales_list if e and 'stationID' in e}
+    dias = sorted(hwu.keys())
+
+    for dias_atras in range(n_dias, 0, -1):
+        fecha_dt  = ahora - timedelta(days=dias_atras)
+        fecha_str = fecha_dt.strftime('%Y-%m-%d')
+
+        if fecha_str in hist_riesgo:
+            print(f"  ℹ {fecha_str}: ya existe, saltando")
+            continue
+
+        if fecha_str not in hwu:
+            print(f"  ⚠ {fecha_str}: sin datos en historial agrícola")
+            continue
+
+        print(f"  🔄 Recalculando {fecha_str}...")
+
+        # Construir datos "actuales" simulados para ese día
+        actuales_dia = []
+        for sid, dd in hwu[fecha_str].items():
+            if not dd.get('lat'): continue
+            # Simular observación con los datos del día
+            tmax = dd.get('tempMax')
+            tmin = dd.get('tempMin')
+            tmed = round((tmax+tmin)/2, 1) if tmax is not None and tmin is not None else None
+            actuales_dia.append({
+                'stationID': sid,
+                'lat': dd.get('lat', 0),
+                'lon': dd.get('lon', 0),
+                'metric': {
+                    'temp': tmed,
+                    'precipTotal': dd.get('precipTotal', 0),
+                    'windSpeed': 0, 'windGust': 0
+                },
+                'humidity': max(0, 85 - dd.get('humedadAltaMinutos', 0) // 60 * 5)
+            })
+
+        if not actuales_dia:
+            continue
+
+        # Usar solo historial hasta ese día para el cálculo
+        dias_hasta = [d for d in dias if d <= fecha_str]
+        hwu_hasta  = {d: hwu[d] for d in dias_hasta}
+
+        # Recalcular riesgo con snapshot de ese día
+        r_dia = calcular_riesgo(hwu_hasta, actuales_dia)
+
+        snapshot = {}
+        for sid, r in r_dia.items():
+            snapshot[sid] = {
+                'oidio':         r.get('oidio', -1),
+                'mildiu':        r.get('mildiu', -1),
+                'dsv_temporada': r.get('dsv_temporada', 0),
+                'dsv_7d':        r.get('dsv_7d', 0),
+                'lat':           r.get('lat'),
+                'lon':           r.get('lon'),
+                'datos_ok':      r.get('datos_ok', False),
+                'fuente_datos':  r.get('fuente_datos', ''),
+            }
+        hist_riesgo[fecha_str] = snapshot
+        print(f"    ✅ {fecha_str}: {len(snapshot)} estaciones")
+
+    guardar(F_RIESGO, hist_riesgo)
+    print(f"  ✅ historial_riesgo.json: {len(hist_riesgo)} días")
+    return hist_riesgo
+
 # ── Git push ──────────────────────────────────────────────────
 def git_push(ahora):
     print("\n☁️  Subiendo a GitHub...")
@@ -434,9 +541,11 @@ def generar_html(historial, riesgo_data, ahora, dias_acum):
         aviso_dias = (f"⏳ Acumulando historial: {dias_acum}/{MIN_DIAS} días. "
                       f"Faltan {falt} día{'s' if falt>1 else ''} para activar el cálculo de riesgo.")
 
+    hist_riesgo = leer(F_RIESGO, {})
     js = ("var NOMBRES="+json.dumps(NOMBRES, ensure_ascii=False)+";\n"
          +"var historyData="+json.dumps(historial, ensure_ascii=False)+";\n"
          +"var riesgoData="+json.dumps(riesgo_data, ensure_ascii=False)+";\n"
+         +"var riesgoHistData="+json.dumps(hist_riesgo, ensure_ascii=False)+";\n"
          +"var AVISO_DIAS="+json.dumps(aviso_dias)+";\n"
          + JS_LOGICA)
 
@@ -948,6 +1057,42 @@ render=function(){
 var _render2=render;
 render=function(){
   CI=getSnapIndex();
+  var p=document.getElementById('ps').value;
+  var isR=p==='oidio'||p==='mildiu';
+
+  // En modo riesgo con historial, usar riesgoHistData del día seleccionado
+  if(isR && Object.keys(riesgoHistData).length>0){
+    var indices=getModoIndices();
+    if(indices.length>0){
+      var snapIdx=indices[Math.min(idxActual,indices.length-1)];
+      var ts=historyData[snapIdx].timestamp;
+      var fechaDia=ts.slice(0,10);
+      // Si existe snapshot de riesgo para ese día, usarlo temporalmente
+      if(riesgoHistData[fechaDia]){
+        var riesgoOrig=window._riesgoDataActual||riesgoData;
+        window._riesgoDataActual=riesgoOrig;
+        // Mezclar datos históricos con actuales (usar histórico para oidio/mildiu/dsv)
+        var riesgoTemp={};
+        Object.keys(riesgoOrig).forEach(function(sid){
+          riesgoTemp[sid]=Object.assign({},riesgoOrig[sid]);
+          if(riesgoHistData[fechaDia][sid]){
+            var h=riesgoHistData[fechaDia][sid];
+            riesgoTemp[sid].oidio=h.oidio;
+            riesgoTemp[sid].mildiu=h.mildiu;
+            riesgoTemp[sid].dsv_temporada=h.dsv_temporada;
+            riesgoTemp[sid].dsv_7d=h.dsv_7d;
+            riesgoTemp[sid].datos_ok=h.datos_ok;
+          }
+        });
+        // Sustituir temporalmente riesgoData y renderizar
+        var rdBak=riesgoData;
+        riesgoData=riesgoTemp;
+        _renderOrig();
+        riesgoData=rdBak;
+        return;
+      }
+    }
+  }
   _renderOrig();
 };
 
@@ -1163,6 +1308,12 @@ def principal():
         ot = niveles[rv['oidio']]  if rv['oidio']  >= 0 else '⏳ Pendiente'
         mt = niveles[rv['mildiu']] if rv['mildiu'] >= 0 else '⏳ Pendiente'
         print(f"  {sid}: Oídio={ot} | Mildiu={mt} | {rv['fuente_datos']}")
+
+    print("\n📈 Guardando snapshot de riesgo diario...")
+    guardar_riesgo_dia(r, ahora)
+
+    print("\n🔄 Rellenando riesgo de días anteriores...")
+    recalcular_riesgo_dias_anteriores(hagri, {}, datos_wu, ahora, n_dias=3)
 
     print("\n🗺  Generando HTML...")
     ruta = generar_html(h24, r, ahora, dias_acum)
