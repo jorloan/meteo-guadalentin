@@ -417,6 +417,13 @@ NOMBRES = {
     "IPULP6":"Meteobaraza Pulpí",
     "IVERA31":"Thalassa",
     "ICARTA267":"Palmasol",
+    "IJUMIL46":"Fuente de las Perdices",
+    "IJUMILLA5":"Casa Navarros",
+    "IYECLA52":"Senda de los Jinetes - La Decarada",
+    "IABARN30":"Abarán - Áureo Natura",
+    "IVILLA1263":"Israel",
+    "ISANTO462":"RyA",
+    "IMURCI180":"Colegio Luis Vives",
 }
 
 def generar_html(historial, riesgo_data, ahora, dias_acum):
