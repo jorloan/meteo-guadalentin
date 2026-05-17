@@ -644,40 +644,109 @@ function render(){
             +nd+' de 5 días necesarios. Faltan <b>'+falt+'</b> día'+(falt>1?'s':'')+'.<br>'
             +'<span style="color:#666;">El mapa calculará el riesgo automáticamente.</span></div>';
         }
-        // Barra de progreso DSV
-        var dsv=r.dsv_temporada||0;
-        var dsvPct=Math.min(100,Math.round(dsv/60*100));
-        var dsvCol=dsv<20?'#27ae60':dsv<40?'#f39c12':dsv<60?'#e67e22':'#c0392b';
-        var dsvLabel=dsv<20?'Sin riesgo':dsv<40?'Vigilancia':dsv<60?'Tratar pronto':'Urgente';
-        var dsvBar='<div style="margin-bottom:10px;">'
-          +'<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:3px;">'
-          +'<span>🍇 DSV Oídio temporada</span><span style="font-weight:700;color:'+dsvCol+'">'+dsv+' pts — '+dsvLabel+'</span></div>'
-          +'<div style="background:#eee;border-radius:4px;height:8px;overflow:hidden;">'
-          +'<div style="background:'+dsvCol+';width:'+dsvPct+'%;height:100%;border-radius:4px;transition:width .5s;"></div></div>'
-          +'<div style="display:flex;justify-content:space-between;font-size:10px;color:#bbb;margin-top:2px;">'
-          +'<span>0</span><span>20 ⚠</span><span>40 🔶</span><span>60 🔴</span></div>'
-          +'<div style="font-size:11px;color:#aaa;margin-top:3px;">DSV 7d='+(r.dsv_7d||0)+' | DSV hoy='+(r.dsv_hoy||0)+'</div>'
-          +'</div>';
+        // ── Panel según enfermedad seleccionada ──────────────
+        var esOidio = (p==='oidio');
 
-        ph=av+dsvBar
-          +'<div style="margin-bottom:6px;">'
-          +'<b>🍇 Oídio:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;'
-          +'font-weight:700;color:#fff;background:'+(nO<0?'#aaa':RC[nO])+'">'
-          +(nO<0?'Pendiente':RL[nO])+'</span></div>'
-          +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dO||'—')+'</div>'
-          +'<div style="margin-bottom:6px;">'
-          +'<b>🍃 Mildiu:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;'
-          +'font-weight:700;color:#fff;background:'+(nM<0?'#aaa':RC[nM])+'">'
-          +(nM<0?'Pendiente':RL[nM])+'</span></div>'
-          +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dM||'—')+'</div>'
-          +(r.fecha_sintomas?'<div style="background:#fef9e7;border:1px solid #f39c12;border-radius:6px;padding:6px 10px;font-size:12px;margin-bottom:10px;">📅 Síntomas mildiu estimados: <b>'+r.fecha_sintomas+'</b></div>':'')
-          +'<hr style="border:0;border-top:1px solid #eee;margin:8px 0;">'
-          +'<div style="font-size:12px;color:#666;">'
-          +'🌡 '+(det.temp_actual!=null?det.temp_actual.toFixed(1)+'°C Tmed':'—')
-          +' &nbsp;💧 '+(det.hum_actual!=null?det.hum_actual+'%':'—')+'<br>'
-          +'🌧 Lluvia 10d='+(det.precip_10dias||0)+'mm'
-          +' &nbsp;⏱ HR alta='+(det.horas_hum_alta_7d||0)+'h (7d)</div>'
-          +'<div style="font-size:11px;color:#aaa;margin-top:8px;">📊 '+r.fuente_datos+'</div>';
+        if(esOidio) {
+          // ── OÍDIO ────────────────────────────────────────────
+          var dsv=r.dsv_temporada||0;
+          var dsvPct=Math.min(100,Math.round(dsv/60*100));
+          var dsvCol=dsv<20?'#27ae60':dsv<40?'#f39c12':dsv<60?'#e67e22':'#c0392b';
+          var dsvLabel=dsv<20?'Sin riesgo':dsv<40?'Vigilancia':dsv<60?'Tratar pronto':'Urgente';
+
+          ph=av
+            // Nivel y barra DSV
+            +'<div style="margin-bottom:6px;">'
+            +'<b>🍇 Oídio:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;'
+            +'font-weight:700;color:#fff;background:'+(nO<0?'#aaa':RC[nO])+'">'
+            +(nO<0?'Pendiente':RL[nO])+'</span></div>'
+            +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dO||'—')+'</div>'
+            // Barra DSV temporada
+            +'<div style="background:#f8f8f8;border-radius:8px;padding:10px;margin-bottom:10px;">'
+            +'<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px;">'
+            +'<span>DSV acumulado temporada</span>'
+            +'<span style="font-weight:700;color:'+dsvCol+'">'+dsv+' pts — '+dsvLabel+'</span></div>'
+            +'<div style="background:#e0e0e0;border-radius:4px;height:10px;overflow:hidden;">'
+            +'<div style="background:'+dsvCol+';width:'+dsvPct+'%;height:100%;border-radius:4px;"></div></div>'
+            +'<div style="display:flex;justify-content:space-between;font-size:10px;color:#bbb;margin-top:3px;">'
+            +'<span>0</span><span>20⚠</span><span>40🔶</span><span>60🔴</span></div>'
+            +'<div style="font-size:11px;color:#999;margin-top:4px;">DSV últimos 7d='+(r.dsv_7d||0)+' &nbsp;|&nbsp; DSV hoy='+(r.dsv_hoy||0)+'</div>'
+            +'</div>'
+            // Datos actuales
+            +'<hr style="border:0;border-top:1px solid #eee;margin:8px 0;">'
+            +'<div style="font-size:12px;color:#666;margin-bottom:10px;">'
+            +'🌡 Tmed='+(det.temp_actual!=null?det.temp_actual.toFixed(1)+'°C':'—')
+            +' &nbsp;💧 HR='+(det.hum_actual!=null?det.hum_actual+'%':'—')+'<br>'
+            +'⏱ HR alta='+(det.horas_hum_alta_7d||0)+'h (últimos 7d)'
+            +'</div>'
+            // Explicación del modelo
+            +'<div style="background:#f0f7ff;border-left:3px solid #3498db;border-radius:4px;padding:10px;font-size:11px;color:#444;line-height:1.6;">'
+            +'<b style="color:#2c3e50;">📖 Modelo Gubler-Thomas (UC Davis, 1982)</b><br><br>'
+            +'Acumula puntos <b>DSV</b> (Disease Severity Values) diarios cruzando temperatura media y horas de humedad alta:<br><br>'
+            +'<table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:6px;">'
+            +'<tr style="background:#dce8f5;"><td style="padding:2px 4px;font-weight:bold;">Tmed</td><td style="padding:2px 4px;text-align:center;">0-6h</td><td style="padding:2px 4px;text-align:center;">7-12h</td><td style="padding:2px 4px;text-align:center;">13-18h</td><td style="padding:2px 4px;text-align:center;">&gt;18h</td></tr>'
+            +'<tr><td style="padding:2px 4px;">15-19°C</td><td style="text-align:center;padding:2px 4px;">1</td><td style="text-align:center;padding:2px 4px;">2</td><td style="text-align:center;padding:2px 4px;">3</td><td style="text-align:center;padding:2px 4px;">4</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">19-22°C</td><td style="text-align:center;padding:2px 4px;">2</td><td style="text-align:center;padding:2px 4px;">3</td><td style="text-align:center;padding:2px 4px;">4</td><td style="text-align:center;padding:2px 4px;">5</td></tr>'
+            +'<tr><td style="padding:2px 4px;">22-26°C</td><td style="text-align:center;padding:2px 4px;">3</td><td style="text-align:center;padding:2px 4px;">4</td><td style="text-align:center;padding:2px 4px;">5</td><td style="text-align:center;padding:2px 4px;">6</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">26-40°C</td><td style="text-align:center;padding:2px 4px;">2</td><td style="text-align:center;padding:2px 4px;">3</td><td style="text-align:center;padding:2px 4px;">4</td><td style="text-align:center;padding:2px 4px;">5</td></tr>'
+            +'<tr><td style="padding:2px 4px;color:#888;">&lt;15°C o &gt;40°C</td><td colspan="4" style="text-align:center;padding:2px 4px;color:#888;">0 — sin desarrollo</td></tr>'
+            +'</table>'
+            +'<b>Lluvia &gt;2.5mm:</b> lava las esporas → DSV=0 ese día<br>'
+            +'<b>Umbrales de tratamiento:</b><br>'
+            +'&nbsp;· &lt;20 pts → Sin riesgo<br>'
+            +'&nbsp;· 20-40 pts → Vigilancia<br>'
+            +'&nbsp;· 40-60 pts → Tratar pronto<br>'
+            +'&nbsp;· &gt;60 pts → Tratamiento urgente'
+            +'</div>'
+            +'<div style="font-size:11px;color:#aaa;margin-top:8px;">📊 '+r.fuente_datos+'</div>';
+
+        } else {
+          // ── MILDIU ───────────────────────────────────────────
+          ph=av
+            +'<div style="margin-bottom:6px;">'
+            +'<b>🍃 Mildiu:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;'
+            +'font-weight:700;color:#fff;background:'+(nM<0?'#aaa':RC[nM])+'">'
+            +(nM<0?'Pendiente':RL[nM])+'</span></div>'
+            +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dM||'—')+'</div>'
+            // Fecha síntomas si procede
+            +(r.fecha_sintomas?'<div style="background:#fef9e7;border:1px solid #f39c12;'
+            +'border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:10px;">'
+            +'📅 Síntomas estimados: <b>'+r.fecha_sintomas+'</b><br>'
+            +'<span style="font-size:11px;color:#888;">Período de incubación según Tmed actual</span></div>':'')
+            // Datos actuales
+            +'<hr style="border:0;border-top:1px solid #eee;margin:8px 0;">'
+            +'<div style="font-size:12px;color:#666;margin-bottom:10px;">'
+            +'🌡 Tmed='+(det.temp_actual!=null?det.temp_actual.toFixed(1)+'°C':'—')
+            +' &nbsp;💧 HR='+(det.hum_actual!=null?det.hum_actual+'%':'—')+'<br>'
+            +'🌧 Lluvia 10d='+(det.precip_10dias||0)+'mm'
+            +'</div>'
+            // Explicación del modelo
+            +'<div style="background:#f0fff4;border-left:3px solid #27ae60;border-radius:4px;padding:10px;font-size:11px;color:#444;line-height:1.6;">'
+            +'<b style="color:#2c3e50;">📖 Modelo 10-10-10 + EPI (Plasmopara viticola)</b><br><br>'
+            +'Requiere las <b>3 condiciones simultáneas</b> para infección primaria:<br><br>'
+            +'<b>1. Temperatura mínima &gt;10°C</b><br>'
+            +'&nbsp;&nbsp;El hongo necesita suelo &gt;8-10°C para activarse.<br><br>'
+            +'<b>2. Lluvia acumulada ≥10mm en 10 días</b><br>'
+            +'&nbsp;&nbsp;Activa las oosporas del suelo y permite la infección.<br><br>'
+            +'<b>3. Historial suficiente (≥5 días)</b><br>'
+            +'&nbsp;&nbsp;Proxy del desarrollo vegetativo de la vid.<br><br>'
+            +'<b>Refinamiento EPI:</b><br>'
+            +'&nbsp;· Tmed 18-24°C + HR≥85% → riesgo máximo<br>'
+            +'&nbsp;· T&gt;30°C → inhibe esporulación<br><br>'
+            +'<b>Período de incubación (aparición síntomas):</b><br>'
+            +'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+            +'<tr style="background:#c8f0d8;"><td style="padding:2px 4px;font-weight:bold;">Tmed</td><td style="padding:2px 4px;font-weight:bold;">Días hasta síntomas</td></tr>'
+            +'<tr><td style="padding:2px 4px;">&lt;12°C</td><td style="padding:2px 4px;">Sin desarrollo</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">12-15°C</td><td style="padding:2px 4px;">21 días</td></tr>'
+            +'<tr><td style="padding:2px 4px;">15-18°C</td><td style="padding:2px 4px;">15 días</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">18-21°C</td><td style="padding:2px 4px;">10 días</td></tr>'
+            +'<tr><td style="padding:2px 4px;">21-25°C</td><td style="padding:2px 4px;">7 días</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">25-30°C</td><td style="padding:2px 4px;">6 días</td></tr>'
+            +'<tr><td style="padding:2px 4px;">&gt;30°C</td><td style="padding:2px 4px;">Inhibición</td></tr>'
+            +'</table>'
+            +'</div>'
+            +'<div style="font-size:11px;color:#aaa;margin-top:8px;">📊 '+r.fuente_datos+'</div>';
+        }
       } else {
         ph='<div style="color:#999;font-size:13px;line-height:1.7;">Sin datos de riesgo.</div>';
       }
