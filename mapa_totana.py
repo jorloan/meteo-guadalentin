@@ -818,34 +818,180 @@ function render(){
 // ── Slider máquina del tiempo ──────────────────────────────
 var sl=document.getElementById('sl');
 var tl=document.getElementById('tl');
+var tlLabel=document.getElementById('tl-label');
+var slFechaIni=document.getElementById('sl-fecha-ini');
+var slFechaFin=document.getElementById('sl-fecha-fin');
+var slSep=document.getElementById('sl-sep');
+
+// ── Construir índices ────────────────────────────────────────
+// Modo hora: una entrada por hora (última de cada hora) — últimas 12h
+// Modo día:  una entrada por día (última del día) — para oidio/mildiu
+var horaIdx = [];   // índices en historyData, uno por hora
+var diaIdx  = [];   // índices en historyData, uno por día
+
+(function(){
+  // Agrupar por hora
+  var porHora={}, porDia={};
+  historyData.forEach(function(e,i){
+    var d=new Date(e.timestamp);
+    var hk=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'T'+d.getHours();
+    var dk=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    porHora[hk]=i;  // última lectura de cada hora
+    porDia[dk]=i;   // última lectura de cada día
+  });
+  // Últimas 12 horas
+  var ahora=new Date();
+  var hace12=new Date(ahora.getTime()-12*3600000);
+  Object.keys(porHora).sort().forEach(function(k){
+    var idx=porHora[k];
+    var t=new Date(historyData[idx].timestamp);
+    if(t>=hace12) horaIdx.push(idx);
+  });
+  // Todos los días disponibles
+  Object.keys(porDia).sort().forEach(function(k){
+    diaIdx.push({key:k, idx:porDia[k]});
+  });
+})();
+
+var modoRiesgo=false;
+var idxActual=horaIdx.length-1;  // índice dentro de horaIdx o diaIdx
+var diaFiltroIni='', diaFiltroFin='';
+
+function getModoIndices(){
+  if(!modoRiesgo) return horaIdx;
+  // Filtrar diaIdx por rango seleccionado
+  if(!diaFiltroIni && !diaFiltroFin) return diaIdx.map(function(d){return d.idx;});
+  return diaIdx.filter(function(d){
+    return (!diaFiltroIni || d.key>=diaFiltroIni) && (!diaFiltroFin || d.key<=diaFiltroFin);
+  }).map(function(d){return d.idx;});
+}
+
+function actualizarModoSlider(){
+  var p=document.getElementById('ps').value;
+  modoRiesgo=(p==='oidio'||p==='mildiu');
+  var indices=getModoIndices();
+  sl.min=0; sl.max=Math.max(0,indices.length-1); sl.value=indices.length-1;
+  idxActual=indices.length-1;
+
+  if(modoRiesgo){
+    tlLabel.textContent='📅 Máquina del Tiempo — por día';
+    sl.style.display='none';
+    slFechaIni.style.display='';
+    slFechaFin.style.display='';
+    slSep.style.display='';
+    // Poner fechas por defecto
+    if(diaIdx.length>0){
+      slFechaIni.value=diaIdx[0].key;
+      slFechaFin.value=diaIdx[diaIdx.length-1].key;
+      diaFiltroIni=diaIdx[0].key;
+      diaFiltroFin=diaIdx[diaIdx.length-1].key;
+    }
+  } else {
+    tlLabel.textContent='⏱ Últimas 12h — por hora';
+    sl.style.display='';
+    slFechaIni.style.display='none';
+    slFechaFin.style.display='none';
+    slSep.style.display='none';
+  }
+  actualizarLabel();
+}
+
+function actualizarLabel(){
+  var indices=getModoIndices();
+  if(!indices.length){tl.innerText='Sin datos';return;}
+  var idx=indices[Math.min(idxActual,indices.length-1)];
+  var ts=historyData[idx].timestamp;
+  var last=idxActual===indices.length-1;
+  if(modoRiesgo){
+    var d=new Date(ts);
+    tl.innerText=d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'})+(last?' (Hoy)':'');
+  } else {
+    tl.innerText=fmtT(ts)+(last?' (Actual)':' (Histórico)');
+  }
+}
+
+function getSnapIndex(){
+  var indices=getModoIndices();
+  if(!indices.length) return historyData.length-1;
+  return indices[Math.min(idxActual,indices.length-1)];
+}
+
+// Sobrescribir render para usar getSnapIndex
+var _renderOrig=render;
+render=function(){
+  var p=document.getElementById('ps').value;
+  var isR=p==='oidio'||p==='mildiu';
+  // Para riesgo siempre usar el snapshot del día seleccionado
+  var snapIdx = isR ? getSnapIndex() : getSnapIndex();
+  // Guardar CI original y restaurar
+  var ciOrig=CI;
+  CI=snapIdx;
+  _renderOrig();
+  CI=ciOrig;
+};
+
+// Actualizar render para que use CI correctamente
+// (ya lo hace via snap en render, pero necesitamos que use snapIdx)
+// Redefine getSnap en render:
+var _render2=render;
+render=function(){
+  CI=getSnapIndex();
+  _renderOrig();
+};
+
+sl.addEventListener('input',function(){
+  idxActual=parseInt(this.value);
+  actualizarLabel();
+  render();
+});
+
+// Filtros de fecha para modo riesgo
+slFechaIni.addEventListener('change',function(){
+  diaFiltroIni=this.value;
+  var indices=getModoIndices();
+  sl.max=Math.max(0,indices.length-1);
+  idxActual=indices.length-1;
+  sl.value=idxActual;
+  actualizarLabel(); render();
+});
+slFechaFin.addEventListener('change',function(){
+  diaFiltroFin=this.value;
+  var indices=getModoIndices();
+  sl.max=Math.max(0,indices.length-1);
+  idxActual=indices.length-1;
+  sl.value=idxActual;
+  actualizarLabel(); render();
+});
+
+// Escuchar cambio de parámetro para cambiar modo
+document.getElementById('ps').addEventListener('change',function(){
+  actualizarModoSlider();
+  render();
+});
+
+var PT=null;
+document.getElementById('pb').addEventListener('click',function(){
+  if(PT){clearInterval(PT);PT=null;this.textContent='▶️';return;}
+  this.textContent='⏸️';
+  var indices=getModoIndices();
+  if(idxActual>=indices.length-1) idxActual=0;
+  var s=this;
+  var intervalo=modoRiesgo?800:500;  // 0.8s/día para riesgo, 0.5s/hora para meteo
+  PT=setInterval(function(){
+    idxActual=(idxActual+1)%indices.length;
+    sl.value=idxActual;
+    actualizarLabel();
+    render();
+    if(idxActual===indices.length-1){clearInterval(PT);PT=null;s.textContent='▶️';}
+  },intervalo);
+});
+
 function initSl(){
   var n=historyData.length;
   if(!n){tl.innerText='Sin datos';return;}
-  sl.min=0; sl.max=n-1; sl.value=n-1; CI=n-1;
-  tl.innerText=fmtT(historyData[n-1].timestamp)+' (Actual)';
+  actualizarModoSlider();
   render();
 }
-sl.addEventListener('input',function(){
-  CI=parseInt(this.value);
-  var last=CI===historyData.length-1;
-  tl.innerText=fmtT(historyData[CI].timestamp)+(last?' (Actual)':' (Histórico)');
-  render();
-});
-var PT=null;
-document.getElementById('pb').addEventListener('click',function(){
-  if(PT){clearInterval(PT);PT=null;this.textContent='▶️';}
-  else{
-    this.textContent='⏸️';
-    if(CI>=historyData.length-1) CI=0;
-    var s=this;
-    PT=setInterval(function(){
-      CI=(CI+1)%historyData.length;
-      sl.value=CI;
-      sl.dispatchEvent(new Event('input'));
-      if(CI===historyData.length-1){clearInterval(PT);PT=null;s.textContent='▶️';}
-    },1500);
-  }
-});
 document.getElementById('op').addEventListener('input',function(){
   window.HO=parseFloat(this.value);
   if(HL) HL.setStyle({fillOpacity:window.HO});
@@ -906,10 +1052,13 @@ HTML_BASE = """<!DOCTYPE html>
   </div>
   <div class="ct">
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-      <span style="font-size:.68rem;color:#ecf0f1;font-weight:700">⏱ Máquina del Tiempo</span>
+      <span style="font-size:.68rem;color:#ecf0f1;font-weight:700" id="tl-label">⏱ Últimas 12h — por hora</span>
       <div style="display:flex;align-items:center;gap:4px">
         <button id="pb" style="background:transparent;color:#fff;border:none;cursor:pointer;font-size:1rem;padding:0 3px">▶️</button>
-        <input type="range" id="sl" min="0" max="0" value="0" style="width:120px;cursor:pointer">
+        <input type="range" id="sl" min="0" max="0" value="0" style="width:100px;cursor:pointer">
+        <input type="date" id="sl-fecha-ini" style="display:none;font-size:10px;padding:2px 4px;border-radius:4px;border:none;width:100px;cursor:pointer">
+        <span id="sl-sep" style="display:none;color:#ecf0f1;font-size:11px;">→</span>
+        <input type="date" id="sl-fecha-fin" style="display:none;font-size:10px;padding:2px 4px;border-radius:4px;border:none;width:100px;cursor:pointer">
       </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
