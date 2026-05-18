@@ -821,9 +821,9 @@
       "fuente_datos": "WU propio 10d"
     },
     "IJUMIL46": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 8,
+      "dsv_temporada": 61,
       "dsv_7d": 4,
       "lat": 38.471875,
       "lon": -1.421486,
@@ -831,9 +831,9 @@
       "fuente_datos": "WU propio 9d"
     },
     "IJUMILLA5": {
-      "oidio": 0,
+      "oidio": 2,
       "mildiu": 1,
-      "dsv_temporada": 4,
+      "dsv_temporada": 43,
       "dsv_7d": 4,
       "lat": 38.541588,
       "lon": -1.239228,
@@ -841,9 +841,9 @@
       "fuente_datos": "WU propio 9d"
     },
     "IYECLA52": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 6,
+      "dsv_temporada": 61,
       "dsv_7d": 4,
       "lat": 38.635307,
       "lon": -1.097558,
@@ -851,9 +851,9 @@
       "fuente_datos": "WU propio 9d"
     },
     "IABARN30": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 16,
+      "dsv_temporada": 130,
       "dsv_7d": 11,
       "lat": 38.217273,
       "lon": -1.374528,
@@ -861,9 +861,9 @@
       "fuente_datos": "WU propio 9d"
     },
     "IVILLA1263": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 19,
+      "dsv_temporada": 156,
       "dsv_7d": 14,
       "lat": 38.113005,
       "lon": -1.324433,
@@ -871,9 +871,9 @@
       "fuente_datos": "WU propio 9d"
     },
     "ISANTO462": {
-      "oidio": 1,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 22,
+      "dsv_temporada": 182,
       "dsv_7d": 16,
       "lat": 38.068994,
       "lon": -1.044818,
@@ -881,9 +881,9 @@
       "fuente_datos": "WU propio 9d"
     },
     "IMURCI180": {
-      "oidio": 1,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 23,
+      "dsv_temporada": 165,
       "dsv_7d": 12,
       "lat": 37.971022,
       "lon": -1.17308,
