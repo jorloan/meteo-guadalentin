@@ -320,16 +320,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 10d"
     },
-    "ILORCA50": {
-      "oidio": 1,
-      "mildiu": 2,
-      "dsv_temporada": 30,
-      "dsv_7d": 4,
-      "lat": 37.857225,
-      "lon": -1.829139,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 4d + WU vecinos 6d"
-    },
     "ILORCA55": {
       "oidio": 3,
       "mildiu": 1,

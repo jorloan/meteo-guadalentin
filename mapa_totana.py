@@ -1054,26 +1054,26 @@ function actualizarLabel(){
 }
 
 // ── Render con soporte historial ─────────────────────────────
-var _renderBase = render;
-
-function getSnapIndex(){
-  var indices = getModoIndices();
-  if(!indices.length) return historyData.length-1;
-  return indices[Math.min(idxActual, indices.length-1)];
-}
+// ── Render con historial de riesgo ──────────────────────────
+var _renderOriginal = render;
 
 render = function(){
   var p   = document.getElementById('ps').value;
   var isR = p==='oidio' || p==='mildiu';
-  CI = getSnapIndex();
 
-  if(isR && Object.keys(riesgoHistData).length > 0){
-    var snapIdx = CI;
-    var ts      = historyData[snapIdx] ? historyData[snapIdx].timestamp : '';
-    var fechaDia = ts.slice(0,10);
+  // Calcular índice correcto según modo
+  var indices = getModoIndices();
+  if(indices.length > 0){
+    CI = indices[Math.min(idxActual, indices.length-1)];
+  }
+
+  // En modo riesgo usar datos históricos del día seleccionado
+  if(isR && riesgoHistData && Object.keys(riesgoHistData).length > 0){
+    var ts       = historyData[CI] ? historyData[CI].timestamp : '';
+    var fechaDia = ts.slice(0, 10);
     if(riesgoHistData[fechaDia]){
-      var rdBak   = riesgoData;
-      var rTemp   = {};
+      var rdBak = riesgoData;
+      var rTemp = {};
       Object.keys(rdBak).forEach(function(sid){
         rTemp[sid] = Object.assign({}, rdBak[sid]);
         var h = riesgoHistData[fechaDia][sid];
@@ -1086,53 +1086,55 @@ render = function(){
         }
       });
       riesgoData = rTemp;
-      _renderBase();
+      _renderOriginal();
       riesgoData = rdBak;
       return;
     }
   }
-  _renderBase();
+  _renderOriginal();
 };
 
 // ── Slider listeners ─────────────────────────────────────────
-var sl2=document.getElementById('sl');
-sl2.addEventListener('input',function(){
-  idxActual=parseInt(this.value);
+var sl2 = document.getElementById('sl');
+sl2.addEventListener('input', function(){
+  idxActual = parseInt(this.value);
   actualizarLabel();
-  timeOverlay.style.display='block';
+  timeOverlay.style.display = 'block';
   render();
   clearTimeout(window._ovTimer);
-  window._ovTimer=setTimeout(function(){if(!PT)timeOverlay.style.display='none';},2000);
+  window._ovTimer = setTimeout(function(){
+    if(!PT) timeOverlay.style.display = 'none';
+  }, 2000);
 });
 
-document.getElementById('pb').addEventListener('click',function(){
-  if(PT){clearInterval(PT);PT=null;this.textContent='▶️';return;}
-  this.textContent='⏸️';
-  var indices=getModoIndices();
-  if(idxActual>=indices.length-1) idxActual=0;
-  var s=this;
-  var intervalo=modoRiesgo?800:500;
-  timeOverlay.style.display='block';
-  PT=setInterval(function(){
-    idxActual=(idxActual+1)%indices.length;
-    sl2.value=idxActual;
+document.getElementById('pb').addEventListener('click', function(){
+  if(PT){ clearInterval(PT); PT=null; this.textContent='▶️'; return; }
+  this.textContent = '⏸️';
+  var indices = getModoIndices();
+  if(idxActual >= indices.length-1) idxActual = 0;
+  var s = this;
+  var intervalo = modoRiesgo ? 800 : 500;
+  timeOverlay.style.display = 'block';
+  PT = setInterval(function(){
+    idxActual = (idxActual+1) % indices.length;
+    sl2.value = idxActual;
     actualizarLabel();
     render();
-    if(idxActual===indices.length-1){
-      clearInterval(PT);PT=null;s.textContent='▶️';
-      timeOverlay.style.display='none';
+    if(idxActual === indices.length-1){
+      clearInterval(PT); PT=null; s.textContent='▶️';
+      timeOverlay.style.display = 'none';
     }
-  },intervalo);
+  }, intervalo);
 });
 
-document.getElementById('op').addEventListener('input',function(){
-  window.HO=parseFloat(this.value);
-  if(HL) HL.setStyle({fillOpacity:window.HO});
+document.getElementById('op').addEventListener('input', function(){
+  window.HO = parseFloat(this.value);
+  if(HL) HL.setStyle({fillOpacity: window.HO});
 });
 
 function initSl(){
-  var n=historyData.length;
-  if(!n){document.getElementById('tl').innerText='Sin datos';return;}
+  var n = historyData.length;
+  if(!n){ document.getElementById('tl').innerText='Sin datos'; return; }
   actualizarModoSlider();
   render();
 }
