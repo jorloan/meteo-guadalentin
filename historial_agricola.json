@@ -6899,7 +6899,7 @@
       "lon": -1.592649
     },
     "IMULA35": {
-      "tempMax": 20.6,
+      "tempMax": 21.0,
       "tempMin": 19.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -7083,7 +7083,7 @@
       "lon": -1.52123
     },
     "IGUILA10": {
-      "tempMax": 19.3,
+      "tempMax": 20.0,
       "tempMin": 15.3,
       "precipTotal": 3.05,
       "humedadAltaMinutos": 150,
