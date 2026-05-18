@@ -648,7 +648,9 @@ function getPrecipAcumulada(sid, periodo){
   // Suma el máximo precipTotal de cada día en el período
   var ahora = new Date();
   var desde;
-  if(periodo==='ayer'){
+  if(periodo==='hoy'){
+    desde = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
+  } else if(periodo==='ayer'){
     desde = new Date(ahora.getTime() - 24*3600*1000);
   } else if(periodo==='semana'){
     desde = new Date(ahora.getTime() - 7*24*3600*1000);
@@ -686,7 +688,7 @@ function raw(est,p){
   if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}
   var m=est.metric; if(!m) return null;
   if(p==='precip'){
-    var periodo=precipPeriodo?precipPeriodo.value:'ayer';
+    var periodo=precipPeriodo?precipPeriodo.value:'hoy';
     var acum=getPrecipAcumulada(est.stationID, periodo);
     return acum!=null?acum:(m.precipTotal!=null?m.precipTotal:0);
   }
@@ -718,8 +720,8 @@ leg.upd=function(p){
   } else {
     var g,ti,u;
     if(p==='precip'){
-      var pp=precipPeriodo?precipPeriodo.value:'ayer';
-      var sf=pp==='semana'?' (7d)':' (24h)';
+      var pp=precipPeriodo?precipPeriodo.value:'hoy';
+      var sf=pp==='semana'?' (7d)':pp==='ayer'?' (24h)':' (hoy)';
       ti='🌧 Precipitación'+sf;u='mm';g=[0.5,2,4,10,20,30,40,50,70];
     }
     else if(p==='temp'){ti='🌡 Temperatura';  u='°C';   g=[5,10,15,20,25,30,35,40];}
@@ -922,7 +924,7 @@ function render(){
         +'<td style="font-weight:700">'+(m.temp!=null?m.temp.toFixed(1)+'°C':'—')+'</td></tr>'
         +'<tr><td style="color:#888">🌧 Precipitación</td>'
         +'<td style="font-weight:700">'+(function(){
-          var periodo=precipPeriodo?precipPeriodo.value:'ayer';
+          var periodo=precipPeriodo?precipPeriodo.value:'hoy';
           var acum=getPrecipAcumulada(est.stationID,periodo);
           var label=periodo==='semana'?'7d':'24h';
           return acum!=null?(acum.toFixed(1)+' mm ('+label+')'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
@@ -1265,9 +1267,10 @@ HTML_BASE = """<!DOCTYPE html>
 
   </div>
 </header>
-<div id="precip-barra" style="display:none;background:#2471a3;padding:6px 1rem;display:none;align-items:center;gap:10px;flex-shrink:0;">
-  <span style="color:#fff;font-size:13px;font-weight:600;">🌧 Período de precipitación:</span>
+<div id="precip-barra" style="display:none;background:#2471a3;padding:6px 1rem;align-items:center;gap:10px;flex-shrink:0;justify-content:flex-end;">
+  <span style="color:#fff;font-size:13px;font-weight:600;">🌧 Período:</span>
   <select id="precip-periodo" style="padding:5px 12px;border-radius:6px;border:none;background:#fff;color:#2c3e50;font-weight:700;font-size:13px;cursor:pointer;" onchange="render()">
+    <option value="hoy">📅 Hoy acumulado</option>
     <option value="ayer">📅 Últimas 24 horas</option>
     <option value="semana">📅 Últimos 7 días</option>
   </select>
