@@ -6731,7 +6731,7 @@
       "lon": -1.702337
     },
     "ILORCA81": {
-      "tempMax": 22.2,
+      "tempMax": 22.3,
       "tempMin": 11.4,
       "precipTotal": 1.7,
       "humedadAltaMinutos": 45,
@@ -6915,7 +6915,7 @@
       "lon": -1.600633
     },
     "IMULA41": {
-      "tempMax": 23.9,
+      "tempMax": 24.0,
       "tempMin": 9.7,
       "precipTotal": 0.99,
       "humedadAltaMinutos": 45,
@@ -7051,7 +7051,7 @@
       "lon": -1.510252
     },
     "ITOTAN33": {
-      "tempMax": 24.5,
+      "tempMax": 24.7,
       "tempMin": 11.0,
       "precipTotal": 7.11,
       "humedadAltaMinutos": 60,
@@ -7086,7 +7086,7 @@
       "tempMax": 19.3,
       "tempMin": 15.3,
       "precipTotal": 3.05,
-      "humedadAltaMinutos": 90,
+      "humedadAltaMinutos": 105,
       "lat": 37.407152,
       "lon": -1.572191
     },
