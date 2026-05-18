@@ -650,16 +650,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 10d"
     },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 70,
-      "dsv_7d": 17,
-      "lat": 37.773,
-      "lon": -1.499,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 4d + WU vecinos 6d"
-    },
     "ITOTAN8": {
       "oidio": 3,
       "mildiu": 2,
