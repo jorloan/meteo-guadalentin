@@ -6435,7 +6435,7 @@
       "lon": -1.575828
     },
     "IALEDO9": {
-      "tempMax": 22.2,
+      "tempMax": 22.5,
       "tempMin": 8.8,
       "precipTotal": 11.68,
       "humedadAltaMinutos": 60,
@@ -6443,7 +6443,7 @@
       "lon": -1.592444
     },
     "IALHAM13": {
-      "tempMax": 26.7,
+      "tempMax": 27.6,
       "tempMin": 12.9,
       "precipTotal": 3.05,
       "humedadAltaMinutos": 60,
@@ -6491,7 +6491,7 @@
       "lon": -1.432404
     },
     "IALHAM64": {
-      "tempMax": 28.8,
+      "tempMax": 28.9,
       "tempMin": 12.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
@@ -6547,7 +6547,7 @@
       "lon": -1.864
     },
     "ILORCA106": {
-      "tempMax": 16.2,
+      "tempMax": 16.9,
       "tempMin": 8.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
@@ -6587,7 +6587,7 @@
       "lon": -1.799738
     },
     "ILORCA123": {
-      "tempMax": 26.7,
+      "tempMax": 27.4,
       "tempMin": 12.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
@@ -6627,7 +6627,7 @@
       "lon": -1.45076
     },
     "ILORCA22": {
-      "tempMax": 25.7,
+      "tempMax": 25.8,
       "tempMin": 11.3,
       "precipTotal": 2.01,
       "humedadAltaMinutos": 60,
@@ -6635,7 +6635,7 @@
       "lon": -1.646632
     },
     "ILORCA24": {
-      "tempMax": 26.8,
+      "tempMax": 27.5,
       "tempMin": 14.4,
       "precipTotal": 7.01,
       "humedadAltaMinutos": 60,
@@ -6707,7 +6707,7 @@
       "lon": -1.694114
     },
     "ILORCA66": {
-      "tempMax": 23.5,
+      "tempMax": 24.5,
       "tempMin": 12.2,
       "precipTotal": 2.01,
       "humedadAltaMinutos": 60,
@@ -6731,7 +6731,7 @@
       "lon": -1.702337
     },
     "ILORCA81": {
-      "tempMax": 21.6,
+      "tempMax": 21.8,
       "tempMin": 11.4,
       "precipTotal": 1.7,
       "humedadAltaMinutos": 45,
@@ -6739,7 +6739,7 @@
       "lon": -1.656607
     },
     "ILORCA84": {
-      "tempMax": 19.4,
+      "tempMax": 19.9,
       "tempMin": 10.4,
       "precipTotal": 0.51,
       "humedadAltaMinutos": 45,
@@ -6867,7 +6867,7 @@
       "lon": -1.335361
     },
     "IMULA10": {
-      "tempMax": 26.7,
+      "tempMax": 27.2,
       "tempMin": 8.6,
       "precipTotal": 8.38,
       "humedadAltaMinutos": 60,
@@ -6875,7 +6875,7 @@
       "lon": -1.525336
     },
     "IMULA21": {
-      "tempMax": 26.5,
+      "tempMax": 27.0,
       "tempMin": 10.7,
       "precipTotal": 0.76,
       "humedadAltaMinutos": 60,
@@ -6883,7 +6883,7 @@
       "lon": -1.450125
     },
     "IMULA25": {
-      "tempMax": 23.9,
+      "tempMax": 24.5,
       "tempMin": 9.7,
       "precipTotal": 0.3,
       "humedadAltaMinutos": 0,
@@ -6891,7 +6891,7 @@
       "lon": -1.533938
     },
     "IMULA34": {
-      "tempMax": 23.7,
+      "tempMax": 24.4,
       "tempMin": 10.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
@@ -6923,7 +6923,7 @@
       "lon": -1.597045
     },
     "IMULA49": {
-      "tempMax": 24.5,
+      "tempMax": 24.7,
       "tempMin": 10.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
@@ -6995,7 +6995,7 @@
       "lon": -1.521982
     },
     "ITOTAN16": {
-      "tempMax": 23.5,
+      "tempMax": 23.8,
       "tempMin": 10.9,
       "precipTotal": 6.91,
       "humedadAltaMinutos": 60,
@@ -7027,7 +7027,7 @@
       "lon": -1.501555
     },
     "ITOTAN28": {
-      "tempMax": 20.6,
+      "tempMax": 21.0,
       "tempMin": 7.4,
       "precipTotal": 3.3,
       "humedadAltaMinutos": 60,
@@ -7075,7 +7075,7 @@
       "lon": -1.539632
     },
     "ITOTAN43": {
-      "tempMax": 25.2,
+      "tempMax": 25.3,
       "tempMin": 11.7,
       "precipTotal": 5.08,
       "humedadAltaMinutos": 60,
@@ -7086,7 +7086,7 @@
       "tempMax": 19.3,
       "tempMin": 15.3,
       "precipTotal": 3.05,
-      "humedadAltaMinutos": 15,
+      "humedadAltaMinutos": 30,
       "lat": 37.407152,
       "lon": -1.572191
     },
@@ -7155,7 +7155,7 @@
       "lon": -1.324433
     },
     "ISANTO462": {
-      "tempMax": 29.4,
+      "tempMax": 29.7,
       "tempMin": 13.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 15,
