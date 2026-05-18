@@ -6611,7 +6611,7 @@
       "lon": -1.707165
     },
     "ILORCA18": {
-      "tempMax": 21.8,
+      "tempMax": 22.2,
       "tempMin": 11.4,
       "precipTotal": 9.4,
       "humedadAltaMinutos": 45,
@@ -7086,7 +7086,7 @@
       "tempMax": 19.3,
       "tempMin": 15.3,
       "precipTotal": 3.05,
-      "humedadAltaMinutos": 105,
+      "humedadAltaMinutos": 120,
       "lat": 37.407152,
       "lon": -1.572191
     },
@@ -7131,7 +7131,7 @@
       "lon": -1.239228
     },
     "IYECLA52": {
-      "tempMax": 25.6,
+      "tempMax": 25.7,
       "tempMin": 8.0,
       "precipTotal": 0.2,
       "humedadAltaMinutos": 60,
