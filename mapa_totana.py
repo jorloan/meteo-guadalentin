@@ -1050,108 +1050,58 @@ function actualizarLabel(){
   timeOverlay.style.display=last&&!PT?'none':'block';
 }
 
+// ── Render con soporte historial ─────────────────────────────
+var _renderBase = render;
+
 function getSnapIndex(){
-  var indices=getModoIndices();
+  var indices = getModoIndices();
   if(!indices.length) return historyData.length-1;
-  return indices[Math.min(idxActual,indices.length-1)];
+  return indices[Math.min(idxActual, indices.length-1)];
 }
 
-// Sobrescribir render para usar getSnapIndex
-var _renderOrig=render;
-render=function(){
-  var p=document.getElementById('ps').value;
-  var isR=p==='oidio'||p==='mildiu';
-  // Para riesgo siempre usar el snapshot del día seleccionado
-  var snapIdx = isR ? getSnapIndex() : getSnapIndex();
-  // Guardar CI original y restaurar
-  var ciOrig=CI;
-  CI=snapIdx;
-  _renderOrig();
-  CI=ciOrig;
-};
+render = function(){
+  var p   = document.getElementById('ps').value;
+  var isR = p==='oidio' || p==='mildiu';
+  CI = getSnapIndex();
 
-// Actualizar render para que use CI correctamente
-// (ya lo hace via snap en render, pero necesitamos que use snapIdx)
-// Redefine getSnap en render:
-var _render2=render;
-render=function(){
-  CI=getSnapIndex();
-  var p=document.getElementById('ps').value;
-  var isR=p==='oidio'||p==='mildiu';
-
-  // En modo riesgo con historial, usar riesgoHistData del día seleccionado
-  if(isR && Object.keys(riesgoHistData).length>0){
-    var indices=getModoIndices();
-    if(indices.length>0){
-      var snapIdx=indices[Math.min(idxActual,indices.length-1)];
-      var ts=historyData[snapIdx].timestamp;
-      var fechaDia=ts.slice(0,10);
-      // Si existe snapshot de riesgo para ese día, usarlo temporalmente
-      if(riesgoHistData[fechaDia]){
-        var riesgoOrig=window._riesgoDataActual||riesgoData;
-        window._riesgoDataActual=riesgoOrig;
-        // Mezclar datos históricos con actuales (usar histórico para oidio/mildiu/dsv)
-        var riesgoTemp={};
-        Object.keys(riesgoOrig).forEach(function(sid){
-          riesgoTemp[sid]=Object.assign({},riesgoOrig[sid]);
-          if(riesgoHistData[fechaDia][sid]){
-            var h=riesgoHistData[fechaDia][sid];
-            riesgoTemp[sid].oidio=h.oidio;
-            riesgoTemp[sid].mildiu=h.mildiu;
-            riesgoTemp[sid].dsv_temporada=h.dsv_temporada;
-            riesgoTemp[sid].dsv_7d=h.dsv_7d;
-            riesgoTemp[sid].datos_ok=h.datos_ok;
-          }
-        });
-        // Sustituir temporalmente riesgoData y renderizar
-        var rdBak=riesgoData;
-        riesgoData=riesgoTemp;
-        _renderOrig();
-        riesgoData=rdBak;
-        return;
-      }
+  if(isR && Object.keys(riesgoHistData).length > 0){
+    var snapIdx = CI;
+    var ts      = historyData[snapIdx] ? historyData[snapIdx].timestamp : '';
+    var fechaDia = ts.slice(0,10);
+    if(riesgoHistData[fechaDia]){
+      var rdBak   = riesgoData;
+      var rTemp   = {};
+      Object.keys(rdBak).forEach(function(sid){
+        rTemp[sid] = Object.assign({}, rdBak[sid]);
+        var h = riesgoHistData[fechaDia][sid];
+        if(h){
+          rTemp[sid].oidio         = h.oidio;
+          rTemp[sid].mildiu        = h.mildiu;
+          rTemp[sid].dsv_temporada = h.dsv_temporada;
+          rTemp[sid].dsv_7d        = h.dsv_7d;
+          rTemp[sid].datos_ok      = h.datos_ok;
+        }
+      });
+      riesgoData = rTemp;
+      _renderBase();
+      riesgoData = rdBak;
+      return;
     }
   }
-  _renderOrig();
+  _renderBase();
 };
 
-sl.addEventListener('input',function(){
+// ── Slider listeners ─────────────────────────────────────────
+var sl2=document.getElementById('sl');
+sl2.addEventListener('input',function(){
   idxActual=parseInt(this.value);
   actualizarLabel();
   timeOverlay.style.display='block';
   render();
-  // Ocultar overlay tras 2 segundos de inactividad
   clearTimeout(window._ovTimer);
-  window._ovTimer=setTimeout(function(){
-    if(!PT) timeOverlay.style.display='none';
-  },2000);
+  window._ovTimer=setTimeout(function(){if(!PT)timeOverlay.style.display='none';},2000);
 });
 
-// Filtros de fecha para modo riesgo
-slFechaIni.addEventListener('change',function(){
-  diaFiltroIni=this.value;
-  var indices=getModoIndices();
-  sl.max=Math.max(0,indices.length-1);
-  idxActual=indices.length-1;
-  sl.value=idxActual;
-  actualizarLabel(); render();
-});
-slFechaFin.addEventListener('change',function(){
-  diaFiltroFin=this.value;
-  var indices=getModoIndices();
-  sl.max=Math.max(0,indices.length-1);
-  idxActual=indices.length-1;
-  sl.value=idxActual;
-  actualizarLabel(); render();
-});
-
-// Escuchar cambio de parámetro para cambiar modo
-document.getElementById('ps').addEventListener('change',function(){
-  actualizarModoSlider();
-  render();
-});
-
-var PT=null;
 document.getElementById('pb').addEventListener('click',function(){
   if(PT){clearInterval(PT);PT=null;this.textContent='▶️';return;}
   this.textContent='⏸️';
@@ -1162,7 +1112,7 @@ document.getElementById('pb').addEventListener('click',function(){
   timeOverlay.style.display='block';
   PT=setInterval(function(){
     idxActual=(idxActual+1)%indices.length;
-    sl.value=idxActual;
+    sl2.value=idxActual;
     actualizarLabel();
     render();
     if(idxActual===indices.length-1){
@@ -1172,59 +1122,16 @@ document.getElementById('pb').addEventListener('click',function(){
   },intervalo);
 });
 
-function initSl(){
-  var n=historyData.length;
-  if(!n){tl.innerText='Sin datos';return;}
-  actualizarModoSlider();
-  render();
-}
 document.getElementById('op').addEventListener('input',function(){
   window.HO=parseFloat(this.value);
   if(HL) HL.setStyle({fillOpacity:window.HO});
 });
 
-// ── Precipitación acumulada por período ──────────────────────
-var precipPeriodo = document.getElementById('precip-periodo');
-
-function onParamChange(){
-  var p = document.getElementById('ps').value;
-  precipPeriodo.style.display = (p==='precip') ? '' : 'none';
+function initSl(){
+  var n=historyData.length;
+  if(!n){document.getElementById('tl').innerText='Sin datos';return;}
   actualizarModoSlider();
   render();
-}
-
-function getPrecipAcumulada(sid, periodo){
-  // Calcula precipitación acumulada desde el historial 24h
-  var ahora = new Date();
-  var desde;
-  if(periodo==='ahora') return null; // usar dato actual
-  if(periodo==='hoy'){
-    desde = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
-  } else if(periodo==='ayer'){
-    desde = new Date(ahora.getTime() - 24*3600*1000);
-  } else if(periodo==='semana'){
-    desde = new Date(ahora.getTime() - 7*24*3600*1000);
-  } else {
-    return null;
-  }
-
-  // Buscar valor máximo de precipTotal en el período (WU acumula desde medianoche)
-  // Para períodos >24h sumamos el máximo de cada día
-  var maxPorDia = {};
-  historyData.forEach(function(snap){
-    var t = new Date(snap.timestamp);
-    if(t < desde) return;
-    var diaKey = t.getFullYear()+'-'+(t.getMonth()+1)+'-'+t.getDate();
-    (snap.stations||[]).forEach(function(est){
-      if(!est || est.stationID!==sid) return;
-      var p = est.metric && est.metric.precipTotal;
-      if(p==null) return;
-      if(!maxPorDia[diaKey] || p > maxPorDia[diaKey]) maxPorDia[diaKey]=p;
-    });
-  });
-
-  var total = Object.values(maxPorDia).reduce(function(a,b){return a+b;},0);
-  return total;
 }
 
 initSl();
