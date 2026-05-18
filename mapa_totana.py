@@ -644,7 +644,14 @@ function col(v,p){
 function raw(est,p){
   if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}
   var m=est.metric; if(!m) return null;
-  if(p==='precip')   return m.precipTotal;
+  if(p==='precip'){
+    var periodo=precipPeriodo?precipPeriodo.value:'ahora';
+    if(periodo!=='ahora'){
+      var acum=getPrecipAcumulada(est.stationID, periodo);
+      return acum!=null?acum:m.precipTotal;
+    }
+    return m.precipTotal;
+  }
   if(p==='temp')     return m.temp;
   if(p==='humidity') return est.humidity;
   if(p==='wind')     return m.windGust;
@@ -672,7 +679,11 @@ leg.upd=function(p){
     h+='<small style="color:#888">'+(p==='oidio'?'Gubler-Thomas (UC Davis)':'Regla 10-10-10 + EPI')+'</small>';
   } else {
     var g,ti,u;
-    if(p==='precip')   {ti='🌧 Precipitación';u='mm';   g=[0.5,2,4,10,20,30,40,50,70];}
+    if(p==='precip'){
+      var pp=precipPeriodo?precipPeriodo.value:'ahora';
+      var sf=pp==='hoy'?' (hoy)':pp==='ayer'?' (24h)':pp==='semana'?' (7d)':'';
+      ti='🌧 Precipitación'+sf;u='mm';g=[0.5,2,4,10,20,30,40,50,70];
+    }
     else if(p==='temp'){ti='🌡 Temperatura';  u='°C';   g=[5,10,15,20,25,30,35,40];}
     else if(p==='humidity'){ti='💧 Humedad'; u='%';    g=[30,50,70,90];}
     else               {ti='💨 Viento';      u='km/h'; g=[2,5,10,20,30,40];}
@@ -872,7 +883,15 @@ function render(){
         +'<tr><td style="color:#888">🌡 Temperatura</td>'
         +'<td style="font-weight:700">'+(m.temp!=null?m.temp.toFixed(1)+'°C':'—')+'</td></tr>'
         +'<tr><td style="color:#888">🌧 Precipitación</td>'
-        +'<td style="font-weight:700">'+(m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—')+'</td></tr>'
+        +'<td style="font-weight:700">'+(function(){
+          var periodo=precipPeriodo?precipPeriodo.value:'ahora';
+          if(periodo!=='ahora'){
+            var acum=getPrecipAcumulada(est.stationID,periodo);
+            var label=periodo==='hoy'?'hoy':periodo==='ayer'?'24h':'7d';
+            return acum!=null?(acum.toFixed(1)+' mm ('+label+')'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
+          }
+          return m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—';
+        })()+' </td></tr>'
         +'<tr><td style="color:#888">💨 Viento</td>'
         +'<td style="font-weight:700">'+(m.windSpeed!=null?m.windSpeed.toFixed(0)+' km/h':'—')+' '+wdL(est.winddir)+'</td></tr>'
         +'<tr><td style="color:#888">⬆ Racha</td>'
@@ -1164,6 +1183,50 @@ document.getElementById('op').addEventListener('input',function(){
   if(HL) HL.setStyle({fillOpacity:window.HO});
 });
 
+// ── Precipitación acumulada por período ──────────────────────
+var precipPeriodo = document.getElementById('precip-periodo');
+
+function onParamChange(){
+  var p = document.getElementById('ps').value;
+  precipPeriodo.style.display = (p==='precip') ? '' : 'none';
+  actualizarModoSlider();
+  render();
+}
+
+function getPrecipAcumulada(sid, periodo){
+  // Calcula precipitación acumulada desde el historial 24h
+  var ahora = new Date();
+  var desde;
+  if(periodo==='ahora') return null; // usar dato actual
+  if(periodo==='hoy'){
+    desde = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
+  } else if(periodo==='ayer'){
+    desde = new Date(ahora.getTime() - 24*3600*1000);
+  } else if(periodo==='semana'){
+    desde = new Date(ahora.getTime() - 7*24*3600*1000);
+  } else {
+    return null;
+  }
+
+  // Buscar valor máximo de precipTotal en el período (WU acumula desde medianoche)
+  // Para períodos >24h sumamos el máximo de cada día
+  var maxPorDia = {};
+  historyData.forEach(function(snap){
+    var t = new Date(snap.timestamp);
+    if(t < desde) return;
+    var diaKey = t.getFullYear()+'-'+(t.getMonth()+1)+'-'+t.getDate();
+    (snap.stations||[]).forEach(function(est){
+      if(!est || est.stationID!==sid) return;
+      var p = est.metric && est.metric.precipTotal;
+      if(p==null) return;
+      if(!maxPorDia[diaKey] || p > maxPorDia[diaKey]) maxPorDia[diaKey]=p;
+    });
+  });
+
+  var total = Object.values(maxPorDia).reduce(function(a,b){return a+b;},0);
+  return total;
+}
+
 initSl();
 """
 
@@ -1238,13 +1301,19 @@ HTML_BASE = """<!DOCTYPE html>
       <span style="font-size:.68rem;color:#ecf0f1;font-weight:700">🔆 Opacidad</span>
       <input type="range" id="op" min="0" max="1" step="0.05" value="0.35" style="width:75px;cursor:pointer">
     </div>
-    <select id="ps" onchange="render()">
+    <select id="ps" onchange="onParamChange()">
       <option value="temp" selected>🌡 Temperatura (°C)</option>
       <option value="precip">🌧 Precipitación (mm)</option>
       <option value="humidity">💧 Humedad (%)</option>
       <option value="wind">💨 Viento (km/h)</option>
       <option value="oidio">🍇 Riesgo Oídio</option>
       <option value="mildiu">🍃 Riesgo Mildiu</option>
+    </select>
+    <select id="precip-periodo" style="display:none;padding:5px 9px;border-radius:6px;border:none;background:#2980b9;color:#fff;font-weight:700;font-size:.82rem;cursor:pointer;" onchange="render()">
+      <option value="ahora">💧 Ahora</option>
+      <option value="hoy">📅 Hoy acumulado</option>
+      <option value="ayer">📅 Desde ayer</option>
+      <option value="semana">📅 Últimos 7 días</option>
     </select>
   </div>
 </header>
