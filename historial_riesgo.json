@@ -1355,7 +1355,7 @@
     "IMAZAR111": {
       "oidio": 3,
       "mildiu": 3,
-      "dsv_temporada": 67,
+      "dsv_temporada": 68,
       "dsv_7d": 9,
       "lat": 37.571,
       "lon": -1.259,
@@ -1565,7 +1565,7 @@
     "ITOTAN5": {
       "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 68,
+      "dsv_temporada": 70,
       "dsv_7d": 13,
       "lat": 37.773,
       "lon": -1.499,
@@ -1765,7 +1765,7 @@
     "IGUILA10": {
       "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 68,
+      "dsv_temporada": 67,
       "dsv_7d": 15,
       "lat": 37.407152,
       "lon": -1.572191,
@@ -1773,9 +1773,9 @@
       "fuente_datos": "WU propio 7d"
     },
     "IJUMIL46": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 8,
+      "dsv_temporada": 61,
       "dsv_7d": 6,
       "lat": 38.471875,
       "lon": -1.421486,
@@ -1783,9 +1783,9 @@
       "fuente_datos": "WU propio 6d"
     },
     "IJUMILLA5": {
-      "oidio": 0,
+      "oidio": 2,
       "mildiu": 1,
-      "dsv_temporada": 4,
+      "dsv_temporada": 43,
       "dsv_7d": 4,
       "lat": 38.541588,
       "lon": -1.239228,
@@ -1793,9 +1793,9 @@
       "fuente_datos": "WU propio 6d"
     },
     "IYECLA52": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 6,
+      "dsv_temporada": 61,
       "dsv_7d": 6,
       "lat": 38.635307,
       "lon": -1.097558,
@@ -1803,9 +1803,9 @@
       "fuente_datos": "WU propio 6d"
     },
     "IABARN30": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 16,
+      "dsv_temporada": 130,
       "dsv_7d": 11,
       "lat": 38.217273,
       "lon": -1.374528,
@@ -1813,9 +1813,9 @@
       "fuente_datos": "WU propio 6d"
     },
     "IVILLA1263": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 19,
+      "dsv_temporada": 156,
       "dsv_7d": 13,
       "lat": 38.113005,
       "lon": -1.324433,
@@ -1823,9 +1823,9 @@
       "fuente_datos": "WU propio 6d"
     },
     "ISANTO462": {
-      "oidio": 1,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 22,
+      "dsv_temporada": 182,
       "dsv_7d": 16,
       "lat": 38.068994,
       "lon": -1.044818,
@@ -1833,9 +1833,9 @@
       "fuente_datos": "WU propio 6d"
     },
     "IMURCI180": {
-      "oidio": 1,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 23,
+      "dsv_temporada": 165,
       "dsv_7d": 15,
       "lat": 37.971022,
       "lon": -1.17308,
@@ -2487,7 +2487,7 @@
     "ITOTAN5": {
       "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 68,
+      "dsv_temporada": 70,
       "dsv_7d": 15,
       "lat": 37.773,
       "lon": -1.499,
@@ -2657,7 +2657,7 @@
     "IMAZAR111": {
       "oidio": 3,
       "mildiu": 3,
-      "dsv_temporada": 67,
+      "dsv_temporada": 68,
       "dsv_7d": 11,
       "lat": 37.571,
       "lon": -1.259,
@@ -2667,7 +2667,7 @@
     "IGUILA10": {
       "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 68,
+      "dsv_temporada": 67,
       "dsv_7d": 15,
       "lat": 37.407152,
       "lon": -1.572191,
@@ -2705,9 +2705,9 @@
       "fuente_datos": "WU propio 8d"
     },
     "IJUMIL46": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 8,
+      "dsv_temporada": 61,
       "dsv_7d": 6,
       "lat": 38.471875,
       "lon": -1.421486,
@@ -2715,9 +2715,9 @@
       "fuente_datos": "WU propio 7d"
     },
     "IJUMILLA5": {
-      "oidio": 0,
+      "oidio": 2,
       "mildiu": 1,
-      "dsv_temporada": 4,
+      "dsv_temporada": 43,
       "dsv_7d": 4,
       "lat": 38.541588,
       "lon": -1.239228,
@@ -2725,9 +2725,9 @@
       "fuente_datos": "WU propio 7d"
     },
     "IYECLA52": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 6,
+      "dsv_temporada": 61,
       "dsv_7d": 6,
       "lat": 38.635307,
       "lon": -1.097558,
@@ -2735,9 +2735,9 @@
       "fuente_datos": "WU propio 7d"
     },
     "IABARN30": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 16,
+      "dsv_temporada": 130,
       "dsv_7d": 12,
       "lat": 38.217273,
       "lon": -1.374528,
@@ -2745,9 +2745,9 @@
       "fuente_datos": "WU propio 7d"
     },
     "IVILLA1263": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 19,
+      "dsv_temporada": 156,
       "dsv_7d": 15,
       "lat": 38.113005,
       "lon": -1.324433,
@@ -2755,9 +2755,9 @@
       "fuente_datos": "WU propio 7d"
     },
     "ISANTO462": {
-      "oidio": 1,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 22,
+      "dsv_temporada": 182,
       "dsv_7d": 18,
       "lat": 38.068994,
       "lon": -1.044818,
@@ -2765,9 +2765,9 @@
       "fuente_datos": "WU propio 7d"
     },
     "IMURCI180": {
-      "oidio": 1,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 23,
+      "dsv_temporada": 165,
       "dsv_7d": 16,
       "lat": 37.971022,
       "lon": -1.17308,
@@ -3219,7 +3219,7 @@
     "IMAZAR111": {
       "oidio": 3,
       "mildiu": 3,
-      "dsv_temporada": 67,
+      "dsv_temporada": 68,
       "dsv_7d": 9,
       "lat": 37.571,
       "lon": -1.259,
@@ -3429,7 +3429,7 @@
     "ITOTAN5": {
       "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 68,
+      "dsv_temporada": 70,
       "dsv_7d": 15,
       "lat": 37.773,
       "lon": -1.499,
@@ -3599,7 +3599,7 @@
     "IGUILA10": {
       "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 68,
+      "dsv_temporada": 67,
       "dsv_7d": 12,
       "lat": 37.407152,
       "lon": -1.572191,
@@ -3647,9 +3647,9 @@
       "fuente_datos": "WU propio 8d"
     },
     "IJUMIL46": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 8,
+      "dsv_temporada": 61,
       "dsv_7d": 4,
       "lat": 38.471875,
       "lon": -1.421486,
@@ -3657,9 +3657,9 @@
       "fuente_datos": "WU propio 8d"
     },
     "IJUMILLA5": {
-      "oidio": 0,
+      "oidio": 2,
       "mildiu": 1,
-      "dsv_temporada": 4,
+      "dsv_temporada": 43,
       "dsv_7d": 4,
       "lat": 38.541588,
       "lon": -1.239228,
@@ -3667,9 +3667,9 @@
       "fuente_datos": "WU propio 8d"
     },
     "IYECLA52": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 6,
+      "dsv_temporada": 61,
       "dsv_7d": 4,
       "lat": 38.635307,
       "lon": -1.097558,
@@ -3677,9 +3677,9 @@
       "fuente_datos": "WU propio 8d"
     },
     "IABARN30": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 16,
+      "dsv_temporada": 130,
       "dsv_7d": 11,
       "lat": 38.217273,
       "lon": -1.374528,
@@ -3687,9 +3687,9 @@
       "fuente_datos": "WU propio 8d"
     },
     "IVILLA1263": {
-      "oidio": 0,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 19,
+      "dsv_temporada": 156,
       "dsv_7d": 14,
       "lat": 38.113005,
       "lon": -1.324433,
@@ -3697,9 +3697,9 @@
       "fuente_datos": "WU propio 8d"
     },
     "ISANTO462": {
-      "oidio": 1,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 22,
+      "dsv_temporada": 182,
       "dsv_7d": 16,
       "lat": 38.068994,
       "lon": -1.044818,
@@ -3707,9 +3707,9 @@
       "fuente_datos": "WU propio 8d"
     },
     "IMURCI180": {
-      "oidio": 1,
+      "oidio": 3,
       "mildiu": 1,
-      "dsv_temporada": 23,
+      "dsv_temporada": 165,
       "dsv_7d": 12,
       "lat": 37.971022,
       "lon": -1.17308,
