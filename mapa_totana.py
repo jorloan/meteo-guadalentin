@@ -563,6 +563,7 @@ var RC=['#27ae60','#f39c12','#e67e22','#c0392b'];
 var RL=['Sin riesgo','Riesgo bajo','Riesgo medio','Riesgo ALTO'];
 var CI=historyData.length-1;
 var PT=null;
+var precipPeriodo=null;
 window.HO=0.35;
 
 // ── Mapa base ──────────────────────────────────────────────
@@ -1026,6 +1027,7 @@ function actualizarModoSlider(){
 }
 
 var timeOverlay=document.getElementById('time-overlay');
+precipPeriodo=document.getElementById('precip-periodo');
 function actualizarLabel(){
   var indices=getModoIndices();
   if(!indices.length){tl.innerText='Sin datos';timeOverlay.style.display='none';return;}
