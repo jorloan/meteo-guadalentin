@@ -1132,6 +1132,14 @@ document.getElementById('op').addEventListener('input', function(){
   if(HL) HL.setStyle({fillOpacity: window.HO});
 });
 
+function onParamChange(){
+  var p = document.getElementById('ps').value;
+  var barra = document.getElementById('precip-barra');
+  if(barra) barra.style.display = (p==='precip') ? 'flex' : 'none';
+  actualizarModoSlider();
+  render();
+}
+
 function initSl(){
   var n = historyData.length;
   if(!n){ document.getElementById('tl').innerText='Sin datos'; return; }
@@ -1221,14 +1229,18 @@ HTML_BASE = """<!DOCTYPE html>
       <option value="oidio">🍇 Riesgo Oídio</option>
       <option value="mildiu">🍃 Riesgo Mildiu</option>
     </select>
-    <select id="precip-periodo" style="display:none;padding:5px 9px;border-radius:6px;border:none;background:#2980b9;color:#fff;font-weight:700;font-size:.82rem;cursor:pointer;" onchange="render()">
-      <option value="ahora">💧 Ahora</option>
-      <option value="hoy">📅 Hoy acumulado</option>
-      <option value="ayer">📅 Desde ayer</option>
-      <option value="semana">📅 Últimos 7 días</option>
-    </select>
+
   </div>
 </header>
+<div id="precip-barra" style="display:none;background:#2471a3;padding:6px 1rem;display:none;align-items:center;gap:10px;flex-shrink:0;">
+  <span style="color:#fff;font-size:13px;font-weight:600;">🌧 Período de precipitación:</span>
+  <select id="precip-periodo" style="padding:5px 12px;border-radius:6px;border:none;background:#fff;color:#2c3e50;font-weight:700;font-size:13px;cursor:pointer;" onchange="render()">
+    <option value="ahora">💧 Ahora (dato actual)</option>
+    <option value="hoy">📅 Hoy acumulado</option>
+    <option value="ayer">📅 Últimas 24 horas</option>
+    <option value="semana">📅 Últimos 7 días</option>
+  </select>
+</div>
 <div id="aviso-dias"></div>
 <div class="ma" style="position:relative;">
   <div id="time-overlay"></div>
