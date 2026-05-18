@@ -643,16 +643,52 @@ function col(v,p){
   if(p==='wind') return v>=40?'#b71c1c':v>=30?'#e65100':v>=20?'#f57f17':v>=10?'#fbc02d':v>=5?'#81c784':'#b2dfdb';
   return '#aaa';
 }
+function getPrecipAcumulada(sid, periodo){
+  // Calcula precipitación acumulada usando historial 24h
+  // Suma el máximo precipTotal de cada día en el período
+  var ahora = new Date();
+  var desde;
+  if(periodo==='ayer'){
+    desde = new Date(ahora.getTime() - 24*3600*1000);
+  } else if(periodo==='semana'){
+    desde = new Date(ahora.getTime() - 7*24*3600*1000);
+  } else {
+    return null;
+  }
+
+  // Agrupar por día y coger el máximo precipTotal de cada día
+  var maxPorDia = {};
+  for(var i=0; i<historyData.length; i++){
+    var snap = historyData[i];
+    var t = new Date(snap.timestamp);
+    if(t < desde) continue;
+    var diaKey = t.getFullYear()+'-'+t.getMonth()+'-'+t.getDate();
+    var ests = snap.stations || [];
+    for(var j=0; j<ests.length; j++){
+      var est = ests[j];
+      if(!est || est.stationID !== sid) continue;
+      var p = est.metric && est.metric.precipTotal != null ? est.metric.precipTotal : null;
+      if(p === null) continue;
+      if(maxPorDia[diaKey] === undefined || p > maxPorDia[diaKey]){
+        maxPorDia[diaKey] = p;
+      }
+    }
+  }
+
+  // Sumar máximos de cada día
+  var total = 0;
+  var keys = Object.keys(maxPorDia);
+  for(var k=0; k<keys.length; k++) total += maxPorDia[keys[k]];
+  return Math.round(total * 10) / 10;
+}
+
 function raw(est,p){
   if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}
   var m=est.metric; if(!m) return null;
   if(p==='precip'){
-    var periodo=precipPeriodo?precipPeriodo.value:'ahora';
-    if(periodo!=='ahora'){
-      var acum=getPrecipAcumulada(est.stationID, periodo);
-      return acum!=null?acum:m.precipTotal;
-    }
-    return m.precipTotal;
+    var periodo=precipPeriodo?precipPeriodo.value:'ayer';
+    var acum=getPrecipAcumulada(est.stationID, periodo);
+    return acum!=null?acum:(m.precipTotal!=null?m.precipTotal:0);
   }
   if(p==='temp')     return m.temp;
   if(p==='humidity') return est.humidity;
@@ -682,8 +718,8 @@ leg.upd=function(p){
   } else {
     var g,ti,u;
     if(p==='precip'){
-      var pp=precipPeriodo?precipPeriodo.value:'ahora';
-      var sf=pp==='hoy'?' (hoy)':pp==='ayer'?' (24h)':pp==='semana'?' (7d)':'';
+      var pp=precipPeriodo?precipPeriodo.value:'ayer';
+      var sf=pp==='semana'?' (7d)':' (24h)';
       ti='🌧 Precipitación'+sf;u='mm';g=[0.5,2,4,10,20,30,40,50,70];
     }
     else if(p==='temp'){ti='🌡 Temperatura';  u='°C';   g=[5,10,15,20,25,30,35,40];}
@@ -886,13 +922,10 @@ function render(){
         +'<td style="font-weight:700">'+(m.temp!=null?m.temp.toFixed(1)+'°C':'—')+'</td></tr>'
         +'<tr><td style="color:#888">🌧 Precipitación</td>'
         +'<td style="font-weight:700">'+(function(){
-          var periodo=precipPeriodo?precipPeriodo.value:'ahora';
-          if(periodo!=='ahora'){
-            var acum=getPrecipAcumulada(est.stationID,periodo);
-            var label=periodo==='hoy'?'hoy':periodo==='ayer'?'24h':'7d';
-            return acum!=null?(acum.toFixed(1)+' mm ('+label+')'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
-          }
-          return m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—';
+          var periodo=precipPeriodo?precipPeriodo.value:'ayer';
+          var acum=getPrecipAcumulada(est.stationID,periodo);
+          var label=periodo==='semana'?'7d':'24h';
+          return acum!=null?(acum.toFixed(1)+' mm ('+label+')'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
         })()+' </td></tr>'
         +'<tr><td style="color:#888">💨 Viento</td>'
         +'<td style="font-weight:700">'+(m.windSpeed!=null?m.windSpeed.toFixed(0)+' km/h':'—')+' '+wdL(est.winddir)+'</td></tr>'
@@ -1235,8 +1268,6 @@ HTML_BASE = """<!DOCTYPE html>
 <div id="precip-barra" style="display:none;background:#2471a3;padding:6px 1rem;display:none;align-items:center;gap:10px;flex-shrink:0;">
   <span style="color:#fff;font-size:13px;font-weight:600;">🌧 Período de precipitación:</span>
   <select id="precip-periodo" style="padding:5px 12px;border-radius:6px;border:none;background:#fff;color:#2c3e50;font-weight:700;font-size:13px;cursor:pointer;" onchange="render()">
-    <option value="ahora">💧 Ahora (dato actual)</option>
-    <option value="hoy">📅 Hoy acumulado</option>
     <option value="ayer">📅 Últimas 24 horas</option>
     <option value="semana">📅 Últimos 7 días</option>
   </select>
