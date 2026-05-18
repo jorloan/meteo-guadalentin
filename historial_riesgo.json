@@ -450,16 +450,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 10d"
     },
-    "IMAZAR111": {
-      "oidio": 3,
-      "mildiu": 2,
-      "dsv_temporada": 68,
-      "dsv_7d": 9,
-      "lat": 37.571,
-      "lon": -1.259,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 10d"
-    },
     "IMAZAR112": {
       "oidio": 3,
       "mildiu": 1,
