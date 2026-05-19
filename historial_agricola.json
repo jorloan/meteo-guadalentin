@@ -7304,7 +7304,7 @@
       "tempMax": 18.9,
       "tempMin": 11.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 60,
+      "humedadAltaMinutos": 75,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -7376,7 +7376,7 @@
       "tempMax": 21.4,
       "tempMin": 15.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 90,
+      "humedadAltaMinutos": 105,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -7502,7 +7502,7 @@
     },
     "ILORCA86": {
       "tempMax": 22.7,
-      "tempMin": 14.8,
+      "tempMin": 14.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.648492,
@@ -7536,7 +7536,7 @@
       "tempMax": 20.9,
       "tempMin": 16.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 45,
+      "humedadAltaMinutos": 60,
       "lat": 37.566389,
       "lon": -1.305008
     },
@@ -7560,7 +7560,7 @@
       "tempMax": 23.1,
       "tempMin": 17.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 15,
+      "humedadAltaMinutos": 30,
       "lat": 37.564448,
       "lon": -1.264009
     },
@@ -7568,7 +7568,7 @@
       "tempMax": 21.7,
       "tempMin": 13.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 90,
+      "humedadAltaMinutos": 105,
       "lat": 37.567,
       "lon": -1.3
     },
@@ -7584,7 +7584,7 @@
       "tempMax": 27.6,
       "tempMin": 14.3,
       "precipTotal": 0.25,
-      "humedadAltaMinutos": 60,
+      "humedadAltaMinutos": 75,
       "lat": 37.674696,
       "lon": -1.345717
     },
@@ -7600,7 +7600,7 @@
       "tempMax": 21.6,
       "tempMin": 16.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 30,
+      "humedadAltaMinutos": 45,
       "lat": 37.602019,
       "lon": -1.295504
     },
@@ -7832,7 +7832,7 @@
       "tempMax": 20.8,
       "tempMin": 16.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 30,
+      "humedadAltaMinutos": 45,
       "lat": 37.407152,
       "lon": -1.572191
     },
@@ -7848,7 +7848,7 @@
       "tempMax": 21.7,
       "tempMin": 16.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 15,
+      "humedadAltaMinutos": 30,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -7856,7 +7856,7 @@
       "tempMax": 25.0,
       "tempMin": 14.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 75,
+      "humedadAltaMinutos": 90,
       "lat": 37.695322,
       "lon": -0.935908
     },
