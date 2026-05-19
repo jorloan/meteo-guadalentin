@@ -3828,16 +3828,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
     },
-    "IALHAM92": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 87,
-      "dsv_7d": 10,
-      "lat": 37.848953,
-      "lon": -1.415771,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 9d"
-    },
     "ILORCA100": {
       "oidio": 3,
       "mildiu": 2,
@@ -4347,6 +4337,16 @@
       "lon": -1.599507,
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
+    },
+    "ITOTAN16": {
+      "oidio": 2,
+      "mildiu": 2,
+      "dsv_temporada": 40,
+      "dsv_7d": 8,
+      "lat": 37.783714,
+      "lon": -1.514744,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 9d"
     },
     "ITOTAN17": {
       "oidio": 3,
