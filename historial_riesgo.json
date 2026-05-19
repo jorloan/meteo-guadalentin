@@ -4138,16 +4138,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
     },
-    "IMAZAR19": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 67,
-      "dsv_7d": 9,
-      "lat": 37.646405,
-      "lon": -1.249082,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 11d"
-    },
     "IMAZAR20": {
       "oidio": 3,
       "mildiu": 1,
@@ -4318,16 +4308,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
     },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 71,
-      "dsv_7d": 10,
-      "lat": 37.773,
-      "lon": -1.499,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 5d"
-    },
     "ITOTAN8": {
       "oidio": 3,
       "mildiu": 2,
@@ -4367,16 +4347,6 @@
       "lon": -1.599507,
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
-    },
-    "ITOTAN16": {
-      "oidio": 2,
-      "mildiu": 2,
-      "dsv_temporada": 40,
-      "dsv_7d": 8,
-      "lat": 37.783714,
-      "lon": -1.514744,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 9d"
     },
     "ITOTAN17": {
       "oidio": 3,
