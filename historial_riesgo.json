@@ -5772,16 +5772,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 13d"
     },
-    "ILORCA81": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 69,
-      "dsv_7d": 11,
-      "lat": 37.512787,
-      "lon": -1.656607,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 13d"
-    },
     "ILORCA84": {
       "oidio": 1,
       "mildiu": 2,
