@@ -1,0 +1,34 @@
+name: Actualizar datos meteorológicos
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # cada hora, en punto
+  workflow_dispatch:         # también se puede lanzar a mano desde GitHub
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # necesario para hacer git push
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Ejecutar mapa_totana.py
+        env:
+          WUNDERGROUND_API_KEY: ${{ secrets.WUNDERGROUND_API_KEY }}
+        run: python mapa_totana.py
+
+      - name: Subir datos actualizados al repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json history_24h.json historial_agricola.json index.html
+          git diff --staged --quiet && echo "Sin cambios, nada que subir." || \
+            git commit -m "meteo: actualización automática $(date -u +'%Y-%m-%d %H:%M UTC')" && git push
