@@ -9644,9 +9644,9 @@
     },
     "ILORCA106": {
       "tempMax": 33.3,
-      "tempMin": 16.8,
+      "tempMin": 15.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 30,
+      "humedadAltaMinutos": 45,
       "lat": 37.698662,
       "lon": -1.923552
     },
