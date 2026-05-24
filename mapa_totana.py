@@ -180,9 +180,120 @@ def generar_json(datos_estaciones, ahora):
     print(f"✅ data.json generado con {len(estaciones_json)} estaciones")
 
 
-def generar_html(historial_data, ahora, historial_riesgo=None):
-    if historial_riesgo is None:
-        historial_riesgo = {}
+def calcular_riesgo_agro(historial_agricola, historial_riesgo, historial_dsv, coordenadas):
+    """
+    Calcula riesgo de mildiu (modelo Goidanich, ventana 14 días) y oídio (DSV Gubler-Thomas)
+    por estación. Retorna dict plano {station_id: {lat, lon, mildiu_nivel, mildiu_puntos,
+    mildiu_dias, oidio_nivel, dsv_7d, dsv_temporada}}.
+    """
+    # Niveles de oídio desde historial_riesgo (fecha más reciente)
+    oidio_por_estacion = {}
+    if historial_riesgo:
+        fecha_rec = sorted(historial_riesgo.keys())[-1]
+        for sid, d in historial_riesgo[fecha_rec].items():
+            if d.get('datos_ok'):
+                oidio_por_estacion[sid] = {
+                    'nivel': d.get('oidio', 1),
+                    'dsv_7d': d.get('dsv_7d', 0),
+                    'dsv_temporada': d.get('dsv_temporada', 0)
+                }
+
+    def nivel_oidio_desde_dsv(sid):
+        dsv = historial_dsv.get(sid, {}).get('dsv_acumulado', 0)
+        if dsv >= 60: return 3
+        if dsv >= 20: return 2
+        return 1
+
+    # Datos diarios por estación (últimos 14 días de historial_agricola)
+    fechas_ordenadas = sorted(historial_agricola.keys())[-14:]
+    datos_por_estacion = {}
+    for fecha in fechas_ordenadas:
+        for sid, d in historial_agricola[fecha].items():
+            if sid not in datos_por_estacion:
+                datos_por_estacion[sid] = []
+            datos_por_estacion[sid].append({
+                'tempMax':          d.get('tempMax'),
+                'tempMin':          d.get('tempMin'),
+                'precipTotal':      d.get('precipTotal', 0) or 0,
+                'humedadAltaMinutos': d.get('humedadAltaMinutos', 0) or 0
+            })
+
+    resultado = {}
+    for sid, dias in datos_por_estacion.items():
+        lat, lon = coordenadas.get(sid, (None, None))
+        if not lat or not lon:
+            continue
+
+        # ── Modelo Goidanich para Plasmopara viticola (mildiu) ──────────
+        # Día de infección: T 11-30°C + (lluvia ≥ 2mm o HR≥85% ≥ 2h)
+        # Puntuación: óptimo térmico 18-22°C + bonus por lluvia intensa
+        puntos_mildiu = 0
+        dias_infeccion = 0
+
+        for dia in dias:
+            tmax = dia['tempMax']
+            tmin = dia['tempMin']
+            prec = dia['precipTotal']
+            hum_h = dia['humedadAltaMinutos'] / 60.0
+
+            if tmax is None or tmin is None:
+                continue
+            tmed = (tmax + tmin) / 2.0
+
+            if tmed < 11 or tmed > 30:
+                continue
+            if prec < 2.0 and hum_h < 2.0:
+                continue
+
+            dias_infeccion += 1
+            if 18 <= tmed <= 22:
+                puntos = 3          # óptimo esporulación
+            elif (14 <= tmed < 18) or (22 < tmed <= 25):
+                puntos = 2
+            else:
+                puntos = 1
+
+            if prec >= 10:
+                puntos += 1         # infección primaria desde oosporas
+
+            puntos_mildiu += puntos
+
+        if puntos_mildiu >= 15:
+            mildiu_nivel = 3
+        elif puntos_mildiu >= 5:
+            mildiu_nivel = 2
+        else:
+            mildiu_nivel = 1
+
+        # ── Oídio desde historial_riesgo o fallback DSV ─────────────────
+        if sid in oidio_por_estacion:
+            oidio = oidio_por_estacion[sid]
+        else:
+            oidio = {
+                'nivel':         nivel_oidio_desde_dsv(sid),
+                'dsv_7d':        historial_dsv.get(sid, {}).get('dsv_wu_extra', 0),
+                'dsv_temporada': historial_dsv.get(sid, {}).get('dsv_acumulado', 0)
+            }
+
+        resultado[sid] = {
+            'lat':            lat,
+            'lon':            lon,
+            'mildiu_nivel':   mildiu_nivel,
+            'mildiu_puntos':  puntos_mildiu,
+            'mildiu_dias':    dias_infeccion,
+            'oidio_nivel':    oidio['nivel'],
+            'dsv_7d':         oidio['dsv_7d'],
+            'dsv_temporada':  oidio['dsv_temporada']
+        }
+
+    print(f"✅ Riesgo agro calculado: {len(resultado)} estaciones "
+          f"(mildiu Goidanich · oídio DSV Gubler-Thomas)")
+    return resultado
+
+
+def generar_html(historial_data, ahora, datos_agro=None):
+    if datos_agro is None:
+        datos_agro = {}
     fecha_actualizada = ahora.strftime("%d/%m/%Y %H:%M:%S")
 
     html_content = f"""
@@ -260,14 +371,14 @@ def generar_html(historial_data, ahora, historial_riesgo=None):
                 </div>
                 <div id="controles-agro" style="display:none; gap:15px; align-items:center; flex-wrap:wrap;">
                     <select id="param-agro-select" onchange="actualizarMapaAgro()">
-                        <option value="mildiu">Riesgo Mildiu</option>
-                        <option value="oidio">Riesgo Oídio</option>
+                        <option value="mildiu">Riesgo Mildiu (Goidanich)</option>
+                        <option value="oidio">Riesgo Oídio (DSV)</option>
                         <option value="dsv_temporada">DSV Temporada</option>
                         <option value="dsv_7d">DSV Últimos 7 días</option>
                     </select>
-                    <div style="font-size:0.8rem; color:#ecf0f1; text-align:center;">
-                        <div style="font-weight:bold; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px;">Datos del día</div>
-                        <span id="agro-fecha-label">-</span>
+                    <div style="font-size:0.75rem; color:#bdc3c7; line-height:1.3;">
+                        Marcadores: <strong style="color:white;">Mil · Oid</strong><br>
+                        B=Bajo · M=Medio · A=Alto
                     </div>
                 </div>
             </div>
@@ -297,7 +408,7 @@ def generar_html(historial_data, ahora, historial_riesgo=None):
             }};
 
             var historyData = {json.dumps(historial_data)};
-            var riesgoData = {json.dumps(historial_riesgo)};
+            var datosAgro = {json.dumps(datos_agro)};
             var currentTimestampIndex = historyData.length - 1;
             var modoActivo = 'meteo';
             window.globalHeatmapOpacity = 0.35;
@@ -491,27 +602,44 @@ def generar_html(historial_data, ahora, historial_riesgo=None):
             }};
             legendAgro.update = function(param) {{
                 var html = '';
-                if (param === 'mildiu' || param === 'oidio') {{
-                    var titulo = param === 'mildiu' ? 'Mildiu' : 'Oídio';
-                    html = `<div style="margin-bottom:6px;font-size:0.85rem;line-height:1.1;">Riesgo ${{titulo}}</div>
+                if (param === 'mildiu') {{
+                    html = `<div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;">Mildiu</div>
+                        <div style="font-size:0.65rem;color:#555;margin-bottom:6px;line-height:1.3;">
+                            Goidanich · 14 días<br>
+                            T: 11–30°C<br>
+                            + lluvia ≥ 2mm<br>
+                            o HR≥85% ≥ 2h
+                        </div>
+                        <div><i style="background:#d32f2f"></i> Alto (&ge;15 pts)</div>
+                        <div><i style="background:#f57c00"></i> Moderado (5–14)</div>
+                        <div><i style="background:#388e3c"></i> Bajo (&lt;5 pts)</div>`;
+                }} else if (param === 'oidio') {{
+                    html = `<div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;">Oídio</div>
+                        <div style="font-size:0.65rem;color:#555;margin-bottom:6px;line-height:1.3;">
+                            DSV Gubler-Thomas<br>
+                            T: 15–40°C<br>
+                            + HR≥85% acumuladas
+                        </div>
                         <div><i style="background:#d32f2f"></i> Alto (3)</div>
                         <div><i style="background:#f57c00"></i> Moderado (2)</div>
                         <div><i style="background:#388e3c"></i> Bajo (1)</div>`;
                 }} else if (param === 'dsv_temporada') {{
-                    html = `<div style="margin-bottom:6px;font-size:0.85rem;line-height:1.1;">DSV<br><span style="font-size:0.7rem;color:#666">Temporada</span></div>
+                    html = `<div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;">DSV</div>
+                        <div style="font-size:0.65rem;color:#555;margin-bottom:6px;">Temporada (desde 1-Mar)</div>
                         <div><i style="background:#b71c1c"></i> &gt; 100</div>
-                        <div><i style="background:#e53935"></i> 60 - 100</div>
-                        <div><i style="background:#fb8c00"></i> 40 - 60</div>
-                        <div><i style="background:#fdd835"></i> 20 - 40</div>
-                        <div><i style="background:#66bb6a"></i> 5 - 20</div>
+                        <div><i style="background:#e53935"></i> 60–100</div>
+                        <div><i style="background:#fb8c00"></i> 40–60</div>
+                        <div><i style="background:#fdd835"></i> 20–40</div>
+                        <div><i style="background:#66bb6a"></i> 5–20</div>
                         <div><i style="background:#c8e6c9"></i> &lt; 5</div>`;
                 }} else if (param === 'dsv_7d') {{
-                    html = `<div style="margin-bottom:6px;font-size:0.85rem;line-height:1.1;">DSV<br><span style="font-size:0.7rem;color:#666">7 días</span></div>
+                    html = `<div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;">DSV</div>
+                        <div style="font-size:0.65rem;color:#555;margin-bottom:6px;">Últimos 7 días</div>
                         <div><i style="background:#b71c1c"></i> &gt; 30</div>
-                        <div><i style="background:#e53935"></i> 20 - 30</div>
-                        <div><i style="background:#fb8c00"></i> 10 - 20</div>
-                        <div><i style="background:#fdd835"></i> 5 - 10</div>
-                        <div><i style="background:#66bb6a"></i> 1 - 5</div>
+                        <div><i style="background:#e53935"></i> 20–30</div>
+                        <div><i style="background:#fb8c00"></i> 10–20</div>
+                        <div><i style="background:#fdd835"></i> 5–10</div>
+                        <div><i style="background:#66bb6a"></i> 1–5</div>
                         <div><i style="background:#c8e6c9"></i> 0</div>`;
                 }}
                 this._div.innerHTML = html;
@@ -729,64 +857,88 @@ def generar_html(historial_data, ahora, historial_riesgo=None):
                     heatmapLayerGroup.clearLayers();
                     markersLayer.clearLayers();
 
-                    var fechas = Object.keys(riesgoData).sort();
-                    if (fechas.length === 0) {{
-                        document.getElementById('agro-fecha-label').innerText = 'Sin datos';
-                        return;
-                    }}
-                    var fechaReciente = fechas[fechas.length - 1];
-                    var partes = fechaReciente.split('-');
-                    document.getElementById('agro-fecha-label').innerText = partes[2] + '/' + partes[1] + '/' + partes[0];
+                    if (Object.keys(datosAgro).length === 0) return;
 
-                    var datosEstaciones = riesgoData[fechaReciente];
+                    var esDual = (param === 'mildiu' || param === 'oidio');
+                    var nivelTextoMap = {{1:'Bajo', 2:'Moderado', 3:'Alto'}};
+                    var nivelLetraMap = {{1:'B', 2:'M', 3:'A'}};
                     var features = [];
 
-                    Object.entries(datosEstaciones).forEach(function([estId, datos]) {{
-                        if (!datos.lat || !datos.lon || !datos.datos_ok) return;
-                        var val = datos[param];
-                        if (val === null || val === undefined) return;
+                    Object.entries(datosAgro).forEach(function([estId, datos]) {{
+                        if (!datos.lat || !datos.lon) return;
 
-                        var bgColor = getColorRiesgo(val, param);
-                        var textVal;
-                        if (param === 'mildiu' || param === 'oidio') {{
-                            textVal = val === 1 ? 'B' : val === 2 ? 'M' : 'A';
+                        var markerHtml, iconSize, iconAnchor, val, bgColor;
+
+                        if (esDual) {{
+                            var nivelMil = datos.mildiu_nivel || 1;
+                            var nivelOid = datos.oidio_nivel || 1;
+                            bgColor = getColorRiesgo(param === 'mildiu' ? nivelMil : nivelOid, param);
+                            val     = param === 'mildiu' ? nivelMil : nivelOid;
+
+                            var lMil = nivelLetraMap[nivelMil] || '?';
+                            var lOid = nivelLetraMap[nivelOid] || '?';
+
+                            markerHtml = `<div style="background:${{bgColor}};color:white;text-shadow:1px 1px 1px rgba(0,0,0,0.7);border:2px solid white;border-radius:5px;width:38px;height:28px;display:flex;flex-direction:column;justify-content:center;align-items:center;font-weight:bold;font-size:9px;box-shadow:0 2px 5px rgba(0,0,0,0.4);line-height:1.35;">
+                                <span>Mil: ${{lMil}}</span>
+                                <span style="border-top:1px solid rgba(255,255,255,0.45);padding-top:1px;width:100%;text-align:center;">Oid: ${{lOid}}</span>
+                            </div>`;
+                            iconSize   = [38, 28];
+                            iconAnchor = [19, 14];
                         }} else {{
-                            textVal = Math.round(val).toString();
+                            val = param === 'dsv_temporada' ? datos.dsv_temporada : datos.dsv_7d;
+                            if (val === null || val === undefined) return;
+                            bgColor    = getColorRiesgo(val, param);
+                            markerHtml = `<div style="background:${{bgColor}};color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.8);border:1px solid white;border-radius:50%;width:24px;height:24px;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:11px;box-shadow:0 2px 4px rgba(0,0,0,0.4);">${{Math.round(val)}}</div>`;
+                            iconSize   = [24, 24];
+                            iconAnchor = [12, 12];
                         }}
 
-                        var markerHtml = `<div style="background-color:${{bgColor}};color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.8);border:1px solid white;border-radius:50%;width:24px;height:24px;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:11px;box-shadow:0 2px 4px rgba(0,0,0,0.4);">${{textVal}}</div>`;
-
                         var marker = L.marker([datos.lat, datos.lon], {{
-                            icon: L.divIcon({{className: 'station-badge', html: markerHtml, iconSize: [24, 24], iconAnchor: [12, 12]}})
+                            icon: L.divIcon({{className:'station-badge', html:markerHtml, iconSize:iconSize, iconAnchor:iconAnchor}})
                         }});
 
                         var nombreEstacion = nombresPersonalizados[estId] || estId;
-                        var nivelTexto = (param === 'mildiu' || param === 'oidio') ? (val === 1 ? 'Bajo' : val === 2 ? 'Moderado' : 'Alto') : '';
-                        var paramLabel = {{mildiu:'Riesgo Mildiu', oidio:'Riesgo Oídio', dsv_temporada:'DSV Temporada', dsv_7d:'DSV 7 días'}}[param];
+                        var colorMil = getColorRiesgo(datos.mildiu_nivel, 'mildiu');
+                        var colorOid = getColorRiesgo(datos.oidio_nivel, 'oidio');
 
-                        var popupHtml = `<div style="text-align:center;min-width:170px;">
-                            <strong style="font-size:1rem;color:#2c3e50;">${{nombreEstacion}}</strong><br>
-                            <small style="color:#7f8c8d;">${{estId}}</small>
-                            <hr style="margin:5px 0;border:0;border-top:1px solid #eee;">
-                            <div style="margin:4px 0;"><strong>${{paramLabel}}:</strong> <span style="color:${{bgColor}};font-weight:bold;">${{val}}${{nivelTexto ? ' (' + nivelTexto + ')' : ''}}</span></div>
-                            <div style="font-size:0.8rem;color:#555;">
-                                Mildiu: ${{datos.mildiu}} · Oídio: ${{datos.oidio}}<br>
-                                DSV temporada: ${{datos.dsv_temporada}} · DSV 7d: ${{datos.dsv_7d}}
+                        var popupHtml = `<div style="min-width:190px;">
+                            <div style="text-align:center;padding-bottom:6px;">
+                                <strong style="font-size:1rem;color:#2c3e50;">${{nombreEstacion}}</strong><br>
+                                <small style="color:#7f8c8d;">${{estId}}</small>
                             </div>
+                            <table style="width:100%;font-size:0.82rem;border-collapse:collapse;border-top:1px solid #eee;">
+                                <tr style="background:#e8f5e9;">
+                                    <td style="padding:5px 8px;font-weight:bold;">🍇 Mildiu</td>
+                                    <td style="padding:5px 8px;font-weight:bold;color:${{colorMil}};">${{nivelTextoMap[datos.mildiu_nivel] || '-'}}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:3px 8px;font-size:0.72rem;color:#777;">Pts 14d / Días infec.</td>
+                                    <td style="padding:3px 8px;font-size:0.72rem;">${{datos.mildiu_puntos}} / ${{datos.mildiu_dias}}</td>
+                                </tr>
+                                <tr style="background:#f3e5f5;border-top:1px solid #eee;">
+                                    <td style="padding:5px 8px;font-weight:bold;">🌿 Oídio</td>
+                                    <td style="padding:5px 8px;font-weight:bold;color:${{colorOid}};">${{nivelTextoMap[datos.oidio_nivel] || '-'}}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:3px 8px;font-size:0.72rem;color:#777;">DSV 7d / temporada</td>
+                                    <td style="padding:3px 8px;font-size:0.72rem;">${{datos.dsv_7d}} / ${{datos.dsv_temporada}}</td>
+                                </tr>
+                            </table>
                         </div>`;
 
                         marker.bindPopup(popupHtml);
-                        marker.bindTooltip(`<strong>${{nombreEstacion}}</strong>`, {{direction:'top', offset:[0,-10], opacity:0.9}});
+                        marker.bindTooltip(
+                            `<strong>${{nombreEstacion}}</strong> · Mil: ${{nivelLetraMap[datos.mildiu_nivel]}} · Oid: ${{nivelLetraMap[datos.oidio_nivel]}}`,
+                            {{direction:'top', offset:[0,-10], opacity:0.9}}
+                        );
                         markersLayer.addLayer(marker);
                         features.push(turf.point([datos.lon, datos.lat], {{value: val}}));
                     }});
 
-                    if (features.length > 2 && (param === 'dsv_temporada' || param === 'dsv_7d')) {{
+                    if (!esDual && features.length > 2) {{
                         var collection = turf.featureCollection(features);
-                        var interpolatedGrid = turf.interpolate(collection, 2.5, {{gridType:'square', property:'value', units:'kilometers', weight:2}});
-                        var finalGrid = turf.featureCollection(
-                            interpolatedGrid.features.filter(f => f.properties.value !== null && !isNaN(f.properties.value))
-                        );
+                        var grid = turf.interpolate(collection, 2.5, {{gridType:'square', property:'value', units:'kilometers', weight:2}});
+                        var finalGrid = turf.featureCollection(grid.features.filter(f => f.properties.value !== null && !isNaN(f.properties.value)));
                         heatmapLayer = L.geoJSON(finalGrid, {{
                             pane: 'heatmapPane',
                             style: function(feature) {{
@@ -857,17 +1009,41 @@ def principal():
         historial_agri = gestionar_historial_agricola(datos_completos, ahora)
         generar_json(datos_completos, ahora)
 
+        directorio = os.path.dirname(os.path.abspath(__file__))
+
         historial_riesgo = {}
-        ruta_riesgo = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'historial_riesgo.json')
         try:
-            if os.path.exists(ruta_riesgo):
-                with open(ruta_riesgo, 'r', encoding='utf-8') as f:
+            ruta = os.path.join(directorio, 'historial_riesgo.json')
+            if os.path.exists(ruta):
+                with open(ruta, 'r', encoding='utf-8') as f:
                     historial_riesgo = json.load(f)
                 print(f"✅ historial_riesgo.json cargado ({len(historial_riesgo)} fechas).")
         except Exception as e:
             print(f"No se pudo cargar historial_riesgo.json: {e}")
 
-        ruta_html = generar_html(historial, ahora, historial_riesgo)
+        historial_dsv = {}
+        try:
+            ruta = os.path.join(directorio, 'historial_dsv.json')
+            if os.path.exists(ruta):
+                with open(ruta, 'r', encoding='utf-8') as f:
+                    historial_dsv = json.load(f)
+                print(f"✅ historial_dsv.json cargado ({len(historial_dsv)} estaciones).")
+        except Exception as e:
+            print(f"No se pudo cargar historial_dsv.json: {e}")
+
+        # Coordenadas por estación: desde observaciones actuales + historial_riesgo
+        coordenadas = {}
+        for est in datos_completos:
+            sid = est.get('stationID')
+            if sid and est.get('lat') and est.get('lon'):
+                coordenadas[sid] = (est['lat'], est['lon'])
+        for fecha_datos in historial_riesgo.values():
+            for sid, d in fecha_datos.items():
+                if sid not in coordenadas and d.get('lat') and d.get('lon'):
+                    coordenadas[sid] = (d['lat'], d['lon'])
+
+        datos_agro = calcular_riesgo_agro(historial_agri, historial_riesgo, historial_dsv, coordenadas)
+        ruta_html = generar_html(historial, ahora, datos_agro)
         print("Mapa, Máquina del Tiempo y Datos Agrícolas generados correctamente.")
     else:
         print("No se han podido cargar datos.")
