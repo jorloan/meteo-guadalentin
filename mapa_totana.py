@@ -337,6 +337,8 @@ def generar_html(historial_data, ahora, datos_agro=None):
             .tab-btn {{ background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: background 0.2s; }}
             .tab-btn.active {{ background: rgba(255,255,255,0.9); color: #1a252f; }}
             .tab-btn:hover:not(.active) {{ background: rgba(255,255,255,0.25); }}
+            .btn-capa {{ border-radius: 6px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); color: white; opacity: 0.45; transition: opacity 0.2s, border-color 0.2s; }}
+            .btn-capa.activo {{ opacity: 1; border-color: white; }}
         </style>
     </head>
     <body>
@@ -369,17 +371,10 @@ def generar_html(historial_data, ahora, datos_agro=None):
                         <option value="wind">Rachas de Viento (km/h)</option>
                     </select>
                 </div>
-                <div id="controles-agro" style="display:none; gap:15px; align-items:center; flex-wrap:wrap;">
-                    <select id="param-agro-select" onchange="actualizarMapaAgro()">
-                        <option value="mildiu">Riesgo Mildiu (Goidanich)</option>
-                        <option value="oidio">Riesgo Oídio (DSV)</option>
-                        <option value="dsv_temporada">DSV Temporada</option>
-                        <option value="dsv_7d">DSV Últimos 7 días</option>
-                    </select>
-                    <div style="font-size:0.75rem; color:#bdc3c7; line-height:1.3;">
-                        Marcadores: <strong style="color:white;">Mil · Oid</strong><br>
-                        B=Bajo · M=Medio · A=Alto
-                    </div>
+                <div id="controles-agro" style="display:none; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <button id="btn-capa-mildiu" class="btn-capa activo" onclick="toggleCapa('mildiu')" style="background:#1565c0;">● Mildiu</button>
+                    <button id="btn-capa-oidio"  class="btn-capa activo" onclick="toggleCapa('oidio')"  style="background:#e65100;">■ Oídio</button>
+                    <span style="font-size:0.7rem;color:#bdc3c7;line-height:1.4;">B=Bajo&nbsp; M=Moderado&nbsp; A=Alto</span>
                 </div>
             </div>
         </header>
@@ -412,6 +407,10 @@ def generar_html(historial_data, ahora, datos_agro=None):
             var currentTimestampIndex = historyData.length - 1;
             var modoActivo = 'meteo';
             window.globalHeatmapOpacity = 0.35;
+            var capaMildiuActiva = true;
+            var capaOidioActiva  = true;
+            var capaMildiuGroup  = L.layerGroup();
+            var capaOidioGroup   = L.layerGroup();
 
             var mapaClaro = L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; CARTO' }});
             var terreno = L.tileLayer('http://{{s}}.google.com/vt/lyrs=p&x={{x}}&y={{y}}&z={{z}}', {{
@@ -594,57 +593,37 @@ def generar_html(historial_data, ahora, datos_agro=None):
             }};
             legend.addTo(map);
 
-            var legendAgro = L.control({{position: 'bottomleft'}});
-            legendAgro.onAdd = function(map) {{
+            var legendMildiu = L.control({{position: 'bottomleft'}});
+            legendMildiu.onAdd = function(map) {{
                 this._div = L.DomUtil.create('div', 'legend');
                 this._div.style.display = 'none';
+                this._div.innerHTML = `
+                    <div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;color:#1565c0;">● Mildiu</div>
+                    <div style="font-size:0.65rem;color:#555;margin-bottom:6px;line-height:1.4;">
+                        Goidanich · 14 días<br>T 11–30°C<br>+ lluvia ≥2mm o HR≥85% ≥2h
+                    </div>
+                    <div><i style="background:#0d47a1"></i> Alto (&ge;15 pts)</div>
+                    <div><i style="background:#1976d2"></i> Moderado (5–14)</div>
+                    <div><i style="background:#64b5f6"></i> Bajo (&lt;5 pts)</div>`;
                 return this._div;
             }};
-            legendAgro.update = function(param) {{
-                var html = '';
-                if (param === 'mildiu') {{
-                    html = `<div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;">Mildiu</div>
-                        <div style="font-size:0.65rem;color:#555;margin-bottom:6px;line-height:1.3;">
-                            Goidanich · 14 días<br>
-                            T: 11–30°C<br>
-                            + lluvia ≥ 2mm<br>
-                            o HR≥85% ≥ 2h
-                        </div>
-                        <div><i style="background:#d32f2f"></i> Alto (&ge;15 pts)</div>
-                        <div><i style="background:#f57c00"></i> Moderado (5–14)</div>
-                        <div><i style="background:#388e3c"></i> Bajo (&lt;5 pts)</div>`;
-                }} else if (param === 'oidio') {{
-                    html = `<div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;">Oídio</div>
-                        <div style="font-size:0.65rem;color:#555;margin-bottom:6px;line-height:1.3;">
-                            DSV Gubler-Thomas<br>
-                            T: 15–40°C<br>
-                            + HR≥85% acumuladas
-                        </div>
-                        <div><i style="background:#d32f2f"></i> Alto (3)</div>
-                        <div><i style="background:#f57c00"></i> Moderado (2)</div>
-                        <div><i style="background:#388e3c"></i> Bajo (1)</div>`;
-                }} else if (param === 'dsv_temporada') {{
-                    html = `<div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;">DSV</div>
-                        <div style="font-size:0.65rem;color:#555;margin-bottom:6px;">Temporada (desde 1-Mar)</div>
-                        <div><i style="background:#b71c1c"></i> &gt; 100</div>
-                        <div><i style="background:#e53935"></i> 60–100</div>
-                        <div><i style="background:#fb8c00"></i> 40–60</div>
-                        <div><i style="background:#fdd835"></i> 20–40</div>
-                        <div><i style="background:#66bb6a"></i> 5–20</div>
-                        <div><i style="background:#c8e6c9"></i> &lt; 5</div>`;
-                }} else if (param === 'dsv_7d') {{
-                    html = `<div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;">DSV</div>
-                        <div style="font-size:0.65rem;color:#555;margin-bottom:6px;">Últimos 7 días</div>
-                        <div><i style="background:#b71c1c"></i> &gt; 30</div>
-                        <div><i style="background:#e53935"></i> 20–30</div>
-                        <div><i style="background:#fb8c00"></i> 10–20</div>
-                        <div><i style="background:#fdd835"></i> 5–10</div>
-                        <div><i style="background:#66bb6a"></i> 1–5</div>
-                        <div><i style="background:#c8e6c9"></i> 0</div>`;
-                }}
-                this._div.innerHTML = html;
+            legendMildiu.addTo(map);
+
+            var legendOidio = L.control({{position: 'bottomright'}});
+            legendOidio.onAdd = function(map) {{
+                this._div = L.DomUtil.create('div', 'legend');
+                this._div.style.display = 'none';
+                this._div.innerHTML = `
+                    <div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;color:#e65100;">■ Oídio</div>
+                    <div style="font-size:0.65rem;color:#555;margin-bottom:6px;line-height:1.4;">
+                        DSV Gubler-Thomas<br>T 15–40°C<br>+ HR≥85% acumuladas
+                    </div>
+                    <div><i style="background:#b71c1c"></i> Alto (3)</div>
+                    <div><i style="background:#e65100"></i> Moderado (2)</div>
+                    <div><i style="background:#ffa000"></i> Bajo (1)</div>`;
+                return this._div;
             }};
-            legendAgro.addTo(map);
+            legendOidio.addTo(map);
 
             function formatTimeLabel(isoString) {{
                 var d = new Date(isoString);
@@ -827,129 +806,99 @@ def generar_html(historial_data, ahora, datos_agro=None):
                 }}
             }}
 
-            function getColorRiesgo(val, param) {{
-                if (param === 'mildiu' || param === 'oidio') {{
-                    if (val >= 3) return '#d32f2f';
-                    if (val >= 2) return '#f57c00';
-                    if (val >= 1) return '#388e3c';
-                    return '#9e9e9e';
-                }} else if (param === 'dsv_temporada') {{
-                    if (val >= 100) return '#b71c1c';
-                    if (val >= 60)  return '#e53935';
-                    if (val >= 40)  return '#fb8c00';
-                    if (val >= 20)  return '#fdd835';
-                    if (val >= 5)   return '#66bb6a';
-                    return '#c8e6c9';
-                }} else if (param === 'dsv_7d') {{
-                    if (val >= 30) return '#b71c1c';
-                    if (val >= 20) return '#e53935';
-                    if (val >= 10) return '#fb8c00';
-                    if (val >= 5)  return '#fdd835';
-                    if (val >= 1)  return '#66bb6a';
-                    return '#c8e6c9';
-                }}
-                return '#9e9e9e';
+            function colorMildiu(nivel) {{
+                if (nivel >= 3) return '#0d47a1';
+                if (nivel >= 2) return '#1976d2';
+                return '#64b5f6';
+            }}
+            function colorOidio(nivel) {{
+                if (nivel >= 3) return '#b71c1c';
+                if (nivel >= 2) return '#e65100';
+                return '#ffa000';
             }}
 
-            function actualizarMapaAgro() {{
-                try {{
-                    var param = document.getElementById('param-agro-select').value;
-                    heatmapLayerGroup.clearLayers();
-                    markersLayer.clearLayers();
+            var NIVEL_TEXTO = {{1:'Bajo', 2:'Moderado', 3:'Alto'}};
+            var NIVEL_LETRA = {{1:'B', 2:'M', 3:'A'}};
 
-                    if (Object.keys(datosAgro).length === 0) return;
-
-                    var esDual = (param === 'mildiu' || param === 'oidio');
-                    var nivelTextoMap = {{1:'Bajo', 2:'Moderado', 3:'Alto'}};
-                    var nivelLetraMap = {{1:'B', 2:'M', 3:'A'}};
-                    var features = [];
-
-                    Object.entries(datosAgro).forEach(function([estId, datos]) {{
-                        if (!datos.lat || !datos.lon) return;
-
-                        var markerHtml, iconSize, iconAnchor, val, bgColor;
-
-                        if (esDual) {{
-                            var nivelMil = datos.mildiu_nivel || 1;
-                            var nivelOid = datos.oidio_nivel || 1;
-                            bgColor = getColorRiesgo(param === 'mildiu' ? nivelMil : nivelOid, param);
-                            val     = param === 'mildiu' ? nivelMil : nivelOid;
-
-                            var lMil = nivelLetraMap[nivelMil] || '?';
-                            var lOid = nivelLetraMap[nivelOid] || '?';
-
-                            markerHtml = `<div style="background:${{bgColor}};color:white;text-shadow:1px 1px 1px rgba(0,0,0,0.7);border:2px solid white;border-radius:5px;width:38px;height:28px;display:flex;flex-direction:column;justify-content:center;align-items:center;font-weight:bold;font-size:9px;box-shadow:0 2px 5px rgba(0,0,0,0.4);line-height:1.35;">
-                                <span>Mil: ${{lMil}}</span>
-                                <span style="border-top:1px solid rgba(255,255,255,0.45);padding-top:1px;width:100%;text-align:center;">Oid: ${{lOid}}</span>
-                            </div>`;
-                            iconSize   = [38, 28];
-                            iconAnchor = [19, 14];
-                        }} else {{
-                            val = param === 'dsv_temporada' ? datos.dsv_temporada : datos.dsv_7d;
-                            if (val === null || val === undefined) return;
-                            bgColor    = getColorRiesgo(val, param);
-                            markerHtml = `<div style="background:${{bgColor}};color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.8);border:1px solid white;border-radius:50%;width:24px;height:24px;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:11px;box-shadow:0 2px 4px rgba(0,0,0,0.4);">${{Math.round(val)}}</div>`;
-                            iconSize   = [24, 24];
-                            iconAnchor = [12, 12];
-                        }}
-
-                        var marker = L.marker([datos.lat, datos.lon], {{
-                            icon: L.divIcon({{className:'station-badge', html:markerHtml, iconSize:iconSize, iconAnchor:iconAnchor}})
-                        }});
-
-                        var nombreEstacion = nombresPersonalizados[estId] || estId;
-                        var colorMil = getColorRiesgo(datos.mildiu_nivel, 'mildiu');
-                        var colorOid = getColorRiesgo(datos.oidio_nivel, 'oidio');
-
-                        var popupHtml = `<div style="min-width:190px;">
-                            <div style="text-align:center;padding-bottom:6px;">
-                                <strong style="font-size:1rem;color:#2c3e50;">${{nombreEstacion}}</strong><br>
-                                <small style="color:#7f8c8d;">${{estId}}</small>
-                            </div>
-                            <table style="width:100%;font-size:0.82rem;border-collapse:collapse;border-top:1px solid #eee;">
-                                <tr style="background:#e8f5e9;">
-                                    <td style="padding:5px 8px;font-weight:bold;">🍇 Mildiu</td>
-                                    <td style="padding:5px 8px;font-weight:bold;color:${{colorMil}};">${{nivelTextoMap[datos.mildiu_nivel] || '-'}}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:3px 8px;font-size:0.72rem;color:#777;">Pts 14d / Días infec.</td>
-                                    <td style="padding:3px 8px;font-size:0.72rem;">${{datos.mildiu_puntos}} / ${{datos.mildiu_dias}}</td>
-                                </tr>
-                                <tr style="background:#f3e5f5;border-top:1px solid #eee;">
-                                    <td style="padding:5px 8px;font-weight:bold;">🌿 Oídio</td>
-                                    <td style="padding:5px 8px;font-weight:bold;color:${{colorOid}};">${{nivelTextoMap[datos.oidio_nivel] || '-'}}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding:3px 8px;font-size:0.72rem;color:#777;">DSV 7d / temporada</td>
-                                    <td style="padding:3px 8px;font-size:0.72rem;">${{datos.dsv_7d}} / ${{datos.dsv_temporada}}</td>
-                                </tr>
-                            </table>
-                        </div>`;
-
-                        marker.bindPopup(popupHtml);
-                        marker.bindTooltip(
-                            `<strong>${{nombreEstacion}}</strong> · Mil: ${{nivelLetraMap[datos.mildiu_nivel]}} · Oid: ${{nivelLetraMap[datos.oidio_nivel]}}`,
-                            {{direction:'top', offset:[0,-10], opacity:0.9}}
-                        );
-                        markersLayer.addLayer(marker);
-                        features.push(turf.point([datos.lon, datos.lat], {{value: val}}));
+            function dibujarCapaMildiu() {{
+                capaMildiuGroup.clearLayers();
+                if (!capaMildiuActiva || Object.keys(datosAgro).length === 0) return;
+                Object.entries(datosAgro).forEach(function([estId, d]) {{
+                    if (!d.lat || !d.lon) return;
+                    var nivel = d.mildiu_nivel || 1;
+                    var color = colorMildiu(nivel);
+                    var letra = NIVEL_LETRA[nivel] || '?';
+                    var markerHtml = `<div style="background:${{color}};color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.7);border:2px solid white;border-radius:50%;width:24px;height:24px;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:11px;box-shadow:0 2px 5px rgba(0,0,0,0.5);">${{letra}}</div>`;
+                    var marker = L.marker([d.lat, d.lon], {{
+                        icon: L.divIcon({{className:'station-badge', html:markerHtml, iconSize:[24,24], iconAnchor:[12,12]}})
                     }});
+                    var nombre = nombresPersonalizados[estId] || estId;
+                    marker.bindPopup(`<div style="min-width:165px;">
+                        <div style="text-align:center;padding-bottom:5px;">
+                            <strong style="font-size:1rem;color:#1565c0;">● Mildiu</strong><br>
+                            <strong style="color:#2c3e50;">${{nombre}}</strong>
+                            <div style="font-size:0.75rem;color:#999;">${{estId}}</div>
+                        </div>
+                        <div style="background:#e3f2fd;border-radius:4px;padding:8px;text-align:center;">
+                            <div style="font-size:1.4rem;font-weight:bold;color:${{color}};">${{NIVEL_TEXTO[nivel]}}</div>
+                        </div>
+                        <div style="font-size:0.78rem;color:#555;margin-top:7px;line-height:1.6;">
+                            Modelo: Goidanich (14 días)<br>
+                            Puntos acumulados: <strong>${{d.mildiu_puntos}}</strong><br>
+                            Días con condición de infección: <strong>${{d.mildiu_dias}}</strong><br>
+                            <span style="color:#888;font-size:0.72rem;">T 11–30°C + lluvia≥2mm o HR≥85%≥2h</span>
+                        </div>
+                    </div>`);
+                    marker.bindTooltip(`<strong>${{nombre}}</strong><br>Mildiu: ${{NIVEL_TEXTO[nivel]}}`, {{direction:'top', offset:[0,-12], opacity:0.95}});
+                    capaMildiuGroup.addLayer(marker);
+                }});
+            }}
 
-                    if (!esDual && features.length > 2) {{
-                        var collection = turf.featureCollection(features);
-                        var grid = turf.interpolate(collection, 2.5, {{gridType:'square', property:'value', units:'kilometers', weight:2}});
-                        var finalGrid = turf.featureCollection(grid.features.filter(f => f.properties.value !== null && !isNaN(f.properties.value)));
-                        heatmapLayer = L.geoJSON(finalGrid, {{
-                            pane: 'heatmapPane',
-                            style: function(feature) {{
-                                return {{fillColor: getColorRiesgo(feature.properties.value, param), fillOpacity: window.globalHeatmapOpacity, stroke: false}};
-                            }}
-                        }});
-                        heatmapLayerGroup.addLayer(heatmapLayer);
-                    }}
-                    legendAgro.update(param);
-                }} catch(e) {{
-                    console.error("Error en mapa agrometeorológico:", e);
+            function dibujarCapaOidio() {{
+                capaOidioGroup.clearLayers();
+                if (!capaOidioActiva || Object.keys(datosAgro).length === 0) return;
+                Object.entries(datosAgro).forEach(function([estId, d]) {{
+                    if (!d.lat || !d.lon) return;
+                    var nivel = d.oidio_nivel || 1;
+                    var color = colorOidio(nivel);
+                    var letra = NIVEL_LETRA[nivel] || '?';
+                    var markerHtml = `<div style="background:${{color}};color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.7);border:2px solid white;border-radius:3px;width:22px;height:22px;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:11px;box-shadow:0 2px 5px rgba(0,0,0,0.5);">${{letra}}</div>`;
+                    var marker = L.marker([d.lat, d.lon], {{
+                        icon: L.divIcon({{className:'station-badge', html:markerHtml, iconSize:[22,22], iconAnchor:[11,11]}})
+                    }});
+                    var nombre = nombresPersonalizados[estId] || estId;
+                    marker.bindPopup(`<div style="min-width:165px;">
+                        <div style="text-align:center;padding-bottom:5px;">
+                            <strong style="font-size:1rem;color:#e65100;">■ Oídio</strong><br>
+                            <strong style="color:#2c3e50;">${{nombre}}</strong>
+                            <div style="font-size:0.75rem;color:#999;">${{estId}}</div>
+                        </div>
+                        <div style="background:#fff3e0;border-radius:4px;padding:8px;text-align:center;">
+                            <div style="font-size:1.4rem;font-weight:bold;color:${{color}};">${{NIVEL_TEXTO[nivel]}}</div>
+                        </div>
+                        <div style="font-size:0.78rem;color:#555;margin-top:7px;line-height:1.6;">
+                            Modelo: DSV Gubler-Thomas<br>
+                            DSV últimos 7 días: <strong>${{d.dsv_7d}}</strong><br>
+                            DSV temporada (desde 1-Mar): <strong>${{d.dsv_temporada}}</strong><br>
+                            <span style="color:#888;font-size:0.72rem;">T 15–40°C + HR≥85% acumuladas</span>
+                        </div>
+                    </div>`);
+                    marker.bindTooltip(`<strong>${{nombre}}</strong><br>Oídio: ${{NIVEL_TEXTO[nivel]}}`, {{direction:'top', offset:[0,-12], opacity:0.95}});
+                    capaOidioGroup.addLayer(marker);
+                }});
+            }}
+
+            function toggleCapa(enfermedad) {{
+                if (enfermedad === 'mildiu') {{
+                    capaMildiuActiva = !capaMildiuActiva;
+                    document.getElementById('btn-capa-mildiu').classList.toggle('activo', capaMildiuActiva);
+                    legendMildiu._div.style.display = capaMildiuActiva ? '' : 'none';
+                    dibujarCapaMildiu();
+                }} else {{
+                    capaOidioActiva = !capaOidioActiva;
+                    document.getElementById('btn-capa-oidio').classList.toggle('activo', capaOidioActiva);
+                    legendOidio._div.style.display = capaOidioActiva ? '' : 'none';
+                    dibujarCapaOidio();
                 }}
             }}
 
@@ -959,14 +908,28 @@ def generar_html(historial_data, ahora, datos_agro=None):
                 document.getElementById('tab-agro-btn').classList.toggle('active', modo === 'agro');
                 document.getElementById('controles-meteo').style.display = (modo === 'meteo') ? 'flex' : 'none';
                 document.getElementById('controles-agro').style.display = (modo === 'agro') ? 'flex' : 'none';
-                legend._div.style.display = (modo === 'meteo') ? '' : 'none';
-                legendAgro._div.style.display = (modo === 'agro') ? '' : 'none';
-                heatmapLayerGroup.clearLayers();
-                markersLayer.clearLayers();
+
                 if (modo === 'meteo') {{
+                    capaMildiuGroup.clearLayers();
+                    capaOidioGroup.clearLayers();
+                    if (map.hasLayer(capaMildiuGroup)) map.removeLayer(capaMildiuGroup);
+                    if (map.hasLayer(capaOidioGroup))  map.removeLayer(capaOidioGroup);
+                    legend._div.style.display    = '';
+                    legendMildiu._div.style.display = 'none';
+                    legendOidio._div.style.display  = 'none';
+                    heatmapLayerGroup.clearLayers();
+                    markersLayer.clearLayers();
                     actualizarMapa();
                 }} else {{
-                    actualizarMapaAgro();
+                    heatmapLayerGroup.clearLayers();
+                    markersLayer.clearLayers();
+                    legend._div.style.display    = 'none';
+                    legendMildiu._div.style.display = capaMildiuActiva ? '' : 'none';
+                    legendOidio._div.style.display  = capaOidioActiva  ? '' : 'none';
+                    capaMildiuGroup.addTo(map);
+                    capaOidioGroup.addTo(map);
+                    dibujarCapaMildiu();
+                    dibujarCapaOidio();
                 }}
             }}
 
