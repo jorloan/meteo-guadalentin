@@ -180,120 +180,99 @@ def generar_json(datos_estaciones, ahora):
     print(f"✅ data.json generado con {len(estaciones_json)} estaciones")
 
 
-def calcular_riesgo_agro(historial_agricola, historial_riesgo, historial_dsv, coordenadas):
-    """
-    Calcula riesgo de mildiu (modelo Goidanich, ventana 14 días) y oídio (DSV Gubler-Thomas)
-    por estación. Retorna dict plano {station_id: {lat, lon, mildiu_nivel, mildiu_puntos,
-    mildiu_dias, oidio_nivel, dsv_7d, dsv_temporada}}.
-    """
-    # Niveles de oídio desde historial_riesgo (fecha más reciente)
-    oidio_por_estacion = {}
-    if historial_riesgo:
-        fecha_rec = sorted(historial_riesgo.keys())[-1]
-        for sid, d in historial_riesgo[fecha_rec].items():
-            if d.get('datos_ok'):
-                oidio_por_estacion[sid] = {
-                    'nivel': d.get('oidio', 1),
-                    'dsv_7d': d.get('dsv_7d', 0),
-                    'dsv_temporada': d.get('dsv_temporada', 0)
-                }
-
-    def nivel_oidio_desde_dsv(sid):
-        dsv = historial_dsv.get(sid, {}).get('dsv_acumulado', 0)
-        if dsv >= 60: return 3
-        if dsv >= 20: return 2
-        return 1
-
-    # Datos diarios por estación (últimos 14 días de historial_agricola)
-    fechas_ordenadas = sorted(historial_agricola.keys())[-14:]
-    datos_por_estacion = {}
-    for fecha in fechas_ordenadas:
-        for sid, d in historial_agricola[fecha].items():
-            if sid not in datos_por_estacion:
-                datos_por_estacion[sid] = []
-            datos_por_estacion[sid].append({
-                'tempMax':          d.get('tempMax'),
-                'tempMin':          d.get('tempMin'),
-                'precipTotal':      d.get('precipTotal', 0) or 0,
-                'humedadAltaMinutos': d.get('humedadAltaMinutos', 0) or 0
-            })
-
-    resultado = {}
-    for sid, dias in datos_por_estacion.items():
-        lat, lon = coordenadas.get(sid, (None, None))
-        if not lat or not lon:
+def _goidanich(dias):
+    """Puntuación Goidanich para una lista de días."""
+    puntos = 0
+    dias_inf = 0
+    for dia in dias:
+        tmax, tmin = dia['tempMax'], dia['tempMin']
+        prec  = dia['precipTotal']
+        hum_h = dia['humedadAltaMinutos'] / 60.0
+        if tmax is None or tmin is None:
             continue
+        tmed = (tmax + tmin) / 2.0
+        if tmed < 11 or tmed > 30:
+            continue
+        if prec < 2.0 and hum_h < 2.0:
+            continue
+        dias_inf += 1
+        if 18 <= tmed <= 22:
+            p = 3
+        elif (14 <= tmed < 18) or (22 < tmed <= 25):
+            p = 2
+        else:
+            p = 1
+        if prec >= 10:
+            p += 1
+        puntos += p
+    nivel = 3 if puntos >= 15 else 2 if puntos >= 5 else 1
+    return nivel, puntos, dias_inf
 
-        # ── Modelo Goidanich para Plasmopara viticola (mildiu) ──────────
-        # Día de infección: T 11-30°C + (lluvia ≥ 2mm o HR≥85% ≥ 2h)
-        # Puntuación: óptimo térmico 18-22°C + bonus por lluvia intensa
-        puntos_mildiu = 0
-        dias_infeccion = 0
 
-        for dia in dias:
-            tmax = dia['tempMax']
-            tmin = dia['tempMin']
-            prec = dia['precipTotal']
-            hum_h = dia['humedadAltaMinutos'] / 60.0
+def calcular_historial_agro(historial_agricola, historial_riesgo, historial_dsv, coordenadas):
+    """
+    Calcula mildiu (Goidanich, ventana deslizante 14 días) y oídio (DSV) para cada
+    fecha disponible en historial_agricola.
+    Retorna {YYYY-MM-DD: {station_id: {lat, lon, mildiu_nivel, mildiu_puntos,
+                                       mildiu_dias, oidio_nivel, dsv_7d, dsv_temporada}}}.
+    """
+    fechas_ord = sorted(historial_agricola.keys())
+    resultado  = {}
 
-            if tmax is None or tmin is None:
+    for i, fecha_actual in enumerate(fechas_ord):
+        ventana = fechas_ord[max(0, i - 13): i + 1]   # hasta 14 días
+
+        datos_por_estacion = {}
+        for f in ventana:
+            for sid, d in historial_agricola[f].items():
+                datos_por_estacion.setdefault(sid, []).append({
+                    'tempMax':            d.get('tempMax'),
+                    'tempMin':            d.get('tempMin'),
+                    'precipTotal':        d.get('precipTotal', 0) or 0,
+                    'humedadAltaMinutos': d.get('humedadAltaMinutos', 0) or 0
+                })
+
+        oidio_fecha = historial_riesgo.get(fecha_actual, {})
+        resultado_fecha = {}
+
+        for sid, dias in datos_por_estacion.items():
+            lat, lon = coordenadas.get(sid, (None, None))
+            if not lat or not lon:
                 continue
-            tmed = (tmax + tmin) / 2.0
 
-            if tmed < 11 or tmed > 30:
-                continue
-            if prec < 2.0 and hum_h < 2.0:
-                continue
+            mildiu_nivel, puntos, dias_inf = _goidanich(dias)
 
-            dias_infeccion += 1
-            if 18 <= tmed <= 22:
-                puntos = 3          # óptimo esporulación
-            elif (14 <= tmed < 18) or (22 < tmed <= 25):
-                puntos = 2
+            oidio_d = oidio_fecha.get(sid, {})
+            if oidio_d and oidio_d.get('datos_ok'):
+                oidio_nivel  = oidio_d.get('oidio', 1)
+                dsv_7d       = oidio_d.get('dsv_7d', 0)
+                dsv_temp     = oidio_d.get('dsv_temporada', 0)
             else:
-                puntos = 1
+                dsv_acum    = historial_dsv.get(sid, {}).get('dsv_acumulado', 0)
+                oidio_nivel = 3 if dsv_acum >= 60 else 2 if dsv_acum >= 20 else 1
+                dsv_7d      = 0
+                dsv_temp    = dsv_acum
 
-            if prec >= 10:
-                puntos += 1         # infección primaria desde oosporas
-
-            puntos_mildiu += puntos
-
-        if puntos_mildiu >= 15:
-            mildiu_nivel = 3
-        elif puntos_mildiu >= 5:
-            mildiu_nivel = 2
-        else:
-            mildiu_nivel = 1
-
-        # ── Oídio desde historial_riesgo o fallback DSV ─────────────────
-        if sid in oidio_por_estacion:
-            oidio = oidio_por_estacion[sid]
-        else:
-            oidio = {
-                'nivel':         nivel_oidio_desde_dsv(sid),
-                'dsv_7d':        historial_dsv.get(sid, {}).get('dsv_wu_extra', 0),
-                'dsv_temporada': historial_dsv.get(sid, {}).get('dsv_acumulado', 0)
+            resultado_fecha[sid] = {
+                'lat':           lat,   'lon':          lon,
+                'mildiu_nivel':  mildiu_nivel,
+                'mildiu_puntos': puntos, 'mildiu_dias': dias_inf,
+                'oidio_nivel':   oidio_nivel,
+                'dsv_7d':        dsv_7d, 'dsv_temporada': dsv_temp
             }
 
-        resultado[sid] = {
-            'lat':            lat,
-            'lon':            lon,
-            'mildiu_nivel':   mildiu_nivel,
-            'mildiu_puntos':  puntos_mildiu,
-            'mildiu_dias':    dias_infeccion,
-            'oidio_nivel':    oidio['nivel'],
-            'dsv_7d':         oidio['dsv_7d'],
-            'dsv_temporada':  oidio['dsv_temporada']
-        }
+        if resultado_fecha:
+            resultado[fecha_actual] = resultado_fecha
 
-    print(f"✅ Riesgo agro calculado: {len(resultado)} estaciones "
-          f"(mildiu Goidanich · oídio DSV Gubler-Thomas)")
+    n_est = round(sum(len(v) for v in resultado.values()) / len(resultado)) if resultado else 0
+    print(f"✅ Historial agro: {len(resultado)} fechas · ~{n_est} estaciones/día "
+          f"(Goidanich mildiu · DSV oídio)")
     return resultado
 
 
-def generar_html(historial_data, ahora, datos_agro=None):
-    if datos_agro is None:
-        datos_agro = {}
+def generar_html(historial_data, ahora, historial_agro=None):
+    if historial_agro is None:
+        historial_agro = {}
     fecha_actualizada = ahora.strftime("%d/%m/%Y %H:%M:%S")
 
     html_content = f"""
@@ -339,6 +318,9 @@ def generar_html(historial_data, ahora, datos_agro=None):
             .tab-btn:hover:not(.active) {{ background: rgba(255,255,255,0.25); }}
             .btn-capa {{ border-radius: 6px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); color: white; opacity: 0.45; transition: opacity 0.2s, border-color 0.2s; }}
             .btn-capa.activo {{ opacity: 1; border-color: white; }}
+            .btn-filtro-agro {{ background: rgba(255,255,255,0.12); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 0.78rem; font-weight: bold; transition: background 0.2s; }}
+            .btn-filtro-agro.activo {{ background: rgba(255,255,255,0.85); color: #1a252f; border-color: white; }}
+            .btn-filtro-agro:hover:not(.activo) {{ background: rgba(255,255,255,0.25); }}
         </style>
     </head>
     <body>
@@ -374,7 +356,20 @@ def generar_html(historial_data, ahora, datos_agro=None):
                 <div id="controles-agro" style="display:none; gap:10px; align-items:center; flex-wrap:wrap;">
                     <button id="btn-capa-mildiu" class="btn-capa activo" onclick="toggleCapa('mildiu')" style="background:#1565c0;">● Mildiu</button>
                     <button id="btn-capa-oidio"  class="btn-capa activo" onclick="toggleCapa('oidio')"  style="background:#e65100;">■ Oídio</button>
-                    <span style="font-size:0.7rem;color:#bdc3c7;line-height:1.4;">B=Bajo&nbsp; M=Moderado&nbsp; A=Alto</span>
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                        <span style="font-size:0.72rem;color:#ecf0f1;font-weight:bold;">Máquina del Tiempo</span>
+                        <div style="display:flex; gap:4px;">
+                            <button id="filtro-7d"   class="btn-filtro-agro activo" onclick="setFiltroAgro(7)">7d</button>
+                            <button id="filtro-15d"  class="btn-filtro-agro"        onclick="setFiltroAgro(15)">15d</button>
+                            <button id="filtro-todo" class="btn-filtro-agro"        onclick="setFiltroAgro(0)">Todo</button>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button id="agro-play-btn" style="background:transparent;color:white;border:none;cursor:pointer;font-size:1.1rem;padding:0 5px;" onclick="toggleAgroPlay()" title="Reproducir">▶️</button>
+                            <input type="range" id="agro-time-slider" min="0" max="0" value="0" style="width:100px;cursor:pointer;">
+                            <span id="agro-date-label" style="font-size:0.78rem;color:#ecf0f1;min-width:90px;"></span>
+                        </div>
+                    </div>
+                    <span style="font-size:0.7rem;color:#bdc3c7;line-height:1.4;">B=Bajo&nbsp; M=Mod&nbsp; A=Alto</span>
                 </div>
             </div>
         </header>
@@ -403,14 +398,20 @@ def generar_html(historial_data, ahora, datos_agro=None):
             }};
 
             var historyData = {json.dumps(historial_data)};
-            var datosAgro = {json.dumps(datos_agro)};
+            var historialAgro = {json.dumps(historial_agro)};
             var currentTimestampIndex = historyData.length - 1;
             var modoActivo = 'meteo';
             window.globalHeatmapOpacity = 0.35;
             var capaMildiuActiva = true;
             var capaOidioActiva  = true;
-            var capaMildiuGroup  = L.layerGroup();
-            var capaOidioGroup   = L.layerGroup();
+            var capaMildiuGroup     = L.layerGroup();
+            var capaOidioGroup      = L.layerGroup();
+            var heatmapMildiuGroup  = L.layerGroup();
+            var heatmapOidioGroup   = L.layerGroup();
+            var historialAgroFechas = [];
+            var filtroAgroDias      = 7;
+            var agroSliderIndex     = 0;
+            var agroPlayInterval    = null;
 
             var mapaClaro = L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; CARTO' }});
             var terreno = L.tileLayer('http://{{s}}.google.com/vt/lyrs=p&x={{x}}&y={{y}}&z={{z}}', {{
@@ -439,8 +440,14 @@ def generar_html(historial_data, ahora, datos_agro=None):
             }});
 
             map.createPane('heatmapPane');
-            map.getPane('heatmapPane').style.zIndex = 390; 
+            map.getPane('heatmapPane').style.zIndex = 390;
             map.getPane('heatmapPane').style.filter = 'blur(15px)';
+            map.createPane('heatmapMildiuPane');
+            map.getPane('heatmapMildiuPane').style.zIndex = 387;
+            map.getPane('heatmapMildiuPane').style.filter = 'blur(18px)';
+            map.createPane('heatmapOidioPane');
+            map.getPane('heatmapOidioPane').style.zIndex = 388;
+            map.getPane('heatmapOidioPane').style.filter = 'blur(18px)';
 
             var baseMaps = {{
                 "Relieve": terreno,
@@ -686,6 +693,11 @@ def generar_html(historial_data, ahora, datos_agro=None):
                 }}
             }});
 
+            document.getElementById('agro-time-slider').addEventListener('input', function(e) {{
+                agroSliderIndex = parseInt(e.target.value);
+                actualizarCapasAgro();
+            }});
+
             function actualizarMapa() {{
                 try {{
                     var param = document.getElementById('param-select').value;
@@ -806,6 +818,76 @@ def generar_html(historial_data, ahora, datos_agro=None):
                 }}
             }}
 
+            function formatFechaAgro(dateStr) {{
+                var p = dateStr.split('-');
+                return p[2] + '/' + p[1] + '/' + p[0];
+            }}
+
+            function getAgroFechasFiltradas() {{
+                var todas = Object.keys(historialAgro).sort();
+                if (filtroAgroDias === 0) return todas;
+                return todas.slice(-filtroAgroDias);
+            }}
+
+            function setFiltroAgro(dias) {{
+                filtroAgroDias = dias;
+                ['filtro-7d','filtro-15d','filtro-todo'].forEach(function(id) {{
+                    document.getElementById(id).classList.remove('activo');
+                }});
+                var idActivo = dias === 7 ? 'filtro-7d' : dias === 15 ? 'filtro-15d' : 'filtro-todo';
+                document.getElementById(idActivo).classList.add('activo');
+                inicializarAgroSlider();
+            }}
+
+            function inicializarAgroSlider() {{
+                historialAgroFechas = getAgroFechasFiltradas();
+                var slider = document.getElementById('agro-time-slider');
+                var maxIdx = Math.max(0, historialAgroFechas.length - 1);
+                slider.min = 0;
+                slider.max = maxIdx;
+                slider.value = maxIdx;
+                agroSliderIndex = maxIdx;
+                actualizarCapasAgro();
+            }}
+
+            function actualizarCapasAgro() {{
+                var fecha = historialAgroFechas[agroSliderIndex] || null;
+                var label = document.getElementById('agro-date-label');
+                if (fecha) {{
+                    var hoy = new Date().toISOString().slice(0,10);
+                    label.innerText = formatFechaAgro(fecha) + (fecha === hoy ? ' (Hoy)' : '');
+                }} else {{
+                    label.innerText = '';
+                }}
+                dibujarCapaMildiu(fecha);
+                dibujarCapaOidio(fecha);
+            }}
+
+            function toggleAgroPlay() {{
+                var btn = document.getElementById('agro-play-btn');
+                var slider = document.getElementById('agro-time-slider');
+                if (agroPlayInterval) {{
+                    clearInterval(agroPlayInterval);
+                    agroPlayInterval = null;
+                    btn.innerText = '▶️';
+                    btn.title = 'Reproducir';
+                }} else {{
+                    btn.innerText = '⏸️';
+                    btn.title = 'Pausar';
+                    if (agroSliderIndex >= historialAgroFechas.length - 1) {{
+                        agroSliderIndex = 0;
+                    }}
+                    agroPlayInterval = setInterval(function() {{
+                        agroSliderIndex++;
+                        if (agroSliderIndex >= historialAgroFechas.length) {{
+                            agroSliderIndex = 0;
+                        }}
+                        slider.value = agroSliderIndex;
+                        actualizarCapasAgro();
+                    }}, 1500);
+                }}
+            }}
+
             function colorMildiu(nivel) {{
                 if (nivel >= 3) return '#0d47a1';
                 if (nivel >= 2) return '#1976d2';
@@ -820,10 +902,14 @@ def generar_html(historial_data, ahora, datos_agro=None):
             var NIVEL_TEXTO = {{1:'Bajo', 2:'Moderado', 3:'Alto'}};
             var NIVEL_LETRA = {{1:'B', 2:'M', 3:'A'}};
 
-            function dibujarCapaMildiu() {{
+            function dibujarCapaMildiu(fecha) {{
                 capaMildiuGroup.clearLayers();
-                if (!capaMildiuActiva || Object.keys(datosAgro).length === 0) return;
-                Object.entries(datosAgro).forEach(function([estId, d]) {{
+                heatmapMildiuGroup.clearLayers();
+                if (!capaMildiuActiva) return;
+                var datosF = fecha ? (historialAgro[fecha] || {{}}) : {{}};
+                if (Object.keys(datosF).length === 0) return;
+                var features = [];
+                Object.entries(datosF).forEach(function([estId, d]) {{
                     if (!d.lat || !d.lon) return;
                     var nivel = d.mildiu_nivel || 1;
                     var color = colorMildiu(nivel);
@@ -851,13 +937,33 @@ def generar_html(historial_data, ahora, datos_agro=None):
                     </div>`);
                     marker.bindTooltip(`<strong>${{nombre}}</strong><br>Mildiu: ${{NIVEL_TEXTO[nivel]}}`, {{direction:'top', offset:[0,-12], opacity:0.95}});
                     capaMildiuGroup.addLayer(marker);
+                    features.push(turf.point([d.lon, d.lat], {{value: nivel}}));
                 }});
+                if (features.length > 2) {{
+                    try {{
+                        var col = turf.featureCollection(features);
+                        var grid = turf.interpolate(col, 3, {{gridType:'square', property:'value', units:'kilometers', weight:2}});
+                        var filtered = turf.featureCollection(grid.features.filter(function(f) {{ return f.properties.value !== null && !isNaN(f.properties.value); }}));
+                        var heatLayer = L.geoJSON(filtered, {{
+                            pane: 'heatmapMildiuPane',
+                            style: function(feature) {{
+                                var v = Math.max(1, Math.min(3, Math.round(feature.properties.value)));
+                                return {{fillColor: colorMildiu(v), fillOpacity: window.globalHeatmapOpacity, stroke: false}};
+                            }}
+                        }});
+                        heatmapMildiuGroup.addLayer(heatLayer);
+                    }} catch(e) {{ console.error('Heatmap mildiu:', e); }}
+                }}
             }}
 
-            function dibujarCapaOidio() {{
+            function dibujarCapaOidio(fecha) {{
                 capaOidioGroup.clearLayers();
-                if (!capaOidioActiva || Object.keys(datosAgro).length === 0) return;
-                Object.entries(datosAgro).forEach(function([estId, d]) {{
+                heatmapOidioGroup.clearLayers();
+                if (!capaOidioActiva) return;
+                var datosF = fecha ? (historialAgro[fecha] || {{}}) : {{}};
+                if (Object.keys(datosF).length === 0) return;
+                var features = [];
+                Object.entries(datosF).forEach(function([estId, d]) {{
                     if (!d.lat || !d.lon) return;
                     var nivel = d.oidio_nivel || 1;
                     var color = colorOidio(nivel);
@@ -885,20 +991,47 @@ def generar_html(historial_data, ahora, datos_agro=None):
                     </div>`);
                     marker.bindTooltip(`<strong>${{nombre}}</strong><br>Oídio: ${{NIVEL_TEXTO[nivel]}}`, {{direction:'top', offset:[0,-12], opacity:0.95}});
                     capaOidioGroup.addLayer(marker);
+                    features.push(turf.point([d.lon, d.lat], {{value: nivel}}));
                 }});
+                if (features.length > 2) {{
+                    try {{
+                        var col = turf.featureCollection(features);
+                        var grid = turf.interpolate(col, 3, {{gridType:'square', property:'value', units:'kilometers', weight:2}});
+                        var filtered = turf.featureCollection(grid.features.filter(function(f) {{ return f.properties.value !== null && !isNaN(f.properties.value); }}));
+                        var heatLayer = L.geoJSON(filtered, {{
+                            pane: 'heatmapOidioPane',
+                            style: function(feature) {{
+                                var v = Math.max(1, Math.min(3, Math.round(feature.properties.value)));
+                                return {{fillColor: colorOidio(v), fillOpacity: window.globalHeatmapOpacity, stroke: false}};
+                            }}
+                        }});
+                        heatmapOidioGroup.addLayer(heatLayer);
+                    }} catch(e) {{ console.error('Heatmap oidio:', e); }}
+                }}
             }}
 
             function toggleCapa(enfermedad) {{
+                var fecha = historialAgroFechas[agroSliderIndex] || null;
                 if (enfermedad === 'mildiu') {{
                     capaMildiuActiva = !capaMildiuActiva;
                     document.getElementById('btn-capa-mildiu').classList.toggle('activo', capaMildiuActiva);
                     legendMildiu._div.style.display = capaMildiuActiva ? '' : 'none';
-                    dibujarCapaMildiu();
+                    if (!capaMildiuActiva) {{
+                        capaMildiuGroup.clearLayers();
+                        heatmapMildiuGroup.clearLayers();
+                    }} else {{
+                        dibujarCapaMildiu(fecha);
+                    }}
                 }} else {{
                     capaOidioActiva = !capaOidioActiva;
                     document.getElementById('btn-capa-oidio').classList.toggle('activo', capaOidioActiva);
                     legendOidio._div.style.display = capaOidioActiva ? '' : 'none';
-                    dibujarCapaOidio();
+                    if (!capaOidioActiva) {{
+                        capaOidioGroup.clearLayers();
+                        heatmapOidioGroup.clearLayers();
+                    }} else {{
+                        dibujarCapaOidio(fecha);
+                    }}
                 }}
             }}
 
@@ -910,11 +1043,16 @@ def generar_html(historial_data, ahora, datos_agro=None):
                 document.getElementById('controles-agro').style.display = (modo === 'agro') ? 'flex' : 'none';
 
                 if (modo === 'meteo') {{
+                    if (agroPlayInterval) {{ clearInterval(agroPlayInterval); agroPlayInterval = null; document.getElementById('agro-play-btn').innerText = '▶️'; }}
                     capaMildiuGroup.clearLayers();
                     capaOidioGroup.clearLayers();
-                    if (map.hasLayer(capaMildiuGroup)) map.removeLayer(capaMildiuGroup);
-                    if (map.hasLayer(capaOidioGroup))  map.removeLayer(capaOidioGroup);
-                    legend._div.style.display    = '';
+                    heatmapMildiuGroup.clearLayers();
+                    heatmapOidioGroup.clearLayers();
+                    if (map.hasLayer(capaMildiuGroup))    map.removeLayer(capaMildiuGroup);
+                    if (map.hasLayer(capaOidioGroup))     map.removeLayer(capaOidioGroup);
+                    if (map.hasLayer(heatmapMildiuGroup)) map.removeLayer(heatmapMildiuGroup);
+                    if (map.hasLayer(heatmapOidioGroup))  map.removeLayer(heatmapOidioGroup);
+                    legend._div.style.display       = '';
                     legendMildiu._div.style.display = 'none';
                     legendOidio._div.style.display  = 'none';
                     heatmapLayerGroup.clearLayers();
@@ -923,13 +1061,14 @@ def generar_html(historial_data, ahora, datos_agro=None):
                 }} else {{
                     heatmapLayerGroup.clearLayers();
                     markersLayer.clearLayers();
-                    legend._div.style.display    = 'none';
+                    legend._div.style.display       = 'none';
                     legendMildiu._div.style.display = capaMildiuActiva ? '' : 'none';
                     legendOidio._div.style.display  = capaOidioActiva  ? '' : 'none';
                     capaMildiuGroup.addTo(map);
                     capaOidioGroup.addTo(map);
-                    dibujarCapaMildiu();
-                    dibujarCapaOidio();
+                    heatmapMildiuGroup.addTo(map);
+                    heatmapOidioGroup.addTo(map);
+                    inicializarAgroSlider();
                 }}
             }}
 
@@ -1005,8 +1144,8 @@ def principal():
                 if sid not in coordenadas and d.get('lat') and d.get('lon'):
                     coordenadas[sid] = (d['lat'], d['lon'])
 
-        datos_agro = calcular_riesgo_agro(historial_agri, historial_riesgo, historial_dsv, coordenadas)
-        ruta_html = generar_html(historial, ahora, datos_agro)
+        historial_agro = calcular_historial_agro(historial_agri, historial_riesgo, historial_dsv, coordenadas)
+        ruta_html = generar_html(historial, ahora, historial_agro)
         print("Mapa, Máquina del Tiempo y Datos Agrícolas generados correctamente.")
     else:
         print("No se han podido cargar datos.")
