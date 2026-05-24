@@ -682,7 +682,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
                         }}
                         slider.value = currentTimestampIndex;
                         slider.dispatchEvent(new Event('input')); 
-                    }}, 1500); // 1.5 segundos por fotograma
+                    }}, 500); // 0.5 segundos por fotograma
                 }}
             }});
 
