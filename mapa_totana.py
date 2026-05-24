@@ -884,7 +884,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
                         }}
                         slider.value = agroSliderIndex;
                         actualizarCapasAgro();
-                    }}, 1500);
+                    }}, 800);
                 }}
             }}
 
