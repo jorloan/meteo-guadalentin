@@ -180,7 +180,9 @@ def generar_json(datos_estaciones, ahora):
     print(f"✅ data.json generado con {len(estaciones_json)} estaciones")
 
 
-def generar_html(historial_data, ahora):
+def generar_html(historial_data, ahora, historial_riesgo=None):
+    if historial_riesgo is None:
+        historial_riesgo = {}
     fecha_actualizada = ahora.strftime("%d/%m/%Y %H:%M:%S")
 
     html_content = f"""
@@ -217,10 +219,13 @@ def generar_html(historial_data, ahora):
             @media (max-width: 600px) {{
                 header {{ padding: 0.8rem 1rem; flex-direction: column; align-items: flex-start; gap: 10px; }}
                 .controls {{ width: 100%; }}
-                .controls select {{ width: 100%; padding: 10px; font-size: 1rem; }}
+                .controls select, #controles-agro select {{ width: 100%; padding: 10px; font-size: 1rem; }}
                 .legend {{ font-size: 0.75rem; padding: 6px 8px; }}
                 .legend i {{ width: 14px; height: 12px; }}
             }}
+            .tab-btn {{ background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: background 0.2s; }}
+            .tab-btn.active {{ background: rgba(255,255,255,0.9); color: #1a252f; }}
+            .tab-btn:hover:not(.active) {{ background: rgba(255,255,255,0.25); }}
         </style>
     </head>
     <body>
@@ -228,26 +233,43 @@ def generar_html(historial_data, ahora):
             <div class="header-left">
                 <h1>Meteo Guadalentín</h1>
                 <div class="subtitle">Actualizado: <span id="time-label">{fecha_actualizada}</span></div>
-
+                <div style="display:flex; gap:6px; margin-top:6px;">
+                    <button class="tab-btn active" id="tab-meteo-btn" onclick="switchTab('meteo')">Meteorológico</button>
+                    <button class="tab-btn" id="tab-agro-btn" onclick="switchTab('agro')">Agrometeorológico</button>
+                </div>
             </div>
             <div class="controls">
-                <div style="display:flex; flex-direction:column; align-items:center;">
-                    <span style="font-size:0.75rem; color:#ecf0f1; font-weight:bold;">Máquina del Tiempo</span>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <button id="play-btn" style="background:transparent; color:white; border:none; border-radius:4px; cursor:pointer; font-size:1.1rem; padding:0 5px;" title="Reproducir Animación">▶️</button>
-                        <input type="range" id="time-slider" min="0" max="0" value="0" style="width: 100px; cursor: pointer;" title="Desliza para ver el historial">
+                <div id="controles-meteo" style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <span style="font-size:0.75rem; color:#ecf0f1; font-weight:bold;">Máquina del Tiempo</span>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button id="play-btn" style="background:transparent; color:white; border:none; border-radius:4px; cursor:pointer; font-size:1.1rem; padding:0 5px;" title="Reproducir Animación">▶️</button>
+                            <input type="range" id="time-slider" min="0" max="0" value="0" style="width: 100px; cursor: pointer;" title="Desliza para ver el historial">
+                        </div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <span style="font-size:0.75rem; color:#ecf0f1; font-weight:bold;">Transparencia</span>
+                        <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="0.35" style="width: 80px; cursor: pointer;">
+                    </div>
+                    <select id="param-select" onchange="actualizarMapa()">
+                        <option value="precip">Precipitación Acumulada (mm)</option>
+                        <option value="temp" selected>Temperatura (°C)</option>
+                        <option value="humidity">Humedad (%)</option>
+                        <option value="wind">Rachas de Viento (km/h)</option>
+                    </select>
+                </div>
+                <div id="controles-agro" style="display:none; gap:15px; align-items:center; flex-wrap:wrap;">
+                    <select id="param-agro-select" onchange="actualizarMapaAgro()">
+                        <option value="mildiu">Riesgo Mildiu</option>
+                        <option value="oidio">Riesgo Oídio</option>
+                        <option value="dsv_temporada">DSV Temporada</option>
+                        <option value="dsv_7d">DSV Últimos 7 días</option>
+                    </select>
+                    <div style="font-size:0.8rem; color:#ecf0f1; text-align:center;">
+                        <div style="font-weight:bold; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.5px;">Datos del día</div>
+                        <span id="agro-fecha-label">-</span>
                     </div>
                 </div>
-                <div style="display:flex; flex-direction:column; align-items:center;">
-                    <span style="font-size:0.75rem; color:#ecf0f1; font-weight:bold;">Transparencia</span>
-                    <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="0.35" style="width: 80px; cursor: pointer;">
-                </div>
-                <select id="param-select" onchange="actualizarMapa()">
-                    <option value="precip">Precipitación Acumulada (mm)</option>
-                    <option value="temp" selected>Temperatura (°C)</option>
-                    <option value="humidity">Humedad (%)</option>
-                    <option value="wind">Rachas de Viento (km/h)</option>
-                </select>
             </div>
         </header>
         
@@ -275,7 +297,9 @@ def generar_html(historial_data, ahora):
             }};
 
             var historyData = {json.dumps(historial_data)};
+            var riesgoData = {json.dumps(historial_riesgo)};
             var currentTimestampIndex = historyData.length - 1;
+            var modoActivo = 'meteo';
             window.globalHeatmapOpacity = 0.35;
 
             var mapaClaro = L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; CARTO' }});
@@ -459,6 +483,41 @@ def generar_html(historial_data, ahora):
             }};
             legend.addTo(map);
 
+            var legendAgro = L.control({{position: 'bottomleft'}});
+            legendAgro.onAdd = function(map) {{
+                this._div = L.DomUtil.create('div', 'legend');
+                this._div.style.display = 'none';
+                return this._div;
+            }};
+            legendAgro.update = function(param) {{
+                var html = '';
+                if (param === 'mildiu' || param === 'oidio') {{
+                    var titulo = param === 'mildiu' ? 'Mildiu' : 'Oídio';
+                    html = `<div style="margin-bottom:6px;font-size:0.85rem;line-height:1.1;">Riesgo ${{titulo}}</div>
+                        <div><i style="background:#d32f2f"></i> Alto (3)</div>
+                        <div><i style="background:#f57c00"></i> Moderado (2)</div>
+                        <div><i style="background:#388e3c"></i> Bajo (1)</div>`;
+                }} else if (param === 'dsv_temporada') {{
+                    html = `<div style="margin-bottom:6px;font-size:0.85rem;line-height:1.1;">DSV<br><span style="font-size:0.7rem;color:#666">Temporada</span></div>
+                        <div><i style="background:#b71c1c"></i> &gt; 100</div>
+                        <div><i style="background:#e53935"></i> 60 - 100</div>
+                        <div><i style="background:#fb8c00"></i> 40 - 60</div>
+                        <div><i style="background:#fdd835"></i> 20 - 40</div>
+                        <div><i style="background:#66bb6a"></i> 5 - 20</div>
+                        <div><i style="background:#c8e6c9"></i> &lt; 5</div>`;
+                }} else if (param === 'dsv_7d') {{
+                    html = `<div style="margin-bottom:6px;font-size:0.85rem;line-height:1.1;">DSV<br><span style="font-size:0.7rem;color:#666">7 días</span></div>
+                        <div><i style="background:#b71c1c"></i> &gt; 30</div>
+                        <div><i style="background:#e53935"></i> 20 - 30</div>
+                        <div><i style="background:#fb8c00"></i> 10 - 20</div>
+                        <div><i style="background:#fdd835"></i> 5 - 10</div>
+                        <div><i style="background:#66bb6a"></i> 1 - 5</div>
+                        <div><i style="background:#c8e6c9"></i> 0</div>`;
+                }}
+                this._div.innerHTML = html;
+            }};
+            legendAgro.addTo(map);
+
             function formatTimeLabel(isoString) {{
                 var d = new Date(isoString);
                 var today = new Date();
@@ -640,6 +699,125 @@ def generar_html(historial_data, ahora):
                 }}
             }}
 
+            function getColorRiesgo(val, param) {{
+                if (param === 'mildiu' || param === 'oidio') {{
+                    if (val >= 3) return '#d32f2f';
+                    if (val >= 2) return '#f57c00';
+                    if (val >= 1) return '#388e3c';
+                    return '#9e9e9e';
+                }} else if (param === 'dsv_temporada') {{
+                    if (val >= 100) return '#b71c1c';
+                    if (val >= 60)  return '#e53935';
+                    if (val >= 40)  return '#fb8c00';
+                    if (val >= 20)  return '#fdd835';
+                    if (val >= 5)   return '#66bb6a';
+                    return '#c8e6c9';
+                }} else if (param === 'dsv_7d') {{
+                    if (val >= 30) return '#b71c1c';
+                    if (val >= 20) return '#e53935';
+                    if (val >= 10) return '#fb8c00';
+                    if (val >= 5)  return '#fdd835';
+                    if (val >= 1)  return '#66bb6a';
+                    return '#c8e6c9';
+                }}
+                return '#9e9e9e';
+            }}
+
+            function actualizarMapaAgro() {{
+                try {{
+                    var param = document.getElementById('param-agro-select').value;
+                    heatmapLayerGroup.clearLayers();
+                    markersLayer.clearLayers();
+
+                    var fechas = Object.keys(riesgoData).sort();
+                    if (fechas.length === 0) {{
+                        document.getElementById('agro-fecha-label').innerText = 'Sin datos';
+                        return;
+                    }}
+                    var fechaReciente = fechas[fechas.length - 1];
+                    var partes = fechaReciente.split('-');
+                    document.getElementById('agro-fecha-label').innerText = partes[2] + '/' + partes[1] + '/' + partes[0];
+
+                    var datosEstaciones = riesgoData[fechaReciente];
+                    var features = [];
+
+                    Object.entries(datosEstaciones).forEach(function([estId, datos]) {{
+                        if (!datos.lat || !datos.lon || !datos.datos_ok) return;
+                        var val = datos[param];
+                        if (val === null || val === undefined) return;
+
+                        var bgColor = getColorRiesgo(val, param);
+                        var textVal;
+                        if (param === 'mildiu' || param === 'oidio') {{
+                            textVal = val === 1 ? 'B' : val === 2 ? 'M' : 'A';
+                        }} else {{
+                            textVal = Math.round(val).toString();
+                        }}
+
+                        var markerHtml = `<div style="background-color:${{bgColor}};color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.8);border:1px solid white;border-radius:50%;width:24px;height:24px;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:11px;box-shadow:0 2px 4px rgba(0,0,0,0.4);">${{textVal}}</div>`;
+
+                        var marker = L.marker([datos.lat, datos.lon], {{
+                            icon: L.divIcon({{className: 'station-badge', html: markerHtml, iconSize: [24, 24], iconAnchor: [12, 12]}})
+                        }});
+
+                        var nombreEstacion = nombresPersonalizados[estId] || estId;
+                        var nivelTexto = (param === 'mildiu' || param === 'oidio') ? (val === 1 ? 'Bajo' : val === 2 ? 'Moderado' : 'Alto') : '';
+                        var paramLabel = {{mildiu:'Riesgo Mildiu', oidio:'Riesgo Oídio', dsv_temporada:'DSV Temporada', dsv_7d:'DSV 7 días'}}[param];
+
+                        var popupHtml = `<div style="text-align:center;min-width:170px;">
+                            <strong style="font-size:1rem;color:#2c3e50;">${{nombreEstacion}}</strong><br>
+                            <small style="color:#7f8c8d;">${{estId}}</small>
+                            <hr style="margin:5px 0;border:0;border-top:1px solid #eee;">
+                            <div style="margin:4px 0;"><strong>${{paramLabel}}:</strong> <span style="color:${{bgColor}};font-weight:bold;">${{val}}${{nivelTexto ? ' (' + nivelTexto + ')' : ''}}</span></div>
+                            <div style="font-size:0.8rem;color:#555;">
+                                Mildiu: ${{datos.mildiu}} · Oídio: ${{datos.oidio}}<br>
+                                DSV temporada: ${{datos.dsv_temporada}} · DSV 7d: ${{datos.dsv_7d}}
+                            </div>
+                        </div>`;
+
+                        marker.bindPopup(popupHtml);
+                        marker.bindTooltip(`<strong>${{nombreEstacion}}</strong>`, {{direction:'top', offset:[0,-10], opacity:0.9}});
+                        markersLayer.addLayer(marker);
+                        features.push(turf.point([datos.lon, datos.lat], {{value: val}}));
+                    }});
+
+                    if (features.length > 2 && (param === 'dsv_temporada' || param === 'dsv_7d')) {{
+                        var collection = turf.featureCollection(features);
+                        var interpolatedGrid = turf.interpolate(collection, 2.5, {{gridType:'square', property:'value', units:'kilometers', weight:2}});
+                        var finalGrid = turf.featureCollection(
+                            interpolatedGrid.features.filter(f => f.properties.value !== null && !isNaN(f.properties.value))
+                        );
+                        heatmapLayer = L.geoJSON(finalGrid, {{
+                            pane: 'heatmapPane',
+                            style: function(feature) {{
+                                return {{fillColor: getColorRiesgo(feature.properties.value, param), fillOpacity: window.globalHeatmapOpacity, stroke: false}};
+                            }}
+                        }});
+                        heatmapLayerGroup.addLayer(heatmapLayer);
+                    }}
+                    legendAgro.update(param);
+                }} catch(e) {{
+                    console.error("Error en mapa agrometeorológico:", e);
+                }}
+            }}
+
+            function switchTab(modo) {{
+                modoActivo = modo;
+                document.getElementById('tab-meteo-btn').classList.toggle('active', modo === 'meteo');
+                document.getElementById('tab-agro-btn').classList.toggle('active', modo === 'agro');
+                document.getElementById('controles-meteo').style.display = (modo === 'meteo') ? 'flex' : 'none';
+                document.getElementById('controles-agro').style.display = (modo === 'agro') ? 'flex' : 'none';
+                legend._div.style.display = (modo === 'meteo') ? '' : 'none';
+                legendAgro._div.style.display = (modo === 'agro') ? '' : 'none';
+                heatmapLayerGroup.clearLayers();
+                markersLayer.clearLayers();
+                if (modo === 'meteo') {{
+                    actualizarMapa();
+                }} else {{
+                    actualizarMapaAgro();
+                }}
+            }}
+
             // Inicializar
             if (historyData.length > 0) {{
                 document.getElementById('time-slider').max = historyData.length - 1;
@@ -678,7 +856,18 @@ def principal():
         historial, ahora = gestionar_historial(datos_completos)
         historial_agri = gestionar_historial_agricola(datos_completos, ahora)
         generar_json(datos_completos, ahora)
-        ruta_html = generar_html(historial, ahora)
+
+        historial_riesgo = {}
+        ruta_riesgo = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'historial_riesgo.json')
+        try:
+            if os.path.exists(ruta_riesgo):
+                with open(ruta_riesgo, 'r', encoding='utf-8') as f:
+                    historial_riesgo = json.load(f)
+                print(f"✅ historial_riesgo.json cargado ({len(historial_riesgo)} fechas).")
+        except Exception as e:
+            print(f"No se pudo cargar historial_riesgo.json: {e}")
+
+        ruta_html = generar_html(historial, ahora, historial_riesgo)
         print("Mapa, Máquina del Tiempo y Datos Agrícolas generados correctamente.")
     else:
         print("No se han podido cargar datos.")
