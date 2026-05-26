@@ -288,25 +288,25 @@ def generar_html(historial_data, ahora, historial_agro=None):
         <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
         
         <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f5f7fa; display: flex; flex-direction: column; height: 100vh; }}
-            header {{ background-color: #1a252f; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex-wrap: wrap; gap: 10px; }}
-            .header-left h1 {{ margin: 0; font-size: 1.5rem; font-weight: 600; }}
-            .subtitle {{ font-size: 0.85rem; color: #bdc3c7; margin-top: 4px; }}
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #0d1117; display: flex; flex-direction: column; height: 100vh; }}
+            header {{ background-color: #161b22; color: #e6edf3; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 1px 0 #30363d; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #30363d; }}
+            .header-left h1 {{ margin: 0; font-size: 1.5rem; font-weight: 600; color: #58a6ff; letter-spacing: 0.5px; }}
+            .subtitle {{ font-size: 0.85rem; color: #8b949e; margin-top: 4px; }}
             .controls {{ display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }}
-            .controls select {{ padding: 8px 15px; border-radius: 6px; border: none; background: #ecf0f1; color: #2c3e50; font-weight: bold; font-size: 1rem; outline: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }}
-            
+            .controls select {{ padding: 8px 15px; border-radius: 6px; border: 1px solid #30363d; background: #21262d; color: #e6edf3; font-weight: bold; font-size: 1rem; outline: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }}
+
             .container {{ display: flex; flex: 1; overflow: hidden; position: relative; }}
             #map {{ flex: 1; height: 100%; }}
-            
-            .legend {{ background: rgba(255,255,255,0.95); padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 0.75rem; font-weight: bold; line-height: 1.4; color: #333; max-height: 50vh; overflow-y: auto; max-width: 110px; }}
-            .legend i {{ width: 14px; height: 12px; float: left; margin-right: 6px; opacity: 0.7; border: 1px solid rgba(0,0,0,0.1); }}
-            
-            .station-label {{ background: transparent; border: none; box-shadow: none; font-size: 11px; font-weight: bold; color: black; text-shadow: 1px 1px 2px white, -1px -1px 2px white; text-align: center; }}
+
+            .legend {{ background: rgba(13,17,23,0.92); padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); font-size: 0.75rem; font-weight: bold; line-height: 1.4; color: #e6edf3; max-height: 50vh; overflow-y: auto; max-width: 110px; border: 1px solid #30363d; }}
+            .legend i {{ width: 14px; height: 12px; float: left; margin-right: 6px; opacity: 0.85; border: 1px solid rgba(255,255,255,0.1); }}
+
+            .station-label {{ background: transparent; border: none; box-shadow: none; font-size: 11px; font-weight: bold; color: #e6edf3; text-shadow: 1px 1px 3px #0d1117, -1px -1px 3px #0d1117; text-align: center; }}
             .grayscale-map {{ filter: grayscale(100%) contrast(1.1) brightness(1.05); }}
-            
-            #loading {{ display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); z-index: 2000; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; color: #2c3e50; flex-direction: column; }}
-            #mapa-tiempo-label {{ position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.45); color: white; font-size: 3rem; font-weight: bold; padding: 10px 28px; border-radius: 14px; z-index: 1000; pointer-events: none; text-align: center; line-height: 1.2; text-shadow: 1px 1px 5px rgba(0,0,0,0.7); display: none; backdrop-filter: blur(2px); }}
-            
+
+            #loading {{ display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(13,17,23,0.8); z-index: 2000; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; color: #58a6ff; flex-direction: column; }}
+            #mapa-tiempo-label {{ position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%); background: rgba(13,17,23,0.72); color: #e6edf3; font-size: 3rem; font-weight: bold; padding: 10px 28px; border-radius: 14px; z-index: 1000; pointer-events: none; text-align: center; line-height: 1.2; text-shadow: 0 2px 8px rgba(0,0,0,0.9); display: none; backdrop-filter: blur(4px); border: 1px solid #30363d; }}
+
             @media (max-width: 600px) {{
                 header {{ padding: 0.8rem 1rem; flex-direction: column; align-items: flex-start; gap: 10px; }}
                 .controls {{ width: 100%; }}
@@ -314,14 +314,14 @@ def generar_html(historial_data, ahora, historial_agro=None):
                 .legend {{ font-size: 0.75rem; padding: 6px 8px; }}
                 .legend i {{ width: 14px; height: 12px; }}
             }}
-            .tab-btn {{ background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: background 0.2s; }}
-            .tab-btn.active {{ background: rgba(255,255,255,0.9); color: #1a252f; }}
-            .tab-btn:hover:not(.active) {{ background: rgba(255,255,255,0.25); }}
-            .btn-capa {{ border-radius: 6px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); color: white; opacity: 0.45; transition: opacity 0.2s, border-color 0.2s; }}
-            .btn-capa.activo {{ opacity: 1; border-color: white; }}
-            .btn-filtro-agro {{ background: rgba(255,255,255,0.12); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 0.78rem; font-weight: bold; transition: background 0.2s; }}
-            .btn-filtro-agro.activo {{ background: rgba(255,255,255,0.85); color: #1a252f; border-color: white; }}
-            .btn-filtro-agro:hover:not(.activo) {{ background: rgba(255,255,255,0.25); }}
+            .tab-btn {{ background: rgba(88,166,255,0.08); color: #8b949e; border: 1px solid #30363d; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: all 0.2s; }}
+            .tab-btn.active {{ background: #58a6ff; color: #0d1117; border-color: #58a6ff; }}
+            .tab-btn:hover:not(.active) {{ background: rgba(88,166,255,0.15); color: #e6edf3; }}
+            .btn-capa {{ border-radius: 6px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: bold; border: 1px solid #30363d; color: #8b949e; opacity: 0.5; transition: opacity 0.2s, border-color 0.2s, color 0.2s; }}
+            .btn-capa.activo {{ opacity: 1; border-color: #58a6ff; color: #e6edf3; }}
+            .btn-filtro-agro {{ background: rgba(88,166,255,0.08); color: #8b949e; border: 1px solid #30363d; border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 0.78rem; font-weight: bold; transition: all 0.2s; }}
+            .btn-filtro-agro.activo {{ background: #58a6ff; color: #0d1117; border-color: #58a6ff; }}
+            .btn-filtro-agro:hover:not(.activo) {{ background: rgba(88,166,255,0.18); color: #e6edf3; }}
         </style>
     </head>
     <body>
@@ -425,6 +425,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
             var agroSliderIndex     = 0;
             var agroPlayInterval    = null;
 
+            var mapaOscuro = L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; CARTO Dark Matter' }});
             var mapaClaro = L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; CARTO' }});
             var terreno = L.tileLayer('http://{{s}}.google.com/vt/lyrs=p&x={{x}}&y={{y}}&z={{z}}', {{
                 maxZoom: 20,
@@ -433,7 +434,6 @@ def generar_html(historial_data, ahora, historial_agro=None):
                 className: 'grayscale-map'
             }});
             var estandar = L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{ attribution: '&copy; OpenStreetMap' }});
-            
             var googleStreets = L.tileLayer('http://{{s}}.google.com/vt/lyrs=m&x={{x}}&y={{y}}&z={{z}}', {{
                 maxZoom: 20,
                 subdomains:['mt0','mt1','mt2','mt3'],
@@ -448,7 +448,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
             var map = L.map('map', {{
                 center: [37.76, -1.53],
                 zoom: 10,
-                layers: [terreno]
+                layers: [mapaOscuro]
             }});
 
             map.createPane('heatmapPane');
@@ -462,6 +462,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
             map.getPane('heatmapOidioPane').style.filter = 'blur(18px)';
 
             var baseMaps = {{
+                "Oscuro": mapaOscuro,
                 "Relieve": terreno,
                 "Mapa Claro": mapaClaro,
                 "Google Maps": googleStreets,
