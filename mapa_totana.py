@@ -378,6 +378,10 @@ def generar_html(historial_data, ahora, historial_agro=None):
         <div class="container">
             <div id="map"></div>
             <div id="mapa-tiempo-label"></div>
+            <div id="info-agro-panel" style="display:none;position:absolute;bottom:90px;left:16px;z-index:1500;background:rgba(13,17,23,0.95);color:#e6edf3;border:1px solid #30363d;border-radius:10px;padding:14px 16px;max-width:260px;font-size:0.8rem;line-height:1.6;box-shadow:0 4px 20px rgba(0,0,0,0.6);backdrop-filter:blur(4px);">
+                <button onclick="toggleInfoAgro(null)" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#8b949e;font-size:1rem;cursor:pointer;">✕</button>
+                <div id="info-agro-contenido"></div>
+            </div>
             <div id="loading">
                 <div>Calculando mapa de calor...</div>
             </div>
@@ -618,32 +622,76 @@ def generar_html(historial_data, ahora, historial_agro=None):
                 this._div = L.DomUtil.create('div', 'legend');
                 this._div.style.display = 'none';
                 this._div.innerHTML = `
-                    <div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;color:#1565c0;">● Mildiu</div>
-                    <div style="font-size:0.65rem;color:#555;margin-bottom:6px;line-height:1.4;">
-                        Goidanich · 14 días<br>T 11–30°C<br>+ lluvia ≥2mm o HR≥85% ≥2h
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                        <span style="font-size:0.85rem;font-weight:bold;color:#58a6ff;">● Mildiu</span>
+                        <span onclick="toggleInfoAgro('mildiu')" title="Ver modelo" style="cursor:pointer;font-size:0.9rem;color:#8b949e;margin-left:8px;">ⓘ</span>
                     </div>
-                    <div><i style="background:#0d47a1"></i> Alto (&ge;15 pts)</div>
-                    <div><i style="background:#1976d2"></i> Moderado (5–14)</div>
-                    <div><i style="background:#64b5f6"></i> Bajo (&lt;5 pts)</div>`;
+                    <div><i style="background:#0d47a1"></i> Alto</div>
+                    <div><i style="background:#1976d2"></i> Moderado</div>
+                    <div><i style="background:#64b5f6"></i> Bajo</div>`;
+                L.DomEvent.disableClickPropagation(this._div);
                 return this._div;
             }};
             legendMildiu.addTo(map);
 
-            var legendOidio = L.control({{position: 'bottomright'}});
+            var legendOidio = L.control({{position: 'bottomleft'}});
             legendOidio.onAdd = function(map) {{
                 this._div = L.DomUtil.create('div', 'legend');
                 this._div.style.display = 'none';
                 this._div.innerHTML = `
-                    <div style="margin-bottom:5px;font-size:0.85rem;font-weight:bold;color:#e65100;">■ Oídio</div>
-                    <div style="font-size:0.65rem;color:#555;margin-bottom:6px;line-height:1.4;">
-                        DSV Gubler-Thomas<br>T 15–40°C<br>+ HR≥85% acumuladas
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                        <span style="font-size:0.85rem;font-weight:bold;color:#e65100;">■ Oídio</span>
+                        <span onclick="toggleInfoAgro('oidio')" title="Ver modelo" style="cursor:pointer;font-size:0.9rem;color:#8b949e;margin-left:8px;">ⓘ</span>
                     </div>
-                    <div><i style="background:#b71c1c"></i> Alto (3)</div>
-                    <div><i style="background:#e65100"></i> Moderado (2)</div>
-                    <div><i style="background:#ffa000"></i> Bajo (1)</div>`;
+                    <div><i style="background:#b71c1c"></i> Alto</div>
+                    <div><i style="background:#e65100"></i> Moderado</div>
+                    <div><i style="background:#ffa000"></i> Bajo</div>`;
+                L.DomEvent.disableClickPropagation(this._div);
                 return this._div;
             }};
             legendOidio.addTo(map);
+
+            var _infoAgroActual = null;
+            var INFO_AGRO = {{
+                mildiu: `<div style="font-weight:bold;color:#58a6ff;margin-bottom:8px;font-size:0.88rem;">● Mildiu — Modelo Goidanich</div>
+                    <b>Condición de infección diaria:</b><br>
+                    T<sub>med</sub> entre 11 °C y 30 °C<br>
+                    + lluvia &ge;2 mm <em>o</em> HR&ge;85% durante &ge;2 h<br><br>
+                    <b>Puntuación diaria:</b><br>
+                    18–22 °C → 3 pts (óptimo)<br>
+                    14–18 °C o 22–25 °C → 2 pts<br>
+                    Resto → 1 pt<br>
+                    Lluvia &ge;10 mm → +1 pt extra<br><br>
+                    <b>Ventana:</b> 14 días deslizantes<br><br>
+                    <b>Niveles:</b><br>
+                    &ge;15 pts → <span style="color:#0d47a1;font-weight:bold;">Alto</span><br>
+                    5–14 pts → <span style="color:#1976d2;font-weight:bold;">Moderado</span><br>
+                    &lt;5 pts &nbsp;→ <span style="color:#64b5f6;font-weight:bold;">Bajo</span>`,
+                oidio: `<div style="font-weight:bold;color:#e65100;margin-bottom:8px;font-size:0.88rem;">■ Oídio — DSV Gubler-Thomas (1982)</div>
+                    <b>Condición:</b> T<sub>med</sub> entre 15 °C y 40 °C<br>
+                    + horas con HR &ge;85%<br>
+                    (precipitación &gt;2,5 mm anula el día)<br><br>
+                    <b>Tabla DSV diario:</b><br>
+                    15–19 °C: 1–4 pts según horas HR<br>
+                    19–22 °C: 2–5 pts<br>
+                    22–26 °C: 3–6 pts (óptimo)<br>
+                    26–40 °C: 2–5 pts<br><br>
+                    <b>Niveles (DSV acumulado 7 días):</b><br>
+                    &ge;20 → <span style="color:#b71c1c;font-weight:bold;">Alto</span><br>
+                    1–19 &nbsp;→ <span style="color:#e65100;font-weight:bold;">Moderado</span><br>
+                    0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ <span style="color:#ffa000;font-weight:bold;">Bajo</span>`
+            }};
+            function toggleInfoAgro(enfermedad) {{
+                var panel = document.getElementById('info-agro-panel');
+                if (!enfermedad || _infoAgroActual === enfermedad) {{
+                    panel.style.display = 'none';
+                    _infoAgroActual = null;
+                }} else {{
+                    document.getElementById('info-agro-contenido').innerHTML = INFO_AGRO[enfermedad];
+                    panel.style.display = '';
+                    _infoAgroActual = enfermedad;
+                }}
+            }}
 
             function actualizarOverlayMeteo(isoString) {{
                 var d = new Date(isoString);
