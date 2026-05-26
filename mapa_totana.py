@@ -305,6 +305,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
             .grayscale-map {{ filter: grayscale(100%) contrast(1.1) brightness(1.05); }}
             
             #loading {{ display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); z-index: 2000; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; color: #2c3e50; flex-direction: column; }}
+            #mapa-tiempo-label {{ position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.45); color: white; font-size: 3rem; font-weight: bold; padding: 10px 28px; border-radius: 14px; z-index: 1000; pointer-events: none; text-align: center; line-height: 1.2; text-shadow: 1px 1px 5px rgba(0,0,0,0.7); display: none; backdrop-filter: blur(2px); }}
             
             @media (max-width: 600px) {{
                 header {{ padding: 0.8rem 1rem; flex-direction: column; align-items: flex-start; gap: 10px; }}
@@ -376,6 +377,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
         
         <div class="container">
             <div id="map"></div>
+            <div id="mapa-tiempo-label"></div>
             <div id="loading">
                 <div>Calculando mapa de calor...</div>
             </div>
@@ -642,6 +644,30 @@ def generar_html(historial_data, ahora, historial_agro=None):
             }};
             legendOidio.addTo(map);
 
+            function actualizarOverlayMeteo(isoString) {{
+                var d = new Date(isoString);
+                var today = new Date();
+                var isToday = (d.getDate() === today.getDate() && d.getMonth() === today.getMonth());
+                var hora = d.toLocaleTimeString('es-ES', {{hour:'2-digit', minute:'2-digit'}});
+                var dia = isToday ? 'Hoy' : 'Ayer ' + d.getDate() + '/' + String(d.getMonth()+1).padStart(2,'0');
+                var el = document.getElementById('mapa-tiempo-label');
+                el.innerHTML = `<div>${{hora}}</div><div style="font-size:1rem;font-weight:normal;opacity:0.85;">${{dia}}</div>`;
+                el.style.display = '';
+            }}
+
+            function actualizarOverlayAgro(fecha) {{
+                var el = document.getElementById('mapa-tiempo-label');
+                if (fecha) {{
+                    var hoy = new Date().toISOString().slice(0,10);
+                    var etiq = fecha === hoy ? 'Hoy' : '';
+                    el.innerHTML = `<div style="font-size:2.2rem;">${{formatFechaAgro(fecha)}}</div>` +
+                                   (etiq ? `<div style="font-size:0.95rem;font-weight:normal;opacity:0.85;">${{etiq}}</div>` : '');
+                    el.style.display = '';
+                }} else {{
+                    el.style.display = 'none';
+                }}
+            }}
+
             function formatTimeLabel(isoString) {{
                 var d = new Date(isoString);
                 var today = new Date();
@@ -656,14 +682,10 @@ def generar_html(historial_data, ahora, historial_agro=None):
 
             document.getElementById('time-slider').addEventListener('input', function(e) {{
                 currentTimestampIndex = parseInt(e.target.value);
-                
                 var isLatest = (currentTimestampIndex === historyData.length - 1);
-                if (isLatest) {{
-                    document.getElementById('time-label').innerText = formatTimeLabel(historyData[currentTimestampIndex].timestamp) + " (Actual)";
-                }} else {{
-                    document.getElementById('time-label').innerText = formatTimeLabel(historyData[currentTimestampIndex].timestamp) + " (Histórico)";
-                }}
-                
+                var ts = historyData[currentTimestampIndex].timestamp;
+                document.getElementById('time-label').innerText = formatTimeLabel(ts) + (isLatest ? " (Actual)" : " (Histórico)");
+                actualizarOverlayMeteo(ts);
                 actualizarMapa();
             }});
 
@@ -869,6 +891,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
                 }} else {{
                     label.innerText = '';
                 }}
+                actualizarOverlayAgro(fecha);
                 dibujarCapaMildiu(fecha);
                 dibujarCapaOidio(fecha);
             }}
@@ -1067,6 +1090,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
                     legendOidio._div.style.display  = 'none';
                     heatmapLayerGroup.clearLayers();
                     markersLayer.clearLayers();
+                    if (historyData.length > 0) actualizarOverlayMeteo(historyData[currentTimestampIndex].timestamp);
                     actualizarMapa();
                 }} else {{
                     heatmapLayerGroup.clearLayers();
@@ -1086,7 +1110,9 @@ def generar_html(historial_data, ahora, historial_agro=None):
             if (historyData.length > 0) {{
                 document.getElementById('time-slider').max = historyData.length - 1;
                 document.getElementById('time-slider').value = historyData.length - 1;
-                document.getElementById('time-label').innerText = formatTimeLabel(historyData[currentTimestampIndex].timestamp) + " (Actual)";
+                var tsInit = historyData[currentTimestampIndex].timestamp;
+                document.getElementById('time-label').innerText = formatTimeLabel(tsInit) + " (Actual)";
+                actualizarOverlayMeteo(tsInit);
                 actualizarMapa();
             }}
 
