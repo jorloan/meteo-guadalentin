@@ -448,7 +448,7 @@ def generar_html(historial_data, ahora, historial_agro=None):
             var map = L.map('map', {{
                 center: [37.76, -1.53],
                 zoom: 10,
-                layers: [mapaOscuro]
+                layers: [terreno]
             }});
 
             map.createPane('heatmapPane');
