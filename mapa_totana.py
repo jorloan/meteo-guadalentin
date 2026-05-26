@@ -397,7 +397,17 @@ def generar_html(historial_data, ahora, historial_agro=None):
                 "ITOTAN17": "La Barquilla"
             }};
 
-            var historyData = {json.dumps(historial_data)};
+            var historyData = (function(raw) {{
+                var porHora = {{}};
+                raw.forEach(function(e) {{
+                    var d = new Date(e.timestamp);
+                    var k = d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()+'-'+d.getHours();
+                    porHora[k] = e;
+                }});
+                return Object.values(porHora).sort(function(a,b) {{
+                    return new Date(a.timestamp)-new Date(b.timestamp);
+                }});
+            }})({json.dumps(historial_data)});
             var historialAgro = {json.dumps(historial_agro)};
             var currentTimestampIndex = historyData.length - 1;
             var modoActivo = 'meteo';
