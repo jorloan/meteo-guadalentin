@@ -1046,27 +1046,20 @@ def generar_html(historial_data, ahora, historial_agro=None):
 
             function toggleCapa(enfermedad) {{
                 var fecha = historialAgroFechas[agroSliderIndex] || null;
-                if (enfermedad === 'mildiu') {{
-                    capaMildiuActiva = !capaMildiuActiva;
-                    document.getElementById('btn-capa-mildiu').classList.toggle('activo', capaMildiuActiva);
-                    legendMildiu._div.style.display = capaMildiuActiva ? '' : 'none';
-                    if (!capaMildiuActiva) {{
-                        capaMildiuGroup.clearLayers();
-                        heatmapMildiuGroup.clearLayers();
-                    }} else {{
-                        dibujarCapaMildiu(fecha);
-                    }}
-                }} else {{
-                    capaOidioActiva = !capaOidioActiva;
-                    document.getElementById('btn-capa-oidio').classList.toggle('activo', capaOidioActiva);
-                    legendOidio._div.style.display = capaOidioActiva ? '' : 'none';
-                    if (!capaOidioActiva) {{
-                        capaOidioGroup.clearLayers();
-                        heatmapOidioGroup.clearLayers();
-                    }} else {{
-                        dibujarCapaOidio(fecha);
-                    }}
-                }}
+                // Solo una capa activa a la vez (radio button)
+                capaMildiuActiva = (enfermedad === 'mildiu');
+                capaOidioActiva  = (enfermedad === 'oidio');
+
+                document.getElementById('btn-capa-mildiu').classList.toggle('activo', capaMildiuActiva);
+                document.getElementById('btn-capa-oidio').classList.toggle('activo',  capaOidioActiva);
+                legendMildiu._div.style.display = capaMildiuActiva ? '' : 'none';
+                legendOidio._div.style.display  = capaOidioActiva  ? '' : 'none';
+
+                capaMildiuGroup.clearLayers();   heatmapMildiuGroup.clearLayers();
+                capaOidioGroup.clearLayers();    heatmapOidioGroup.clearLayers();
+
+                if (capaMildiuActiva) dibujarCapaMildiu(fecha);
+                if (capaOidioActiva)  dibujarCapaOidio(fecha);
             }}
 
             function switchTab(modo) {{
@@ -1096,9 +1089,14 @@ def generar_html(historial_data, ahora, historial_agro=None):
                 }} else {{
                     heatmapLayerGroup.clearLayers();
                     markersLayer.clearLayers();
-                    legend._div.style.display       = 'none';
-                    legendMildiu._div.style.display = capaMildiuActiva ? '' : 'none';
-                    legendOidio._div.style.display  = capaOidioActiva  ? '' : 'none';
+                    legend._div.style.display = 'none';
+                    // Al entrar en agro: mildiu activo por defecto, oidio desactivado
+                    capaMildiuActiva = true;
+                    capaOidioActiva  = false;
+                    document.getElementById('btn-capa-mildiu').classList.add('activo');
+                    document.getElementById('btn-capa-oidio').classList.remove('activo');
+                    legendMildiu._div.style.display = '';
+                    legendOidio._div.style.display  = 'none';
                     capaMildiuGroup.addTo(map);
                     capaOidioGroup.addTo(map);
                     heatmapMildiuGroup.addTo(map);
