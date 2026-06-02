@@ -121,7 +121,7 @@ def gestionar_historial(nuevos_datos_estaciones):
     except ImportError:
         ahora = datetime.now()
         
-    limite = ahora - timedelta(hours=24)
+    limite = ahora - timedelta(hours=6)
     historial_limpio = []
     for h in historial:
         try:
