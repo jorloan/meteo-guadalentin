@@ -282,7 +282,15 @@ def generar_html(historial_data, ahora, historial_agro=None):
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Meteo Guadalentín</title>
-        
+
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-SP9MPQ1FFN"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){{dataLayer.push(arguments);}}
+          gtag('js', new Date());
+          gtag('config', 'G-SP9MPQ1FFN');
+        </script>
+
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
