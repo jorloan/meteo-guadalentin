@@ -2,7 +2,7 @@ name: Actualizar datos meteorológicos
 
 on:
   schedule:
-    - cron: '0 * * * *'   # cada hora, en punto
+    - cron: '*/15 * * * *'   # cada 15 minutos
   workflow_dispatch:         # también se puede lanzar a mano desde GitHub
 
 jobs:
