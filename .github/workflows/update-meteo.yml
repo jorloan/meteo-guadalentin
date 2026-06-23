@@ -1,66 +1,18 @@
 name: Actualizar datos meteorológicos
 
-# GitHub no garantiza ejecutar workflows programados cada 5-15 minutos: en la
-# práctica los retrasa horas en repos públicos. Para conseguir una cadencia
-# real de ~15 minutos, el propio job hace un bucle interno (actualiza, sube
-# cambios, duerme 15 min, repite) durante ~5 horas y se vuelve a lanzar a sí
-# mismo al terminar. El cron solo actúa como respaldo si la cadena se rompe.
-#
-# Cadencia reducida a 15 min (antes 5 min) para minimizar el número de pushes
-# a main, ya que cada push dispara despliegues en cualquier integración
-# externa conectada al repo (p.ej. Netlify) y eso tiene coste.
+# PAUSADO (2026-06-23): se detiene el bucle de actualización porque cada push
+# a main dispara despliegues en una integración externa conectada al repo
+# (Netlify), generando coste. Sin trigger automático (ni cron ni
+# workflow_dispatch en cadena) no hay pushes nuevos, así que no hay nuevos
+# despliegues. Para reactivarlo: restaurar el cron/bucle de este archivo
+# desde el historial de git una vez confirmado que Netlify está desconectado.
 
 on:
-  schedule:
-    - cron: '0 * * * *'   # respaldo cada hora, por si la cadena se rompe
-  workflow_dispatch:
-
-concurrency:
-  group: actualizar-meteo
-  cancel-in-progress: true
+  workflow_dispatch:   # solo manual, sin cron ni auto-relanzado
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 345
-    permissions:
-      contents: write   # necesario para hacer git push
-      actions: write    # necesario para relanzar el workflow al terminar
-
     steps:
-      - name: Clonar repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Bucle de actualización cada 15 minutos (~5 horas)
-        env:
-          WUNDERGROUND_API_KEY: ${{ secrets.WUNDERGROUND_API_KEY }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          FIN=$(( $(date +%s) + 18000 ))   # ~5 horas
-          while [ "$(date +%s)" -lt "$FIN" ]; do
-            python mapa_totana.py || true
-
-            git add data.json history_24h.json historial_agricola.json index.html
-            if ! git diff --staged --quiet; then
-              git commit -m "meteo: actualización automática $(date -u +'%Y-%m-%d %H:%M UTC')"
-              git pull --rebase && git push || echo "⚠ push falló, se reintentará en el próximo ciclo"
-            fi
-
-            sleep 900
-          done
-
-      - name: Relanzar la cadena
-        if: always()
-        run: |
-          curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/update-meteo.yml/dispatches" \
-            -d "{\"ref\":\"${{ github.ref_name }}\"}" || true
+      - name: Workflow pausado
+        run: echo "Workflow pausado manualmente. No se realizan actualizaciones ni pushes."
