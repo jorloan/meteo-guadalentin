@@ -1,6 +1,6 @@
 {
-  "actualizado": "23/06/2026 05:48:39",
-  "timestamp": "2026-06-23T05:48:39.180255+02:00",
+  "actualizado": "23/06/2026 05:53:42",
+  "timestamp": "2026-06-23T05:53:42.480450+02:00",
   "estaciones": [
     {
       "id": "IALEDO7",
@@ -10,16 +10,16 @@
       "temp": 20,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 46,
+      "humedad": 47,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
-      "rachaViento": 2,
+      "rachaViento": 0,
       "presion": 1016.19,
-      "dewPoint": 8,
+      "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALEDO9",
@@ -29,16 +29,16 @@
       "temp": 18,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 57,
+      "humedad": 55,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
       "rachaViento": 0,
       "presion": 1011.18,
-      "dewPoint": 10,
+      "dewPoint": 8,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALHAM13",
@@ -48,16 +48,16 @@
       "temp": 27,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 38,
+      "humedad": 40,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 1,
-      "rachaViento": 1,
+      "viento": 0,
+      "rachaViento": 0,
       "presion": 1010.84,
       "dewPoint": 12,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALHAM23",
@@ -70,13 +70,13 @@
       "humedad": 44,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 3,
-      "rachaViento": 3,
+      "viento": 5,
+      "rachaViento": 5,
       "presion": 1012.87,
       "dewPoint": 12,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALHAM31",
@@ -86,16 +86,16 @@
       "temp": 21,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 55,
+      "humedad": 53,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 7,
-      "rachaViento": 7,
-      "presion": 1012.39,
+      "viento": 9,
+      "rachaViento": 11,
+      "presion": 1012.29,
       "dewPoint": 11,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALHAM36",
@@ -108,13 +108,13 @@
       "humedad": 59,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 0,
+      "viento": 2,
       "rachaViento": 2,
-      "presion": 1010.9,
+      "presion": 1011.21,
       "dewPoint": 12,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALHAM4",
@@ -124,7 +124,7 @@
       "temp": 20,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 53,
+      "humedad": 54,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
@@ -133,7 +133,7 @@
       "dewPoint": 10,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALHAM54",
@@ -143,35 +143,35 @@
       "temp": 25,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 43,
+      "humedad": 42,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 1,
       "rachaViento": 2,
-      "presion": 1013.99,
-      "dewPoint": 11,
+      "presion": 1013.88,
+      "dewPoint": 12,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALHAM81",
       "nombre": "Alhama de Murcia",
       "lat": 37.85,
       "lon": -1.43,
-      "temp": 27,
+      "temp": 26,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 38,
+      "humedad": 39,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
       "rachaViento": 0,
-      "presion": 1024.11,
+      "presion": 1023.91,
       "dewPoint": 11,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALHAM88",
@@ -185,12 +185,12 @@
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
-      "rachaViento": 1,
+      "rachaViento": 0,
       "presion": 1025.4,
       "dewPoint": 11,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALHAM90",
@@ -200,16 +200,16 @@
       "temp": 21,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 56,
+      "humedad": 55,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 2,
-      "rachaViento": 4,
+      "viento": 1,
+      "rachaViento": 2,
       "presion": 1022.01,
       "dewPoint": 12,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA100",
@@ -219,26 +219,26 @@
       "temp": 17,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 51,
+      "humedad": 52,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
       "rachaViento": 0,
-      "presion": 1017.27,
-      "dewPoint": 6,
+      "presion": 1017.61,
+      "dewPoint": 7,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA103",
       "nombre": "Lorca",
       "lat": 37.681107,
       "lon": -1.591535,
-      "temp": 22,
+      "temp": 23,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 42,
+      "humedad": 43,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 8,
@@ -247,7 +247,7 @@
       "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA104",
@@ -260,13 +260,13 @@
       "humedad": 45,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 1,
-      "rachaViento": 2,
-      "presion": 1025.09,
+      "viento": 2,
+      "rachaViento": 4,
+      "presion": 1024.99,
       "dewPoint": 7,
       "uv": 0.0,
       "solar": 0.1,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA108",
@@ -279,13 +279,13 @@
       "humedad": 42,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 12,
-      "rachaViento": 18,
-      "presion": 981.82,
+      "viento": 8,
+      "rachaViento": 17,
+      "presion": 981.71,
       "dewPoint": 8,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA109",
@@ -295,16 +295,16 @@
       "temp": 22,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 42,
+      "humedad": 41,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
-      "rachaViento": 4,
+      "viento": 15,
+      "rachaViento": 16,
       "presion": 1011.85,
-      "dewPoint": 9,
+      "dewPoint": 8,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA115",
@@ -323,7 +323,7 @@
       "dewPoint": 5,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA123",
@@ -333,16 +333,16 @@
       "temp": 21,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 51,
+      "humedad": 50,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 0,
-      "rachaViento": 0,
+      "viento": 2,
+      "rachaViento": 2,
       "presion": 1022.35,
       "dewPoint": 10,
       "uv": 0.0,
       "solar": 0.1,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA124",
@@ -355,32 +355,32 @@
       "humedad": 42,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 14,
-      "rachaViento": 19,
-      "presion": 1011.18,
+      "viento": 11,
+      "rachaViento": 15,
+      "presion": 1010.5,
       "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA15",
       "nombre": "Zarzadilla de Totana",
       "lat": 37.87582,
       "lon": -1.707165,
-      "temp": 22,
+      "temp": 21,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 42,
+      "humedad": 45,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
       "rachaViento": 0,
-      "presion": 1018.02,
+      "presion": 1017.91,
       "dewPoint": 8,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA18",
@@ -399,7 +399,7 @@
       "dewPoint": 8,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA22",
@@ -412,20 +412,20 @@
       "humedad": 44,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
-      "rachaViento": 5,
+      "viento": 5,
+      "rachaViento": 7,
       "presion": 1010.84,
       "dewPoint": 10,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA24",
       "nombre": "Lorca",
       "lat": 37.725495,
       "lon": -1.606179,
-      "temp": 25,
+      "temp": 24,
       "tempMin": null,
       "tempMax": null,
       "humedad": 49,
@@ -437,7 +437,7 @@
       "dewPoint": 13,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA43",
@@ -450,32 +450,32 @@
       "humedad": 58,
       "lluvia": 0.0,
       "lluviaHora": null,
-      "viento": 4,
+      "viento": 3,
       "rachaViento": 4,
       "presion": 1014.56,
       "dewPoint": 7,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA45",
       "nombre": "Coy",
       "lat": 37.949817,
       "lon": -1.811834,
-      "temp": 21,
+      "temp": 22,
       "tempMin": null,
       "tempMax": null,
       "humedad": 41,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 6,
+      "viento": 5,
       "rachaViento": 7,
-      "presion": 1019.54,
-      "dewPoint": 7,
+      "presion": 1019.64,
+      "dewPoint": 8,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA46",
@@ -494,7 +494,7 @@
       "dewPoint": 8,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA49",
@@ -504,16 +504,16 @@
       "temp": 19,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 42,
+      "humedad": 43,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
-      "rachaViento": 5,
-      "presion": 1018.39,
+      "viento": 1,
+      "rachaViento": 2,
+      "presion": 1018.49,
       "dewPoint": 6,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA50",
@@ -528,11 +528,11 @@
       "lluviaHora": null,
       "viento": null,
       "rachaViento": null,
-      "presion": 1012.02,
+      "presion": 1011.72,
       "dewPoint": null,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA55",
@@ -545,13 +545,13 @@
       "humedad": 45,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
+      "viento": 2,
       "rachaViento": 4,
-      "presion": 1013.51,
+      "presion": 1013.72,
       "dewPoint": 10,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA56",
@@ -561,16 +561,16 @@
       "temp": 21,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 48,
+      "humedad": 49,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 12,
+      "viento": 15,
       "rachaViento": 17,
       "presion": 1011.92,
       "dewPoint": 10,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA62",
@@ -583,13 +583,13 @@
       "humedad": 47,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 1,
-      "rachaViento": 2,
-      "presion": 980.94,
-      "dewPoint": 10,
+      "viento": 7,
+      "rachaViento": 9,
+      "presion": 981.04,
+      "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA66",
@@ -602,13 +602,13 @@
       "humedad": 42,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 7,
-      "rachaViento": 9,
-      "presion": 1010.6,
+      "viento": 9,
+      "rachaViento": 13,
+      "presion": 1011.01,
       "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA69",
@@ -621,13 +621,13 @@
       "humedad": 43,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 1,
-      "rachaViento": 2,
+      "viento": 0,
+      "rachaViento": 0,
       "presion": 1012.7,
       "dewPoint": 7,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA77",
@@ -640,13 +640,13 @@
       "humedad": 40,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 12,
-      "rachaViento": 15,
+      "viento": 13,
+      "rachaViento": 13,
       "presion": 1009.82,
       "dewPoint": 8,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA84",
@@ -660,31 +660,31 @@
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 2,
-      "rachaViento": 2,
+      "rachaViento": 4,
       "presion": 1012.8,
       "dewPoint": 7,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA89",
       "nombre": "Lorca",
       "lat": 37.693344,
       "lon": -1.907789,
-      "temp": 19,
+      "temp": 20,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 44,
+      "humedad": 42,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
-      "rachaViento": 4,
-      "presion": 1019.98,
+      "viento": 3,
+      "rachaViento": 3,
+      "presion": 1019.64,
       "dewPoint": 7,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA98",
@@ -694,16 +694,16 @@
       "temp": 22,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 43,
+      "humedad": 42,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 7,
-      "rachaViento": 9,
+      "viento": 14,
+      "rachaViento": 18,
       "presion": 1010.8,
-      "dewPoint": 9,
+      "dewPoint": 8,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILORCA99",
@@ -713,16 +713,16 @@
       "temp": 20,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 42,
+      "humedad": 41,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
-      "rachaViento": 0,
-      "presion": 1013.31,
+      "rachaViento": 2,
+      "presion": 1013.21,
       "dewPoint": 7,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR112",
@@ -735,13 +735,13 @@
       "humedad": 38,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 18,
-      "rachaViento": 21,
+      "viento": 14,
+      "rachaViento": 15,
       "presion": 1012.87,
       "dewPoint": 13,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR114",
@@ -754,13 +754,13 @@
       "humedad": 42,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 2,
+      "viento": 1,
       "rachaViento": 2,
       "presion": 1015.98,
       "dewPoint": 14,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR19",
@@ -773,13 +773,13 @@
       "humedad": 65,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
+      "viento": 3,
       "rachaViento": 4,
       "presion": 1019.64,
       "dewPoint": 13,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR20",
@@ -798,7 +798,7 @@
       "dewPoint": 13,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR60",
@@ -811,13 +811,13 @@
       "humedad": 50,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 15,
-      "rachaViento": 17,
-      "presion": 1012.12,
+      "viento": 11,
+      "rachaViento": 15,
+      "presion": 1011.92,
       "dewPoint": 14,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR64",
@@ -830,13 +830,13 @@
       "humedad": 45,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
-      "rachaViento": 5,
-      "presion": 1018.32,
+      "viento": 6,
+      "rachaViento": 9,
+      "presion": 1018.22,
       "dewPoint": 13,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR7",
@@ -846,7 +846,7 @@
       "temp": 23,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 53,
+      "humedad": 52,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 3,
@@ -855,7 +855,7 @@
       "dewPoint": 13,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR73",
@@ -868,13 +868,13 @@
       "humedad": 50,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 8,
-      "rachaViento": 9,
-      "presion": 1012.43,
-      "dewPoint": 15,
+      "viento": 11,
+      "rachaViento": 13,
+      "presion": 1012.33,
+      "dewPoint": 14,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR87",
@@ -887,13 +887,13 @@
       "humedad": 51,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 2,
-      "rachaViento": 2,
-      "presion": 1009.31,
-      "dewPoint": 15,
+      "viento": 4,
+      "rachaViento": 5,
+      "presion": 1009.52,
+      "dewPoint": 14,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMAZAR97",
@@ -903,16 +903,16 @@
       "temp": 24,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 51,
+      "humedad": 50,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 7,
-      "rachaViento": 7,
-      "presion": 1017.34,
+      "viento": 10,
+      "rachaViento": 13,
+      "presion": 1017.44,
       "dewPoint": 13,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMULA10",
@@ -931,7 +931,7 @@
       "dewPoint": 9,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMULA21",
@@ -944,13 +944,13 @@
       "humedad": 57,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 6,
-      "rachaViento": 6,
+      "viento": 7,
+      "rachaViento": 9,
       "presion": 1019.98,
       "dewPoint": 10,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMULA25",
@@ -969,7 +969,7 @@
       "dewPoint": -39,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMULA34",
@@ -982,13 +982,13 @@
       "humedad": 51,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 2,
+      "viento": 3,
       "rachaViento": 4,
       "presion": 1017.91,
       "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMULA40",
@@ -998,7 +998,7 @@
       "temp": 17,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 56,
+      "humedad": 57,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
@@ -1007,7 +1007,7 @@
       "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMULA41",
@@ -1020,51 +1020,51 @@
       "humedad": 54,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 0,
-      "rachaViento": 0,
-      "presion": 1019.61,
-      "dewPoint": 8,
+      "viento": 2,
+      "rachaViento": 2,
+      "presion": 1019.51,
+      "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMULA49",
       "nombre": "Mula",
       "lat": 38.138751,
       "lon": -1.565616,
-      "temp": 19,
+      "temp": 18,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 51,
+      "humedad": 52,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
       "rachaViento": 0,
-      "presion": 1026.89,
-      "dewPoint": 9,
+      "presion": 1027.19,
+      "dewPoint": 8,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMULACOP3",
       "nombre": "Arroyo Hurtado",
       "lat": 38.095196,
       "lon": -1.674757,
-      "temp": 18,
+      "temp": 17,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 58,
+      "humedad": 60,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 0,
-      "rachaViento": 2,
-      "presion": 1023.91,
+      "viento": 2,
+      "rachaViento": 4,
+      "presion": 1024.01,
       "dewPoint": 10,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN2",
@@ -1083,7 +1083,7 @@
       "dewPoint": 11,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN5",
@@ -1102,26 +1102,26 @@
       "dewPoint": null,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN8",
       "nombre": "Totana",
       "lat": 37.746563,
       "lon": -1.533232,
-      "temp": 23,
+      "temp": 24,
       "tempMin": null,
       "tempMax": null,
       "humedad": 45,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 8,
+      "viento": 9,
       "rachaViento": 9,
       "presion": 1006.77,
       "dewPoint": 11,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN9",
@@ -1131,16 +1131,16 @@
       "temp": 21,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 59,
+      "humedad": 60,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
-      "rachaViento": 4,
+      "viento": 0,
+      "rachaViento": 0,
       "presion": 1017.95,
       "dewPoint": 13,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN10",
@@ -1154,12 +1154,12 @@
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 4,
-      "rachaViento": 4,
-      "presion": 1018.22,
+      "rachaViento": 5,
+      "presion": 1018.12,
       "dewPoint": 13,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN13",
@@ -1172,13 +1172,13 @@
       "humedad": 43,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 2,
+      "viento": 1,
       "rachaViento": 2,
       "presion": 943.31,
       "dewPoint": 6,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN15",
@@ -1197,7 +1197,7 @@
       "dewPoint": null,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN16",
@@ -1210,13 +1210,13 @@
       "humedad": 45,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 0,
+      "viento": 1,
       "rachaViento": 2,
-      "presion": 981.0,
+      "presion": 980.9,
       "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN17",
@@ -1229,13 +1229,13 @@
       "humedad": 52,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 9,
-      "rachaViento": 9,
+      "viento": 0,
+      "rachaViento": 0,
       "presion": 1009.82,
       "dewPoint": 10,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN23",
@@ -1254,7 +1254,7 @@
       "dewPoint": null,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN25",
@@ -1273,7 +1273,7 @@
       "dewPoint": null,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN28",
@@ -1286,13 +1286,13 @@
       "humedad": 43,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 3,
-      "rachaViento": 4,
-      "presion": 1017.41,
+      "viento": 5,
+      "rachaViento": 5,
+      "presion": 1017.31,
       "dewPoint": 7,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN31",
@@ -1302,16 +1302,16 @@
       "temp": 21,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 53,
+      "humedad": 54,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 5,
-      "rachaViento": 6,
+      "viento": 4,
+      "rachaViento": 5,
       "presion": 1028.78,
-      "dewPoint": 11,
+      "dewPoint": 12,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN33",
@@ -1325,12 +1325,12 @@
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 1,
-      "rachaViento": 2,
-      "presion": 1024.69,
+      "rachaViento": 4,
+      "presion": 1024.89,
       "dewPoint": 10,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN41",
@@ -1340,16 +1340,16 @@
       "temp": 21,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 50,
+      "humedad": 51,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 4,
-      "rachaViento": 9,
-      "presion": 991.91,
-      "dewPoint": 10,
+      "rachaViento": 6,
+      "presion": 992.01,
+      "dewPoint": 11,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN42",
@@ -1362,13 +1362,13 @@
       "humedad": 41,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
-      "rachaViento": 4,
-      "presion": 1001.9,
+      "viento": 1,
+      "rachaViento": 2,
+      "presion": 1001.8,
       "dewPoint": 8,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITOTAN43",
@@ -1381,13 +1381,13 @@
       "humedad": 44,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 5,
-      "rachaViento": 8,
+      "viento": 4,
+      "rachaViento": 5,
       "presion": 1021.67,
       "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IGUILA10",
@@ -1400,13 +1400,13 @@
       "humedad": 41,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 3,
-      "rachaViento": 3,
+      "viento": 2,
+      "rachaViento": 2,
       "presion": 1012.87,
-      "dewPoint": 12,
+      "dewPoint": 13,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IPULP6",
@@ -1425,7 +1425,7 @@
       "dewPoint": 12,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IVERA31",
@@ -1435,16 +1435,16 @@
       "temp": 25,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 49,
+      "humedad": 48,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 2,
-      "rachaViento": 7,
-      "presion": 1011.41,
+      "viento": 1,
+      "rachaViento": 2,
+      "presion": 1011.04,
       "dewPoint": 14,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ICARTA267",
@@ -1454,7 +1454,7 @@
       "temp": 20,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 74,
+      "humedad": 75,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
@@ -1463,7 +1463,7 @@
       "dewPoint": 15,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IJUMIL46",
@@ -1473,16 +1473,16 @@
       "temp": 17,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 51,
+      "humedad": 54,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 0,
-      "rachaViento": 0,
+      "viento": 2,
+      "rachaViento": 2,
       "presion": 1018.08,
       "dewPoint": 7,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IJUMILLA5",
@@ -1495,13 +1495,13 @@
       "humedad": 54,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 6,
-      "rachaViento": 8,
+      "viento": 5,
+      "rachaViento": 5,
       "presion": 1015.24,
       "dewPoint": 8,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IYECLA52",
@@ -1511,7 +1511,7 @@
       "temp": 16,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 69,
+      "humedad": 70,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
@@ -1520,26 +1520,26 @@
       "dewPoint": 10,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IABARN30",
       "nombre": "Abarán",
       "lat": 38.217273,
       "lon": -1.374528,
-      "temp": 20,
+      "temp": 19,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 58,
+      "humedad": 59,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
       "rachaViento": 0,
-      "presion": 992.01,
+      "presion": 991.91,
       "dewPoint": 11,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IVILLA1263",
@@ -1549,7 +1549,7 @@
       "temp": 22,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 54,
+      "humedad": 53,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 1,
@@ -1558,7 +1558,7 @@
       "dewPoint": 12,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ISANTO462",
@@ -1568,16 +1568,16 @@
       "temp": 20,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 67,
+      "humedad": 68,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 1,
-      "rachaViento": 1,
+      "viento": 0,
+      "rachaViento": 0,
       "presion": 1017.61,
       "dewPoint": 14,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IMURCI180",
@@ -1592,11 +1592,11 @@
       "lluviaHora": 0.0,
       "viento": 0,
       "rachaViento": 0,
-      "presion": 1006.5,
+      "presion": 1006.4,
       "dewPoint": 12,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ICARTA259",
@@ -1615,7 +1615,7 @@
       "dewPoint": null,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IPILAR71",
@@ -1628,13 +1628,13 @@
       "humedad": 55,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
-      "rachaViento": 6,
+      "viento": 3,
+      "rachaViento": 5,
       "presion": 1016.93,
       "dewPoint": 15,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ITORRE246",
@@ -1649,11 +1649,11 @@
       "lluviaHora": 0.0,
       "viento": null,
       "rachaViento": null,
-      "presion": 1017.2,
+      "presion": 1017.41,
       "dewPoint": null,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IORIHU67",
@@ -1663,16 +1663,16 @@
       "temp": 23,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 61,
+      "humedad": 63,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 3,
-      "rachaViento": 4,
-      "presion": 1015.14,
+      "viento": 4,
+      "rachaViento": 5,
+      "presion": 1015.24,
       "dewPoint": 15,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IELCHE81",
@@ -1682,16 +1682,16 @@
       "temp": 24,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 48,
+      "humedad": 47,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 4,
-      "rachaViento": 6,
+      "viento": 6,
+      "rachaViento": 7,
       "presion": 1024.04,
       "dewPoint": 12,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IALICA113",
@@ -1701,16 +1701,16 @@
       "temp": 26,
       "tempMin": null,
       "tempMax": null,
-      "humedad": 43,
+      "humedad": 44,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
       "viento": 0,
       "rachaViento": 0,
-      "presion": 1016.19,
-      "dewPoint": 12,
+      "presion": 1016.29,
+      "dewPoint": 13,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IBAZA18",
@@ -1726,10 +1726,10 @@
       "viento": 0,
       "rachaViento": 0,
       "presion": 1016.93,
-      "dewPoint": 7,
+      "dewPoint": 6,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "INJAR43",
@@ -1742,32 +1742,32 @@
       "humedad": 33,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 15,
-      "rachaViento": 18,
-      "presion": 1014.02,
+      "viento": 19,
+      "rachaViento": 28,
+      "presion": 1013.82,
       "dewPoint": 11,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "ILOSGA9",
       "nombre": "Los Gallardos",
       "lat": 37.173833,
       "lon": -1.946667,
-      "temp": 26,
+      "temp": 27,
       "tempMin": null,
       "tempMax": null,
       "humedad": 36,
       "lluvia": 0.0,
       "lluviaHora": 0.0,
-      "viento": 2,
-      "rachaViento": 2,
+      "viento": 0,
+      "rachaViento": 0,
       "presion": 1011.72,
       "dewPoint": 10,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IPULP6",
@@ -1786,7 +1786,7 @@
       "dewPoint": 12,
       "uv": null,
       "solar": null,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     },
     {
       "id": "IHURCA14",
@@ -1802,10 +1802,10 @@
       "viento": 2,
       "rachaViento": 2,
       "presion": 1020.01,
-      "dewPoint": 10,
+      "dewPoint": 9,
       "uv": 0.0,
       "solar": 0.0,
-      "actualizado": "23/06/2026 05:48:39"
+      "actualizado": "23/06/2026 05:53:42"
     }
   ]
 }
