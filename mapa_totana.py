@@ -1,1245 +1,1370 @@
-import urllib.request
-import json
-import ssl
-import os
-import webbrowser
+import urllib.request, json, ssl, os, webbrowser, concurrent.futures, subprocess
 from datetime import datetime, timedelta
-import concurrent.futures
 
 ctx = ssl.create_default_context()
 ctx.check_hostname = False
 ctx.verify_mode = ssl.CERT_NONE
 
-API_KEY = os.environ.get('WUNDERGROUND_API_KEY', 'e1f10a1e78da46f5b10a1e78da96f525')
+WU_KEY = "6532d6454b8aa370768e63d6ba5a832e"
 
-ARCHIVO_ESTACIONES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'estaciones.txt')
+# ── Rutas (funciona en Mac y en GitHub Actions) ───────────────
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-if not os.path.exists(ARCHIVO_ESTACIONES):
-    with open(ARCHIVO_ESTACIONES, 'w', encoding='utf-8') as f:
-        f.write("# Añade aquí los IDs de las estaciones, uno por línea.\n")
-        f.write("# Por ejemplo, las de Alhama o Lorca.\n")
-        for est in ["ITOTAN8", "ITOTAN2", "ITOTAN16", "ITOTAN5", "ITOTAN33", "ITOTAN43", "ITOTAN31", "ITOTAN42", "ITOTAN9", "ITOTAN41", "ITOTAN10", "ITOTAN17"]:
-            f.write(f"{est}\n")
+def _repo():
+    c = BASE_DIR
+    for _ in range(4):
+        if os.path.isdir(os.path.join(c, '.git')): return c
+        c = os.path.dirname(c)
+    m = os.path.expanduser("~/Documents/meteo-guadalentin")
+    return m if os.path.isdir(m) else BASE_DIR
 
-ESTACIONES = []
-with open(ARCHIVO_ESTACIONES, 'r', encoding='utf-8') as f:
-    for linea in f:
-        linea_limpia = linea.split('#')[0].strip()
-        if linea_limpia:
-            ESTACIONES.append(linea_limpia)
+REPO_DIR = _repo()
+DIR_PUB  = os.path.join(REPO_DIR, 'public')
+F_H24    = os.path.join(REPO_DIR, 'history_24h.json')
+F_AGRI   = os.path.join(REPO_DIR, 'historial_agricola.json')
+F_DSV    = os.path.join(REPO_DIR, 'historial_dsv.json')
+F_RIESGO = os.path.join(REPO_DIR, 'historial_riesgo.json')
+os.makedirs(DIR_PUB, exist_ok=True)
 
-def obtener_datos_estacion(station_id):
-    url = f"https://api.weather.com/v2/pws/observations/current?stationId={station_id}&format=json&units=m&apiKey={API_KEY}"
+MIN_DIAS = 5   # días mínimos para calcular riesgo
+
+# ── Estaciones WU ─────────────────────────────────────────────
+F_EST = os.path.join(BASE_DIR, 'estaciones.txt')
+if not os.path.exists(F_EST):
+    with open(F_EST, 'w') as f:
+        for e in ["ITOTAN8","ITOTAN2","ITOTAN16","ITOTAN5","ITOTAN33",
+                  "ITOTAN43","ITOTAN31","ITOTAN42","ITOTAN9","ITOTAN41",
+                  "ITOTAN10","ITOTAN17"]:
+            f.write(e+"\n")
+
+ESTACIONES = [l.split('#')[0].strip() for l in open(F_EST) if l.split('#')[0].strip()]
+
+# ── Utilidades ────────────────────────────────────────────────
+def leer(ruta, default):
+    if os.path.exists(ruta):
+        try: return json.load(open(ruta, 'r', encoding='utf-8'))
+        except: pass
+    return default
+
+def guardar(ruta, data):
+    with open(ruta, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def dist(la1, lo1, la2, lo2):
+    return ((la1-la2)**2 + (lo1-lo2)**2)**0.5
+
+# ── WU: observación actual ────────────────────────────────────
+def wu(sid):
+    url = (f"https://api.weather.com/v2/pws/observations/current"
+           f"?stationId={sid}&format=json&units=m&numericPrecision=decimal&apiKey={WU_KEY}")
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, context=ctx, timeout=5) as response:
-            if response.getcode() == 200:
-                data = json.loads(response.read().decode('utf-8'))
-                return data['observations'][0]
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+            'Referer':    'https://www.wunderground.com/'})
+        with urllib.request.urlopen(req, context=ctx, timeout=6) as r:
+            obs = json.loads(r.read().decode('utf-8')).get('observations', [])
+            return obs[0] if obs else None
     except Exception as e:
-        print(f"Error al obtener datos de {station_id}: {e}")
+        print(f"  ⚠ WU {sid}: {e}")
     return None
 
+# ── Historial 24h ─────────────────────────────────────────────
+def hist24(nuevos, ahora):
+    h   = leer(F_H24, [])
+    lim = ahora - timedelta(hours=24)
+    ok  = []
+    for e in h:
+        try:
+            t = datetime.fromisoformat(e['timestamp'])
+            if t.tzinfo is None: t = t.replace(tzinfo=ahora.tzinfo)
+            if t > lim: ok.append(e)
+        except: pass
+    ok.append({'timestamp': ahora.isoformat(), 'stations': nuevos})
+    guardar(F_H24, ok)
+    print(f"  ✅ Historial 24h: {len(ok)} entradas")
+    return ok
 
+# ── Historial agrícola 14 días ────────────────────────────────
+def hist_agri(nuevos, ahora, minutos=15):
+    h   = leer(F_AGRI, {})
+    hoy = ahora.strftime('%Y-%m-%d')
+    if hoy not in h: h[hoy] = {}
 
-def gestionar_historial_agricola(nuevos_datos_estaciones, ahora):
-    url_agricola = "https://jorloan.github.io/meteo-guadalentin/historial_agricola.json"
-    historico_agricola = {}
-    
-    try:
-        req = urllib.request.Request(url_agricola, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, context=ctx, timeout=5) as response:
-            if response.getcode() == 200:
-                historico_agricola = json.loads(response.read().decode('utf-8'))
-                print("✅ Historial agrícola descargado.")
-    except Exception as e:
-        print("No se encontró historial agrícola previo. Se creará uno nuevo.")
-        
-    fecha_hoy = ahora.strftime('%Y-%m-%d')
-    if fecha_hoy not in historico_agricola:
-        historico_agricola[fecha_hoy] = {}
-        
-    for est in nuevos_datos_estaciones:
-        if not est or "stationID" not in est: continue
-        sid = est["stationID"]
-        temp = est.get("metric", {}).get("temp")
-        precip = est.get("metric", {}).get("precipTotal")
-        hum = est.get("humidity")
-        
-        if sid not in historico_agricola[fecha_hoy]:
-            historico_agricola[fecha_hoy][sid] = {
-                "tempMax": temp if temp is not None else -99,
-                "tempMin": temp if temp is not None else 99,
-                "precipTotal": precip if precip is not None else 0.0,
-                "humedadAltaMinutos": 0
-            }
+    for est in nuevos:
+        if not est or 'stationID' not in est: continue
+        sid = est['stationID']
+        t   = est.get('metric', {}).get('temp')
+        p   = est.get('metric', {}).get('precipTotal')
+        hm  = est.get('humidity')
+
+        if sid not in h[hoy]:
+            h[hoy][sid] = {
+                'tempMax':  t if t is not None else -99,
+                'tempMin':  t if t is not None else  99,
+                'precipTotal': p if p is not None else 0.0,
+                'humedadAltaMinutos': 0,
+                'lat': est.get('lat', 0),
+                'lon': est.get('lon', 0)}
         else:
-            datos_dia = historico_agricola[fecha_hoy][sid]
-            if temp is not None:
-                if temp > datos_dia.get("tempMax", -99): datos_dia["tempMax"] = temp
-                if temp < datos_dia.get("tempMin", 99): datos_dia["tempMin"] = temp
-            if precip is not None:
-                if precip > datos_dia.get("precipTotal", 0): datos_dia["precipTotal"] = precip
-                
-        # Si la humedad es >= 85%, sumamos 15 minutos de riesgo por la actualización actual
-        if hum is not None and hum >= 85:
-            historico_agricola[fecha_hoy][sid]["humedadAltaMinutos"] = historico_agricola[fecha_hoy][sid].get("humedadAltaMinutos", 0) + 15
-            
-    # Mantener solo los últimos 14 días (Fase 1 completada)
-    dias_ordenados = sorted(historico_agricola.keys())
-    if len(dias_ordenados) > 14:
-        for d in dias_ordenados[:-14]:
-            del historico_agricola[d]
-            
-    directorio_publico = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(directorio_publico, 'historial_agricola.json'), 'w', encoding='utf-8') as f:
-        json.dump(historico_agricola, f, ensure_ascii=False)
-        
-    return historico_agricola
+            d = h[hoy][sid]
+            if t is not None:
+                if t > d.get('tempMax', -99): d['tempMax'] = t
+                if t < d.get('tempMin',  99): d['tempMin'] = t
+            if p is not None and p > d.get('precipTotal', 0):
+                d['precipTotal'] = p
+        if hm is not None and hm >= 85:
+            h[hoy][sid]['humedadAltaMinutos'] = h[hoy][sid].get('humedadAltaMinutos', 0) + minutos
 
-def gestionar_historial(nuevos_datos_estaciones):
-    url_historico = "https://jorloan.github.io/meteo-guadalentin/history_24h.json"
-    historial = []
-    
+    for d in sorted(h.keys())[:-14]: del h[d]
+    guardar(F_AGRI, h)
+    print(f"  ✅ Historial agrícola: {len(h)} días acumulados")
+    return h
+
+# ── Riesgo Oídio / Mildiu ─────────────────────────────────────
+# Oídio:  Modelo Gubler-Thomas (UC Davis)
+# Mildiu: Regla 10-10-10 + EPI
+# Si faltan datos propios → usa WU de estaciones vecinas dentro del historial
+# ── Tabla DSV diario Gubler-Thomas (UC Davis 1982) ───────────────────────────
+# DSV = Disease Severity Value
+# Filas: rangos Tmed | Columnas: horas de humectación foliar (HR≥85%)
+# Ref: Gubler & Thomas, Plant Disease 66:4 (1982)
+DSV_TABLE = {
+    (15, 19): {(0,6):1,  (7,12):2,  (13,18):3,  (19,24):4},
+    (19, 22): {(0,6):2,  (7,12):3,  (13,18):4,  (19,24):5},
+    (22, 26): {(0,6):3,  (7,12):4,  (13,18):5,  (19,24):6},
+    (26, 40): {(0,6):2,  (7,12):3,  (13,18):4,  (19,24):5},
+}
+
+def dsv_dia(tmed, horas_hum):
+    """Calcula DSV para un día según Gubler-Thomas."""
+    if tmed is None or tmed < 15: return 0
+    for (tmin_r, tmax_r), cols in DSV_TABLE.items():
+        if tmin_r <= tmed < tmax_r:
+            for (h_min, h_max), val in cols.items():
+                if h_min <= horas_hum <= h_max:
+                    return val
+            return list(cols.values())[-1]
+    return 0
+
+def periodo_incubacion_mildiu(tmed):
+    """Días de incubación de Plasmopara viticola según temperatura."""
+    if tmed is None or tmed < 12: return None   # no hay desarrollo
+    if tmed < 15: return 21
+    if tmed < 18: return 15
+    if tmed < 21: return 10
+    if tmed < 25: return 7
+    if tmed < 30: return 6
+    return None  # >30°C inhibe
+
+def calcular_riesgo(hwu, actuales_list):
+    act  = {e['stationID']: e for e in actuales_list if e and 'stationID' in e}
+    dias = sorted(hwu.keys())
+    res  = {}
+
+    # Cargar historial DSV acumulado (temporada)
+    dsv_hist = leer(F_DSV, {})
+    hoy_str  = dias[-1] if dias else ''
+
+    # Mapa de posiciones
+    pos = {}
+    for fecha in dias:
+        for sid, dd in hwu[fecha].items():
+            if sid not in pos and dd.get('lat'):
+                pos[sid] = (dd['lat'], dd['lon'])
+    for sid, est in act.items():
+        if sid not in pos and est.get('lat'):
+            pos[sid] = (est['lat'], est['lon'])
+
+    for sid, est in act.items():
+        ta_inst = est.get('metric', {}).get('temp')
+        ha      = est.get('humidity')
+        la      = est.get('lat', pos.get(sid, (37.77, 0))[0])
+        lo      = est.get('lon', pos.get(sid, (0, -1.5))[1])
+        if ta_inst is None: continue
+
+        # Temperatura media del día actual
+        hoy = sorted(hwu.keys())[-1] if hwu else None
+        tmed_hoy = None
+        if hoy and hwu.get(hoy, {}).get(sid):
+            dd = hwu[hoy][sid]
+            if dd.get('tempMax') is not None and dd.get('tempMin') is not None:
+                tmed_hoy = round((dd['tempMax'] + dd['tempMin']) / 2, 1)
+        ta = tmed_hoy if tmed_hoy is not None else ta_inst
+
+        # 1. Historial WU propio
+        filas = []
+        for f in (dias[-14:] if len(dias) >= 14 else dias):
+            dd = hwu[f].get(sid)
+            if dd:
+                filas.append({
+                    'fecha':   f,
+                    'tmax':    dd.get('tempMax'),
+                    'tmin':    dd.get('tempMin'),
+                    'prec':    dd.get('precipTotal', 0),
+                    'hum_min': dd.get('humedadAltaMinutos', 0),
+                    'src':     'propio'})
+
+        # 2. Vecinos WU si faltan días
+        if len(filas) < MIN_DIAS and la and lo:
+            fechas_ok = {f['fecha'] for f in filas}
+            vecinos   = sorted(
+                [(s, dist(la, lo, p[0], p[1])) for s, p in pos.items() if s != sid],
+                key=lambda x: x[1])
+            for vsid, vd in vecinos[:5]:
+                if vd > 0.5: break
+                for f in (dias[-14:] if len(dias) >= 14 else dias):
+                    if f in fechas_ok: continue
+                    dd = hwu[f].get(vsid)
+                    if dd:
+                        filas.append({
+                            'fecha':   f,
+                            'tmax':    dd.get('tempMax'),
+                            'tmin':    dd.get('tempMin'),
+                            'prec':    dd.get('precipTotal', 0),
+                            'hum_min': dd.get('humedadAltaMinutos', 0),
+                            'src':     f'vecino:{vsid}'})
+                        fechas_ok.add(f)
+                if len(filas) >= MIN_DIAS: break
+
+        filas.sort(key=lambda x: x['fecha'])
+        filas = filas[-14:]
+        nd    = len(filas)
+
+        n_prop = sum(1 for f in filas if f['src'] == 'propio')
+        n_vec  = sum(1 for f in filas if f['src'].startswith('vecino'))
+        partes = []
+        if n_prop: partes.append(f"WU propio {n_prop}d")
+        if n_vec:  partes.append(f"WU vecinos {n_vec}d")
+        flbl = " + ".join(partes) if partes else "Sin datos"
+        ok   = nd >= MIN_DIAS
+
+        # Métricas base
+        p10   = sum(f['prec'] or 0 for f in filas[-10:])
+        tminm = min((f['tmin'] for f in filas if f['tmin'] is not None), default=99)
+        h85   = sum(f.get('hum_min', 0) for f in filas[-7:]) / 60.0
+
+        # ── OÍDIO: Modelo Gubler-Thomas completo con DSV ─────
+        no, do = 0, []
+        dsv_temporada = 0
+        dsv_7d        = 0
+        dsv_hoy_val   = 0
+
+        if not ok:
+            no = -1
+            falt = MIN_DIAS - nd
+            do.append(f"⚠ {nd} días disponibles — faltan {falt} día{'s' if falt>1 else ''} más")
+        else:
+            # Calcular DSV de cada día del historial
+            dsv_dias = []
+            for f in filas:
+                tm = f['tmax']
+                tn = f['tmin']
+                tmed_f = round((tm + tn) / 2, 1) if tm is not None and tn is not None else None
+                horas_f = f.get('hum_min', 0) / 60.0
+                # Inhibición por lluvia: >2.5mm lava esporas → DSV=0 ese día
+                prec_f = f.get('prec', 0) or 0
+                d = 0 if prec_f > 2.5 else dsv_dia(tmed_f, horas_f)
+                dsv_dias.append({'fecha': f['fecha'], 'dsv': d, 'tmed': tmed_f})
+
+            # DSV acumulado en temporada (desde inicio de marzo)
+            dsv_prev = dsv_hist.get(sid, {}).get('dsv_acumulado', 0)
+            # Sumar DSV de días nuevos no contabilizados antes
+            fechas_contadas = set(dsv_hist.get(sid, {}).get('fechas', []))
+            nuevos_dsv = sum(d['dsv'] for d in dsv_dias if d['fecha'] not in fechas_contadas)
+            dsv_temporada = dsv_prev + nuevos_dsv
+
+            # Actualizar historial DSV
+            if sid not in dsv_hist:
+                dsv_hist[sid] = {'dsv_acumulado': 0, 'fechas': []}
+            dsv_hist[sid]['dsv_acumulado'] = dsv_temporada
+            dsv_hist[sid]['fechas'] = list(set(
+                dsv_hist[sid].get('fechas', []) + [d['fecha'] for d in dsv_dias]))
+
+            dsv_7d      = sum(d['dsv'] for d in dsv_dias[-7:])
+            dsv_hoy_val = dsv_dias[-1]['dsv'] if dsv_dias else 0
+
+            # Nivel de riesgo según DSV acumulado (temporada)
+            # Umbrales estándar Gubler-Thomas para viticultura española
+            if dsv_temporada < 20:
+                no = 0
+                do.append(f"DSV temporada={dsv_temporada} (umbral tratamiento: 20)")
+            elif dsv_temporada < 40:
+                no = 1
+                do.append(f"DSV temporada={dsv_temporada} ⚠ Zona de vigilancia (20-40)")
+            elif dsv_temporada < 60:
+                no = 2
+                do.append(f"DSV temporada={dsv_temporada} 🔶 Tratar pronto (40-60)")
+            else:
+                no = 3
+                do.append(f"DSV temporada={dsv_temporada} 🔴 Tratamiento urgente (>60)")
+
+            do.append(f"DSV últimos 7d={dsv_7d} | DSV hoy={dsv_hoy_val}")
+            do.append(f"Tmed hoy={ta:.1f}°C | HR alta={h85:.1f}h (7d)")
+            if dsv_hoy_val == 0 and ta and ta >= 15:
+                do.append("Lluvia >2.5mm lavó esporas hoy")
+
+        # Guardar DSV actualizado
+        guardar(F_DSV, dsv_hist)
+
+        # ── MILDIU: 10-10-10 + período de incubación EPI ────
+        nm, dm = 0, []
+        incubacion_dias = None
+        fecha_sintomas  = None
+
+        if not ok:
+            nm = -1
+            falt = MIN_DIAS - nd
+            dm.append(f"⚠ {nd} días disponibles — faltan {falt} día{'s' if falt>1 else ''} más")
+        else:
+            ct = tminm > 10 or ta > 10
+            cl = p10 >= 10
+            cd = nd >= MIN_DIAS
+
+            if ct: dm.append(f"✓ Tmin>10°C")
+            if cl: dm.append(f"✓ Lluvia 10d={p10:.1f}mm")
+            if cd: dm.append(f"✓ {nd} días historial")
+
+            nc = sum([ct, cl, cd])
+            if nc == 3:
+                # Condiciones de infección cumplidas
+                nm = 2
+                # Temperatura óptima + humedad alta → riesgo alto
+                if 18 <= ta <= 24 and (ha or 0) >= 85:
+                    nm = 3
+                    dm.append(f"Tmed={ta:.1f}°C + HR={ha}% — condiciones óptimas infección")
+                elif 15 <= ta <= 30:
+                    dm.append(f"Tmed={ta:.1f}°C — condiciones favorables")
+                if ta > 30:
+                    nm = max(1, nm - 1)
+                    dm.append("T>30°C — reduce esporulación")
+
+                # Calcular período de incubación
+                incubacion_dias = periodo_incubacion_mildiu(ta)
+                if incubacion_dias:
+                    from datetime import datetime, timedelta
+                    fecha_inf = datetime.strptime(filas[-1]['fecha'], '%Y-%m-%d')
+                    fecha_sint = fecha_inf + timedelta(days=incubacion_dias)
+                    fecha_sintomas = fecha_sint.strftime('%d/%m/%Y')
+                    dm.append(f"⏱ Período incubación: {incubacion_dias} días")
+                    dm.append(f"📅 Síntomas esperados: {fecha_sintomas}")
+            elif nc == 2:
+                nm = 1
+                dm.append("Condiciones parcialmente cumplidas")
+
+            if not cl:
+                dm.append(f"Lluvia 10d={p10:.1f}mm (necesita ≥10mm)")
+            if not ct:
+                dm.append("Temperatura mínima aún baja")
+
+        res[sid] = {
+            'lat': la, 'lon': lo,
+            'oidio':  no, 'mildiu': nm,
+            'datos_ok': ok, 'dias_disponibles': nd, 'fuente_datos': flbl,
+            'dsv_temporada':  dsv_temporada,
+            'dsv_7d':         dsv_7d,
+            'dsv_hoy':        dsv_hoy_val,
+            'incubacion_dias': incubacion_dias,
+            'fecha_sintomas':  fecha_sintomas,
+            'detalles': {
+                'oidio':  do, 'mildiu': dm,
+                'temp_actual':       ta,
+                'hum_actual':        ha,
+                'precip_10dias':     round(p10, 1),
+                'dias_tmed_sobre15': sum(1 for f in filas if f['tmax'] is not None and f['tmin'] is not None and (f['tmax']+f['tmin'])/2 >= 15),
+                'horas_hum_alta_7d': round(h85, 1)}}
+    return res
+
+# ── Guardar snapshot de riesgo diario ────────────────────────
+def guardar_riesgo_dia(riesgo_data, ahora):
+    """
+    Guarda un snapshot del riesgo calculado hoy en historial_riesgo.json
+    Formato: {fecha: {stationID: {oidio, mildiu, dsv, lat, lon}}}
+    """
+    hist = leer(F_RIESGO, {})
+    fecha_hoy = ahora.strftime('%Y-%m-%d')
+
+    snapshot = {}
+    for sid, r in riesgo_data.items():
+        snapshot[sid] = {
+            'oidio':          r.get('oidio', -1),
+            'mildiu':         r.get('mildiu', -1),
+            'dsv_temporada':  r.get('dsv_temporada', 0),
+            'dsv_7d':         r.get('dsv_7d', 0),
+            'lat':            r.get('lat'),
+            'lon':            r.get('lon'),
+            'datos_ok':       r.get('datos_ok', False),
+            'fuente_datos':   r.get('fuente_datos', ''),
+        }
+
+    hist[fecha_hoy] = snapshot
+
+    # Mantener solo 90 días (temporada completa)
+    for d in sorted(hist.keys())[:-90]:
+        del hist[d]
+
+    guardar(F_RIESGO, hist)
+    print(f"  ✅ Riesgo diario guardado: {len(hist)} días en {F_RIESGO}")
+    return hist
+
+# ── Recalcular riesgo para días anteriores ────────────────────
+def recalcular_riesgo_dias_anteriores(hwu, dsv_hist_orig, actuales_list, ahora, n_dias=3):
+    """
+    Recalcula el riesgo para los N días anteriores usando el historial agrícola.
+    Útil para rellenar historial_riesgo.json con datos pasados.
+    """
+    from datetime import timedelta
+    hist_riesgo = leer(F_RIESGO, {})
+    act = {e['stationID']: e for e in actuales_list if e and 'stationID' in e}
+    dias = sorted(hwu.keys())
+
+    for dias_atras in range(n_dias, 0, -1):
+        fecha_dt  = ahora - timedelta(days=dias_atras)
+        fecha_str = fecha_dt.strftime('%Y-%m-%d')
+
+        if fecha_str in hist_riesgo:
+            print(f"  ℹ {fecha_str}: ya existe, saltando")
+            continue
+
+        if fecha_str not in hwu:
+            print(f"  ⚠ {fecha_str}: sin datos en historial agrícola")
+            continue
+
+        print(f"  🔄 Recalculando {fecha_str}...")
+
+        # Construir datos "actuales" simulados para ese día
+        actuales_dia = []
+        for sid, dd in hwu[fecha_str].items():
+            if not dd.get('lat'): continue
+            # Simular observación con los datos del día
+            tmax = dd.get('tempMax')
+            tmin = dd.get('tempMin')
+            tmed = round((tmax+tmin)/2, 1) if tmax is not None and tmin is not None else None
+            actuales_dia.append({
+                'stationID': sid,
+                'lat': dd.get('lat', 0),
+                'lon': dd.get('lon', 0),
+                'metric': {
+                    'temp': tmed,
+                    'precipTotal': dd.get('precipTotal', 0),
+                    'windSpeed': 0, 'windGust': 0
+                },
+                'humidity': max(0, 85 - dd.get('humedadAltaMinutos', 0) // 60 * 5)
+            })
+
+        if not actuales_dia:
+            continue
+
+        # Usar solo historial hasta ese día para el cálculo
+        dias_hasta = [d for d in dias if d <= fecha_str]
+        hwu_hasta  = {d: hwu[d] for d in dias_hasta}
+
+        # Recalcular riesgo con snapshot de ese día
+        r_dia = calcular_riesgo(hwu_hasta, actuales_dia)
+
+        snapshot = {}
+        for sid, r in r_dia.items():
+            snapshot[sid] = {
+                'oidio':         r.get('oidio', -1),
+                'mildiu':        r.get('mildiu', -1),
+                'dsv_temporada': r.get('dsv_temporada', 0),
+                'dsv_7d':        r.get('dsv_7d', 0),
+                'lat':           r.get('lat'),
+                'lon':           r.get('lon'),
+                'datos_ok':      r.get('datos_ok', False),
+                'fuente_datos':  r.get('fuente_datos', ''),
+            }
+        hist_riesgo[fecha_str] = snapshot
+        print(f"    ✅ {fecha_str}: {len(snapshot)} estaciones")
+
+    guardar(F_RIESGO, hist_riesgo)
+    print(f"  ✅ historial_riesgo.json: {len(hist_riesgo)} días")
+    return hist_riesgo
+
+# ── Git push ──────────────────────────────────────────────────
+def git_push(ahora):
+    print("\n☁️  Subiendo a GitHub...")
     try:
-        req = urllib.request.Request(url_historico, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, context=ctx, timeout=5) as response:
-            if response.getcode() == 200:
-                historial = json.loads(response.read().decode('utf-8'))
-                print(f"✅ Historial descargado. Contenía {len(historial)} registros.")
-                
-                # Reset automático: Si el historial descargado tiene estaciones de AEMET antiguas, lo borramos.
-                if historial and any(not est.get('stationID', 'I').startswith('I') for est in historial[-1].get('stations', [])):
-                    print("⚠️ Detectadas estaciones de AEMET antiguas en el historial. Borrando datos para empezar limpio...")
-                    historial = []
+        fecha_str = ahora.strftime("%Y-%m-%d %H:%M")
+        for cmd in [
+            ["git","-C",REPO_DIR,"config","user.email","joseroquel@lopezyandreo.com"],
+            ["git","-C",REPO_DIR,"config","user.name","Meteo Guadalentin Bot"],
+            ["git","-C",REPO_DIR,"add","history_24h.json","historial_agricola.json",
+             "public/index.html"],
+            ["git","-C",REPO_DIR,"commit","-m",f"Auto {fecha_str}"],
+            ["git","-C",REPO_DIR,"push"],
+        ]:
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode != 0:
+                if "nothing to commit" in r.stdout+r.stderr:
+                    print("  ℹ Sin cambios nuevos")
+                    return
+                print(f"  ⚠ {cmd[2]}: {r.stderr.strip()[:120]}")
+                return
+        print("  ✅ Datos subidos a GitHub")
+        print(f"  🌐 https://jorloan.github.io/meteo-guadalentin/")
     except Exception as e:
-        print(f"No se pudo descargar historial previo (es normal si es la primera vez): {e}")
-    
+        print(f"  ⚠ Git error: {e}")
+
+# ── HTML ──────────────────────────────────────────────────────
+NOMBRES = {
+    "ITOTAN8":"Mirador - Lebor Alto","ITOTAN2":"METEO UNDERWORLD",
+    "ITOTAN16":"Mortí Bajo","ITOTAN5":"Tierno Galván",
+    "ITOTAN33":"Huerto Hostench","ITOTAN43":"Casa Totana",
+    "ITOTAN31":"CAMPING Lebor","ITOTAN42":"Secanos",
+    "ITOTAN9":"LA CANAL","ITOTAN41":"Ecowitt WN1981",
+    "ITOTAN10":"WS Rancho","ITOTAN17":"La Barquilla",
+    "IALHAM13":"Alhama Norte","IALHAM23":"Alhama Oeste",
+    "IALHAM31":"Alhama Sur","IALHAM36":"Alhama Este",
+    "IALHAM4":"Alhama Centro","IALHAM54":"Alhama Alt",
+    "IALHAM64":"Alhama de Murcia","IALHAM81":"Alhama Baja",
+    "IALHAM88":"Alhama Sierra","IALHAM90":"Alhama Río",
+    "IALHAM92":"Las Canales",
+    "ILORCA22":"Lorca Sur","IMAZAR7":"Puerto Mazarrón",
+    "IGUILA10":"Club Náutico de Águilas",
+    "IPULP6":"Meteobaraza Pulpí",
+    "IVERA31":"Thalassa",
+    "ICARTA267":"Palmasol",
+    "IJUMIL46":"Fuente de las Perdices",
+    "IJUMILLA5":"Casa Navarros",
+    "IYECLA52":"Senda de los Jinetes - La Decarada",
+    "IABARN30":"Abarán - Áureo Natura",
+    "IVILLA1263":"Israel",
+    "ISANTO462":"RyA",
+    "IMURCI180":"Colegio Luis Vives",
+}
+
+def generar_html(historial, riesgo_data, ahora, dias_acum):
+    fa = ahora.strftime("%d/%m/%Y %H:%M:%S")
+    aviso_dias = ""
+    if dias_acum < MIN_DIAS:
+        falt = MIN_DIAS - dias_acum
+        aviso_dias = (f"⏳ Acumulando historial: {dias_acum}/{MIN_DIAS} días. "
+                      f"Faltan {falt} día{'s' if falt>1 else ''} para activar el cálculo de riesgo.")
+
+    hist_riesgo = leer(F_RIESGO, {})
+    js = ("var NOMBRES="+json.dumps(NOMBRES, ensure_ascii=False)+";\n"
+         +"var historyData="+json.dumps(historial, ensure_ascii=False)+";\n"
+         +"var riesgoData="+json.dumps(riesgo_data, ensure_ascii=False)+";\n"
+         +"var riesgoHistData="+json.dumps(hist_riesgo, ensure_ascii=False)+";\n"
+         +"var AVISO_DIAS="+json.dumps(aviso_dias)+";\n"
+         + JS_LOGICA)
+
+    html = HTML_BASE.replace('__FECHA__', fa).replace('__JS__', js)
+    ruta_pub  = os.path.join(DIR_PUB,   'index.html')
+    ruta_repo = os.path.join(REPO_DIR,  'index.html')
+    for ruta in [ruta_pub, ruta_repo]:
+        with open(ruta, 'w', encoding='utf-8') as f:
+            f.write(html)
+    print(f"  ✅ HTML generado ({dias_acum} días historial)")
+    return ruta_pub
+
+JS_LOGICA = r"""
+var RC=['#27ae60','#f39c12','#e67e22','#c0392b'];
+var RL=['Sin riesgo','Riesgo bajo','Riesgo medio','Riesgo ALTO'];
+var CI=historyData.length-1;
+var PT=null;
+var precipPeriodo=null;
+window.HO=0.35;
+
+// ── Mapa base ──────────────────────────────────────────────
+var terreno=L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
+  {maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google',className:'gmap'});
+var claro=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO'});
+var osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'});
+var sat=L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
+  {maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google'});
+
+var map=L.map('map',{center:[37.76,-1.53],zoom:10,layers:[terreno]});
+map.createPane('hp');
+map.getPane('hp').style.zIndex=390;
+map.getPane('hp').style.filter='blur(14px)';
+
+var rLG=L.layerGroup();
+fetch('https://api.rainviewer.com/public/weather-maps.json')
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var l=d.radar.past[d.radar.past.length-1];
+    rLG.addLayer(L.tileLayer(d.host+l.path+'/256/{z}/{x}/{y}/2/1_1.png',
+      {opacity:0.7,zIndex:400,maxNativeZoom:7,maxZoom:18}));
+  }).catch(function(){});
+
+var mLG=L.layerGroup(),hLG=L.layerGroup(),HL=null;
+var heatActive=true; // mapa de calor activo por defecto
+L.control.layers(
+  {'Relieve':terreno,'Claro':claro,'Satélite':sat,'OSM':osm},
+  {
+    'Radar lluvia':rLG,
+    '🌈 Mapa de calor':hLG,
+    '📍 Marcadores':mLG
+  },
+  {position:'topright',collapsed:true}
+).addTo(map);
+hLG.addTo(map);
+mLG.addTo(map);
+// Detectar cuando el usuario activa/desactiva el mapa de calor
+map.on('overlayadd',   function(e){ if(e.name==='🌈 Mapa de calor'){ heatActive=true;  render(); }});
+map.on('overlayremove',function(e){ if(e.name==='🌈 Mapa de calor'){ heatActive=false; hLG.clearLayers(); }});
+
+// Botón ubicación
+(function(){
+  var b=L.control({position:'topleft'});
+  b.onAdd=function(){
+    var d=L.DomUtil.create('div','leaflet-bar leaflet-control');
+    d.innerHTML='<a href="#" style="font-size:18px;background:white;display:flex;justify-content:center;align-items:center;width:30px;height:30px;text-decoration:none;" title="Mi ubicación">🎯</a>';
+    L.DomEvent.on(d,'click',function(e){L.DomEvent.preventDefault(e);map.locate({setView:true,maxZoom:13});});
+    return d;
+  };
+  b.addTo(map);
+})();
+var uMk=null;
+map.on('locationfound',function(e){
+  if(uMk) map.removeLayer(uMk);
+  uMk=L.circleMarker(e.latlng,{radius:8,color:'#3498db',fillColor:'#3498db',fillOpacity:0.8})
+    .addTo(map).bindPopup('📍 Estás aquí').openPopup();
+});
+
+// ── Colores ────────────────────────────────────────────────
+function lerp(c1,c2,t){
+  return 'rgb('+Math.round(c1[0]+t*(c2[0]-c1[0]))+','+Math.round(c1[1]+t*(c2[1]-c1[1]))+','+Math.round(c1[2]+t*(c2[2]-c1[2]))+')';
+}
+function col(v,p){
+  if(p==='oidio'||p==='mildiu'){if(v<0)return '#aaa';return RC[Math.min(3,Math.max(0,Math.round(v)))];}
+  if(p==='temp'){
+    var s=[{v:-5,c:[148,0,211]},{v:0,c:[0,0,200]},{v:5,c:[0,115,255]},{v:10,c:[0,200,200]},
+           {v:15,c:[50,205,50]},{v:20,c:[255,255,0]},{v:25,c:[255,140,0]},{v:30,c:[220,20,60]},
+           {v:35,c:[139,0,0]},{v:40,c:[200,0,200]}];
+    if(v<=s[0].v) return 'rgb('+s[0].c+')';
+    if(v>=s[s.length-1].v) return 'rgb('+s[s.length-1].c+')';
+    for(var i=0;i<s.length-1;i++)
+      if(v>=s[i].v&&v<=s[i+1].v) return lerp(s[i].c,s[i+1].c,(v-s[i].v)/(s[i+1].v-s[i].v));
+  }
+  if(p==='precip') return v>=70?'#f00':v>=50?'#f9f':v>=40?'#c6f':v>=30?'#939':v>=20?'#609':v>=10?'#00f':v>=4?'#36f':v>=2?'#0cf':v>=0.5?'#9ff':v>0?'#eff':'transparent';
+  if(p==='humidity') return v>=90?'#0d47a1':v>=70?'#1976d2':v>=50?'#42a5f5':'#90caf9';
+  if(p==='wind') return v>=40?'#b71c1c':v>=30?'#e65100':v>=20?'#f57f17':v>=10?'#fbc02d':v>=5?'#81c784':'#b2dfdb';
+  return '#aaa';
+}
+function getPrecipAcumulada(sid, periodo){
+  // Calcula precipitación acumulada usando historial 24h
+  // Suma el máximo precipTotal de cada día en el período
+  var ahora = new Date();
+  var desde;
+  if(periodo==='hoy'){
+    desde = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
+  } else if(periodo==='ayer'){
+    desde = new Date(ahora.getTime() - 24*3600*1000);
+  } else if(periodo==='semana'){
+    desde = new Date(ahora.getTime() - 7*24*3600*1000);
+  } else {
+    return null;
+  }
+
+  // Agrupar por día y coger el máximo precipTotal de cada día
+  var maxPorDia = {};
+  for(var i=0; i<historyData.length; i++){
+    var snap = historyData[i];
+    var t = new Date(snap.timestamp);
+    if(t < desde) continue;
+    var diaKey = t.getFullYear()+'-'+t.getMonth()+'-'+t.getDate();
+    var ests = snap.stations || [];
+    for(var j=0; j<ests.length; j++){
+      var est = ests[j];
+      if(!est || est.stationID !== sid) continue;
+      var p = est.metric && est.metric.precipTotal != null ? est.metric.precipTotal : null;
+      if(p === null) continue;
+      if(maxPorDia[diaKey] === undefined || p > maxPorDia[diaKey]){
+        maxPorDia[diaKey] = p;
+      }
+    }
+  }
+
+  // Sumar máximos de cada día
+  var total = 0;
+  var keys = Object.keys(maxPorDia);
+  for(var k=0; k<keys.length; k++) total += maxPorDia[keys[k]];
+  return Math.round(total * 10) / 10;
+}
+
+function raw(est,p){
+  if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}
+  var m=est.metric; if(!m) return null;
+  if(p==='precip'){
+    var periodo=precipPeriodo?precipPeriodo.value:'hoy';
+    var acum=getPrecipAcumulada(est.stationID, periodo);
+    return acum!=null?acum:(m.precipTotal!=null?m.precipTotal:0);
+  }
+  if(p==='temp')     return m.temp;
+  if(p==='humidity') return est.humidity;
+  if(p==='wind')     return m.windGust;
+  return null;
+}
+function wdL(d){
+  if(d==null) return '—';
+  return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'][Math.round(d/22.5)%16];
+}
+function fmtT(iso){
+  var d=new Date(iso),n=new Date();
+  return(d.getDate()===n.getDate()&&d.getMonth()===n.getMonth()?'Hoy':'Ayer')+
+    ', '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Leyenda ────────────────────────────────────────────────
+var leg=L.control({position:'bottomleft'});
+leg.onAdd=function(){this._d=L.DomUtil.create('div','legend');return this._d;};
+leg.upd=function(p){
+  var h='';
+  if(p==='oidio'||p==='mildiu'){
+    h='<b>'+(p==='oidio'?'🍇 Oídio':'🍃 Mildiu')+'</b><br>';
+    h+='<i style="background:#aaa"></i>Sin datos<br>';
+    for(var i=3;i>=0;i--) h+='<i style="background:'+RC[i]+'"></i>'+RL[i]+'<br>';
+    h+='<small style="color:#888">'+(p==='oidio'?'Gubler-Thomas (UC Davis)':'Regla 10-10-10 + EPI')+'</small>';
+  } else {
+    var g,ti,u;
+    if(p==='precip'){
+      var pp=precipPeriodo?precipPeriodo.value:'hoy';
+      var sf=pp==='semana'?' (7d)':pp==='ayer'?' (24h)':' (hoy)';
+      ti='🌧 Precipitación'+sf;u='mm';g=[0.5,2,4,10,20,30,40,50,70];
+    }
+    else if(p==='temp'){ti='🌡 Temperatura';  u='°C';   g=[5,10,15,20,25,30,35,40];}
+    else if(p==='humidity'){ti='💧 Humedad'; u='%';    g=[30,50,70,90];}
+    else               {ti='💨 Viento';      u='km/h'; g=[2,5,10,20,30,40];}
+    h='<b>'+ti+'</b> <small>'+u+'</small><br>';
+    h+='<i style="background:'+col(g[g.length-1],p)+'"></i>&gt;'+g[g.length-1]+'<br>';
+    for(var i=g.length-2;i>=0;i--)
+      h+='<i style="background:'+col(g[i],p)+'"></i>'+g[i]+'-'+g[i+1]+'<br>';
+  }
+  this._d.innerHTML=h;
+};
+leg.addTo(map);
+
+// ── Panel lateral fijo ─────────────────────────────────────
+var PS=null;
+function showPanel(sid,html){
+  document.getElementById('dc').innerHTML=html;
+  document.getElementById('dp').style.display='flex';
+  PS=sid;
+}
+function hidePanel(){
+  document.getElementById('dp').style.display='none';
+  PS=null;
+}
+
+// Mostrar aviso de días si procede
+if(AVISO_DIAS){
+  var av=document.getElementById('aviso-dias');
+  if(av){av.textContent=AVISO_DIAS;av.style.display='block';}
+}
+
+// ── Render principal ───────────────────────────────────────
+function render(){
+  var p=document.getElementById('ps').value;
+  var isR=p==='oidio'||p==='mildiu';
+  leg.upd(p);
+  if(heatActive) hLG.clearLayers(); mLG.clearLayers(); HL=null;
+
+  var snap=isR?historyData[historyData.length-1]:historyData[CI];
+  if(!snap) return;
+  var feats=[];
+
+  (snap.stations||[]).forEach(function(est){
+    if(!est||est.lat==null||est.lon==null) return;
+    var v=raw(est,p); if(v==null) return;
+    var bg=col(v,p);
+    var lb;
+    if(isR)        lb=v<0?'?':['0','B','M','A'][Math.min(3,Math.max(0,Math.round(v)))];
+    else if(p==='precip') lb=v.toFixed(1);
+    else if(p==='temp')   lb=Math.round(v)+'°';
+    else                   lb=Math.round(v)+'';
+
+    var ws='';
+    if(p==='wind'&&est.winddir!=null)
+      ws='<svg style="position:absolute;top:-13px;left:-13px;width:50px;height:50px;'
+        +'transform:rotate('+est.winddir+'deg);z-index:-1;pointer-events:none;"'
+        +' viewBox="0 0 50 50"><line x1="25" y1="2" x2="25" y2="13" stroke="#333" stroke-width="2.5"/></svg>';
+
+    var ih='<div style="position:relative;">'
+      +'<div style="background:'+bg+';color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,.7);'
+      +'border:1.5px solid #fff;border-radius:50%;width:26px;height:26px;display:flex;'
+      +'justify-content:center;align-items:center;font-weight:700;font-size:10px;'
+      +'box-shadow:0 2px 5px rgba(0,0,0,.35);cursor:pointer;">'+lb+'</div>'+ws+'</div>';
+
+    var mk=L.marker([est.lat,est.lon],{
+      icon:L.divIcon({className:'',html:ih,iconSize:[26,26],iconAnchor:[13,13]})
+    });
+
+    var nm=NOMBRES[est.stationID]
+      ||(est.neighborhood&&est.neighborhood.trim()!==''?est.neighborhood:est.stationID);
+
+    // ── Contenido panel ────────────────────────────────
+    var ph;
+    if(isR){
+      var r=riesgoData[est.stationID];
+      if(r){
+        var nO=r.oidio, nM=r.mildiu, det=r.detalles||{};
+        var dO=(det.oidio||[]).join('<br>&bull; ');
+        var dM=(det.mildiu||[]).join('<br>&bull; ');
+        var av='';
+        if(!r.datos_ok){
+          var nd=r.dias_disponibles, falt=5-nd;
+          av='<div style="background:#e8f4fd;border:1px solid #b3d7f0;border-radius:6px;'
+            +'padding:8px 10px;margin-bottom:10px;font-size:12px;color:#1a5276;">'
+            +'⏳ <b>Acumulando historial</b><br>'
+            +nd+' de 5 días necesarios. Faltan <b>'+falt+'</b> día'+(falt>1?'s':'')+'.<br>'
+            +'<span style="color:#666;">El mapa calculará el riesgo automáticamente.</span></div>';
+        }
+        // ── Panel según enfermedad seleccionada ──────────────
+        var esOidio = (p==='oidio');
+
+        if(esOidio) {
+          // ── OÍDIO ────────────────────────────────────────────
+          var dsv=r.dsv_temporada||0;
+          var dsvPct=Math.min(100,Math.round(dsv/60*100));
+          var dsvCol=dsv<20?'#27ae60':dsv<40?'#f39c12':dsv<60?'#e67e22':'#c0392b';
+          var dsvLabel=dsv<20?'Sin riesgo':dsv<40?'Vigilancia':dsv<60?'Tratar pronto':'Urgente';
+
+          ph=av
+            // Nivel y barra DSV
+            +'<div style="margin-bottom:6px;">'
+            +'<b>🍇 Oídio:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;'
+            +'font-weight:700;color:#fff;background:'+(nO<0?'#aaa':RC[nO])+'">'
+            +(nO<0?'Pendiente':RL[nO])+'</span></div>'
+            +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dO||'—')+'</div>'
+            // Barra DSV temporada
+            +'<div style="background:#f8f8f8;border-radius:8px;padding:10px;margin-bottom:10px;">'
+            +'<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px;">'
+            +'<span>DSV acumulado temporada</span>'
+            +'<span style="font-weight:700;color:'+dsvCol+'">'+dsv+' pts — '+dsvLabel+'</span></div>'
+            +'<div style="background:#e0e0e0;border-radius:4px;height:10px;overflow:hidden;">'
+            +'<div style="background:'+dsvCol+';width:'+dsvPct+'%;height:100%;border-radius:4px;"></div></div>'
+            +'<div style="display:flex;justify-content:space-between;font-size:10px;color:#bbb;margin-top:3px;">'
+            +'<span>0</span><span>20⚠</span><span>40🔶</span><span>60🔴</span></div>'
+            +'<div style="font-size:11px;color:#999;margin-top:4px;">DSV últimos 7d='+(r.dsv_7d||0)+' &nbsp;|&nbsp; DSV hoy='+(r.dsv_hoy||0)+'</div>'
+            +'</div>'
+            // Datos actuales
+            +'<hr style="border:0;border-top:1px solid #eee;margin:8px 0;">'
+            +'<div style="font-size:12px;color:#666;margin-bottom:10px;">'
+            +'🌡 Tmed='+(det.temp_actual!=null?det.temp_actual.toFixed(1)+'°C':'—')
+            +' &nbsp;💧 HR='+(det.hum_actual!=null?det.hum_actual+'%':'—')+'<br>'
+            +'⏱ HR alta='+(det.horas_hum_alta_7d||0)+'h (últimos 7d)'
+            +'</div>'
+            // Explicación del modelo
+            +'<div style="background:#f0f7ff;border-left:3px solid #3498db;border-radius:4px;padding:10px;font-size:11px;color:#444;line-height:1.6;">'
+            +'<b style="color:#2c3e50;">📖 Modelo Gubler-Thomas (UC Davis, 1982)</b><br><br>'
+            +'Acumula puntos <b>DSV</b> (Disease Severity Values) diarios cruzando temperatura media y horas de humedad alta:<br><br>'
+            +'<table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:6px;">'
+            +'<tr style="background:#dce8f5;"><td style="padding:2px 4px;font-weight:bold;">Tmed</td><td style="padding:2px 4px;text-align:center;">0-6h</td><td style="padding:2px 4px;text-align:center;">7-12h</td><td style="padding:2px 4px;text-align:center;">13-18h</td><td style="padding:2px 4px;text-align:center;">&gt;18h</td></tr>'
+            +'<tr><td style="padding:2px 4px;">15-19°C</td><td style="text-align:center;padding:2px 4px;">1</td><td style="text-align:center;padding:2px 4px;">2</td><td style="text-align:center;padding:2px 4px;">3</td><td style="text-align:center;padding:2px 4px;">4</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">19-22°C</td><td style="text-align:center;padding:2px 4px;">2</td><td style="text-align:center;padding:2px 4px;">3</td><td style="text-align:center;padding:2px 4px;">4</td><td style="text-align:center;padding:2px 4px;">5</td></tr>'
+            +'<tr><td style="padding:2px 4px;">22-26°C</td><td style="text-align:center;padding:2px 4px;">3</td><td style="text-align:center;padding:2px 4px;">4</td><td style="text-align:center;padding:2px 4px;">5</td><td style="text-align:center;padding:2px 4px;">6</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">26-40°C</td><td style="text-align:center;padding:2px 4px;">2</td><td style="text-align:center;padding:2px 4px;">3</td><td style="text-align:center;padding:2px 4px;">4</td><td style="text-align:center;padding:2px 4px;">5</td></tr>'
+            +'<tr><td style="padding:2px 4px;color:#888;">&lt;15°C o &gt;40°C</td><td colspan="4" style="text-align:center;padding:2px 4px;color:#888;">0 — sin desarrollo</td></tr>'
+            +'</table>'
+            +'<b>Lluvia &gt;2.5mm:</b> lava las esporas → DSV=0 ese día<br>'
+            +'<b>Umbrales de tratamiento:</b><br>'
+            +'&nbsp;· &lt;20 pts → Sin riesgo<br>'
+            +'&nbsp;· 20-40 pts → Vigilancia<br>'
+            +'&nbsp;· 40-60 pts → Tratar pronto<br>'
+            +'&nbsp;· &gt;60 pts → Tratamiento urgente'
+            +'</div>'
+            +'<div style="font-size:11px;color:#aaa;margin-top:8px;">📊 '+r.fuente_datos+'</div>';
+
+        } else {
+          // ── MILDIU ───────────────────────────────────────────
+          ph=av
+            +'<div style="margin-bottom:6px;">'
+            +'<b>🍃 Mildiu:</b> <span style="padding:2px 9px;border-radius:10px;font-size:12px;'
+            +'font-weight:700;color:#fff;background:'+(nM<0?'#aaa':RC[nM])+'">'
+            +(nM<0?'Pendiente':RL[nM])+'</span></div>'
+            +'<div style="font-size:12px;color:#555;margin-bottom:10px;">&bull; '+(dM||'—')+'</div>'
+            // Fecha síntomas si procede
+            +(r.fecha_sintomas?'<div style="background:#fef9e7;border:1px solid #f39c12;'
+            +'border-radius:6px;padding:8px 10px;font-size:12px;margin-bottom:10px;">'
+            +'📅 Síntomas estimados: <b>'+r.fecha_sintomas+'</b><br>'
+            +'<span style="font-size:11px;color:#888;">Período de incubación según Tmed actual</span></div>':'')
+            // Datos actuales
+            +'<hr style="border:0;border-top:1px solid #eee;margin:8px 0;">'
+            +'<div style="font-size:12px;color:#666;margin-bottom:10px;">'
+            +'🌡 Tmed='+(det.temp_actual!=null?det.temp_actual.toFixed(1)+'°C':'—')
+            +' &nbsp;💧 HR='+(det.hum_actual!=null?det.hum_actual+'%':'—')+'<br>'
+            +'🌧 Lluvia 10d='+(det.precip_10dias||0)+'mm'
+            +'</div>'
+            // Explicación del modelo
+            +'<div style="background:#f0fff4;border-left:3px solid #27ae60;border-radius:4px;padding:10px;font-size:11px;color:#444;line-height:1.6;">'
+            +'<b style="color:#2c3e50;">📖 Modelo 10-10-10 + EPI (Plasmopara viticola)</b><br><br>'
+            +'Requiere las <b>3 condiciones simultáneas</b> para infección primaria:<br><br>'
+            +'<b>1. Temperatura mínima &gt;10°C</b><br>'
+            +'&nbsp;&nbsp;El hongo necesita suelo &gt;8-10°C para activarse.<br><br>'
+            +'<b>2. Lluvia acumulada ≥10mm en 10 días</b><br>'
+            +'&nbsp;&nbsp;Activa las oosporas del suelo y permite la infección.<br><br>'
+            +'<b>3. Historial suficiente (≥5 días)</b><br>'
+            +'&nbsp;&nbsp;Proxy del desarrollo vegetativo de la vid.<br><br>'
+            +'<b>Refinamiento EPI:</b><br>'
+            +'&nbsp;· Tmed 18-24°C + HR≥85% → riesgo máximo<br>'
+            +'&nbsp;· T&gt;30°C → inhibe esporulación<br><br>'
+            +'<b>Período de incubación (aparición síntomas):</b><br>'
+            +'<table style="width:100%;border-collapse:collapse;font-size:10px;">'
+            +'<tr style="background:#c8f0d8;"><td style="padding:2px 4px;font-weight:bold;">Tmed</td><td style="padding:2px 4px;font-weight:bold;">Días hasta síntomas</td></tr>'
+            +'<tr><td style="padding:2px 4px;">&lt;12°C</td><td style="padding:2px 4px;">Sin desarrollo</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">12-15°C</td><td style="padding:2px 4px;">21 días</td></tr>'
+            +'<tr><td style="padding:2px 4px;">15-18°C</td><td style="padding:2px 4px;">15 días</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">18-21°C</td><td style="padding:2px 4px;">10 días</td></tr>'
+            +'<tr><td style="padding:2px 4px;">21-25°C</td><td style="padding:2px 4px;">7 días</td></tr>'
+            +'<tr style="background:#f5f5f5;"><td style="padding:2px 4px;">25-30°C</td><td style="padding:2px 4px;">6 días</td></tr>'
+            +'<tr><td style="padding:2px 4px;">&gt;30°C</td><td style="padding:2px 4px;">Inhibición</td></tr>'
+            +'</table>'
+            +'</div>'
+            +'<div style="font-size:11px;color:#aaa;margin-top:8px;">📊 '+r.fuente_datos+'</div>';
+        }
+      } else {
+        ph='<div style="color:#999;font-size:13px;line-height:1.7;">Sin datos de riesgo.</div>';
+      }
+    } else {
+      var m=est.metric||{};
+      ph='<table style="width:100%;font-size:13px;border-collapse:collapse;line-height:2;">'
+        +'<tr><td style="color:#888">🌡 Temperatura</td>'
+        +'<td style="font-weight:700">'+(m.temp!=null?m.temp.toFixed(1)+'°C':'—')+'</td></tr>'
+        +'<tr><td style="color:#888">🌧 Precipitación</td>'
+        +'<td style="font-weight:700">'+(function(){
+          var periodo=precipPeriodo?precipPeriodo.value:'hoy';
+          var acum=getPrecipAcumulada(est.stationID,periodo);
+          var label=periodo==='semana'?'7d':'24h';
+          return acum!=null?(acum.toFixed(1)+' mm ('+label+')'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
+        })()+' </td></tr>'
+        +'<tr><td style="color:#888">💨 Viento</td>'
+        +'<td style="font-weight:700">'+(m.windSpeed!=null?m.windSpeed.toFixed(0)+' km/h':'—')+' '+wdL(est.winddir)+'</td></tr>'
+        +'<tr><td style="color:#888">⬆ Racha</td>'
+        +'<td style="font-weight:700">'+(m.windGust!=null?m.windGust.toFixed(0)+' km/h':'—')+'</td></tr>'
+        +'<tr><td style="color:#888">💧 Humedad</td>'
+        +'<td style="font-weight:700">'+(est.humidity!=null?est.humidity+'%':'—')+'</td></tr>'
+        +'<tr><td style="color:#888">🕒 Observación</td>'
+        +'<td>'+(est.obsTimeLocal?est.obsTimeLocal.slice(11,16):'—')+'</td></tr>'
+        +'</table>'
+        +'<a href="https://www.wunderground.com/dashboard/pws/'+est.stationID
+        +'" target="_blank" style="display:inline-block;margin-top:12px;padding:7px 16px;'
+        +'background:#3498db;color:#fff;text-decoration:none;border-radius:6px;font-size:12px;">'
+        +'Ver historial en WU ↗</a>';
+    }
+
+    var fh='<div style="font-size:15px;font-weight:700;color:#2c3e50;margin-bottom:4px;">'+nm+'</div>'
+      +'<div style="font-size:11px;color:#bbb;margin-bottom:12px;">'+est.stationID+'</div>'+ph;
+
+    (function(id,h){mk.on('click',function(){showPanel(id,h);});})(est.stationID,fh);
+    mk.bindTooltip('<b>'+nm+'</b>',{direction:'top',offset:[0,-16],opacity:0.9});
+    mLG.addLayer(mk);
+    feats.push(turf.point([est.lon,est.lat],{value:v}));
+  });
+
+  // Heatmap interpolado para TODAS las variables incluidas oidio y mildiu
+  // Para riesgo: solo estaciones con datos válidos (v>=0)
+  var validFeats = isR ? feats.filter(function(f){return f.properties.value>=0;}) : feats;
+  if(validFeats.length>2){
+    try{
+      var c=turf.featureCollection(validFeats);
+      var weight=p==='temp'?2:p==='oidio'||p==='mildiu'?6:4;
+      var g=turf.interpolate(c,p==='oidio'||p==='mildiu'?3:2.5,
+        {gridType:'square',property:'value',units:'kilometers',weight:weight});
+      var cl=turf.featureCollection(g.features.filter(function(f){
+        return f.properties.value!=null&&!isNaN(f.properties.value);
+      }));
+      HL=L.geoJSON(cl,{pane:'hp',style:function(f){
+        var v=f.properties.value;
+        // Para riesgo: redondear al nivel más cercano para colores discretos
+        if(p==='oidio'||p==='mildiu') v=Math.min(3,Math.max(0,Math.round(v)));
+        return{fillColor:col(v,p),fillOpacity:window.HO,stroke:false};
+      }});
+      // Añadir a la capa correspondiente
+      if(heatActive){
+        hLG.clearLayers();
+        hLG.addLayer(HL);
+      }
+    }catch(e){console.error('Heatmap:',e);}
+  }
+}
+
+// ── Slider máquina del tiempo ──────────────────────────────
+var sl=document.getElementById('sl');
+var tl=document.getElementById('tl');
+var tlLabel=document.getElementById('tl-label');
+var slFechaIni=document.getElementById('sl-fecha-ini');
+var slFechaFin=document.getElementById('sl-fecha-fin');
+var slSep=document.getElementById('sl-sep');
+
+// ── Construir índices ────────────────────────────────────────
+// Modo hora: una entrada por hora (última de cada hora) — últimas 12h
+// Modo día:  una entrada por día (última del día) — para oidio/mildiu
+var horaIdx = [];   // índices en historyData, uno por hora
+var diaIdx  = [];   // índices en historyData, uno por día
+
+(function(){
+  // Agrupar por hora
+  var porHora={}, porDia={};
+  historyData.forEach(function(e,i){
+    var d=new Date(e.timestamp);
+    var hk=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'T'+d.getHours();
+    var dk=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    porHora[hk]=i;  // última lectura de cada hora
+    porDia[dk]=i;   // última lectura de cada día
+  });
+  // Últimas 12 horas
+  var ahora=new Date();
+  var hace12=new Date(ahora.getTime()-12*3600000);
+  Object.keys(porHora).sort().forEach(function(k){
+    var idx=porHora[k];
+    var t=new Date(historyData[idx].timestamp);
+    if(t>=hace12) horaIdx.push(idx);
+  });
+  // Todos los días disponibles
+  Object.keys(porDia).sort().forEach(function(k){
+    diaIdx.push({key:k, idx:porDia[k]});
+  });
+})();
+
+var modoRiesgo=false;
+var idxActual=horaIdx.length-1;  // índice dentro de horaIdx o diaIdx
+var diaFiltroIni='', diaFiltroFin='';
+
+function getModoIndices(){
+  if(!modoRiesgo) return horaIdx;
+  // Filtrar diaIdx por rango seleccionado
+  if(!diaFiltroIni && !diaFiltroFin) return diaIdx.map(function(d){return d.idx;});
+  return diaIdx.filter(function(d){
+    return (!diaFiltroIni || d.key>=diaFiltroIni) && (!diaFiltroFin || d.key<=diaFiltroFin);
+  }).map(function(d){return d.idx;});
+}
+
+function actualizarModoSlider(){
+  var p=document.getElementById('ps').value;
+  modoRiesgo=(p==='oidio'||p==='mildiu');
+  var indices=getModoIndices();
+  sl.min=0; sl.max=Math.max(0,indices.length-1); sl.value=indices.length-1;
+  idxActual=indices.length-1;
+
+  if(modoRiesgo){
+    tlLabel.textContent='📅 Máquina del Tiempo — por día';
+    sl.style.display='none';
+    slFechaIni.style.display='';
+    slFechaFin.style.display='';
+    slSep.style.display='';
+    // Poner fechas por defecto
+    if(diaIdx.length>0){
+      slFechaIni.value=diaIdx[0].key;
+      slFechaFin.value=diaIdx[diaIdx.length-1].key;
+      diaFiltroIni=diaIdx[0].key;
+      diaFiltroFin=diaIdx[diaIdx.length-1].key;
+    }
+  } else {
+    tlLabel.textContent='⏱ Últimas 12h — por hora';
+    sl.style.display='';
+    slFechaIni.style.display='none';
+    slFechaFin.style.display='none';
+    slSep.style.display='none';
+  }
+  actualizarLabel();
+}
+
+var timeOverlay=document.getElementById('time-overlay');
+precipPeriodo=document.getElementById('precip-periodo');
+function actualizarLabel(){
+  var indices=getModoIndices();
+  if(!indices.length){tl.innerText='Sin datos';timeOverlay.style.display='none';return;}
+  var idx=indices[Math.min(idxActual,indices.length-1)];
+  var ts=historyData[idx].timestamp;
+  var last=idxActual===indices.length-1;
+  var textoHeader, textoOverlay;
+  if(modoRiesgo){
+    var d=new Date(ts);
+    var fechaStr=d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+    textoHeader=d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'})+(last?' (Hoy)':'');
+    textoOverlay='📅 '+fechaStr+(last?' — Hoy':'');
+  } else {
+    var d2=new Date(ts);
+    var horaStr=d2.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    var esHoy=d2.getDate()===new Date().getDate()&&d2.getMonth()===new Date().getMonth();
+    textoHeader=fmtT(ts)+(last?' (Actual)':' (Histórico)');
+    textoOverlay=(esHoy?'Hoy':'Ayer')+' '+horaStr+(last?' ⬤':'');
+  }
+  tl.innerText=textoHeader;
+  // Mostrar overlay solo si no es el frame actual o si hay animación
+  timeOverlay.textContent=textoOverlay;
+  timeOverlay.style.display=last&&!PT?'none':'block';
+}
+
+// ── Render con soporte historial ─────────────────────────────
+// ── Render con historial de riesgo ──────────────────────────
+var _renderOriginal = render;
+
+render = function(){
+  var p   = document.getElementById('ps').value;
+  var isR = p==='oidio' || p==='mildiu';
+
+  // Calcular índice correcto según modo
+  var indices = getModoIndices();
+  if(indices.length > 0){
+    CI = indices[Math.min(idxActual, indices.length-1)];
+  }
+
+  // En modo riesgo usar datos históricos del día seleccionado
+  if(isR && riesgoHistData && Object.keys(riesgoHistData).length > 0){
+    var ts       = historyData[CI] ? historyData[CI].timestamp : '';
+    var fechaDia = ts.slice(0, 10);
+    if(riesgoHistData[fechaDia]){
+      var rdBak = riesgoData;
+      var rTemp = {};
+      Object.keys(rdBak).forEach(function(sid){
+        rTemp[sid] = Object.assign({}, rdBak[sid]);
+        var h = riesgoHistData[fechaDia][sid];
+        if(h){
+          rTemp[sid].oidio         = h.oidio;
+          rTemp[sid].mildiu        = h.mildiu;
+          rTemp[sid].dsv_temporada = h.dsv_temporada;
+          rTemp[sid].dsv_7d        = h.dsv_7d;
+          rTemp[sid].datos_ok      = h.datos_ok;
+        }
+      });
+      riesgoData = rTemp;
+      _renderOriginal();
+      riesgoData = rdBak;
+      return;
+    }
+  }
+  _renderOriginal();
+};
+
+// ── Slider listeners ─────────────────────────────────────────
+var sl2 = document.getElementById('sl');
+sl2.addEventListener('input', function(){
+  idxActual = parseInt(this.value);
+  actualizarLabel();
+  timeOverlay.style.display = 'block';
+  render();
+  clearTimeout(window._ovTimer);
+  window._ovTimer = setTimeout(function(){
+    if(!PT) timeOverlay.style.display = 'none';
+  }, 2000);
+});
+
+document.getElementById('pb').addEventListener('click', function(){
+  if(PT){ clearInterval(PT); PT=null; this.textContent='▶️'; return; }
+  this.textContent = '⏸️';
+  var indices = getModoIndices();
+  if(idxActual >= indices.length-1) idxActual = 0;
+  var s = this;
+  var intervalo = modoRiesgo ? 800 : 500;
+  timeOverlay.style.display = 'block';
+  PT = setInterval(function(){
+    idxActual = (idxActual+1) % indices.length;
+    sl2.value = idxActual;
+    actualizarLabel();
+    render();
+    if(idxActual === indices.length-1){
+      clearInterval(PT); PT=null; s.textContent='▶️';
+      timeOverlay.style.display = 'none';
+    }
+  }, intervalo);
+});
+
+document.getElementById('op').addEventListener('input', function(){
+  window.HO = parseFloat(this.value);
+  if(HL) HL.setStyle({fillOpacity: window.HO});
+});
+
+function onParamChange(){
+  var p = document.getElementById('ps').value;
+  var barra = document.getElementById('precip-barra');
+  if(barra) barra.style.display = (p==='precip') ? 'flex' : 'none';
+  actualizarModoSlider();
+  render();
+}
+
+function initSl(){
+  var n = historyData.length;
+  if(!n){ document.getElementById('tl').innerText='Sin datos'; return; }
+  actualizarModoSlider();
+  render();
+}
+
+initSl();
+"""
+
+HTML_BASE = """<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Meteo Guadalentín</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:'Segoe UI',sans-serif;margin:0;display:flex;flex-direction:column;height:100vh}
+    header{background:#1a252f;color:#fff;padding:.6rem 1rem;display:flex;
+      justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+      flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.3)}
+    h1{margin:0;font-size:1.1rem}
+    .sub{font-size:.72rem;color:#bdc3c7;margin-top:2px}
+    .ct{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    select{padding:5px 9px;border-radius:6px;border:none;background:#ecf0f1;
+      color:#2c3e50;font-weight:700;font-size:.82rem;cursor:pointer}
+    #aviso-dias{display:none;background:#d6eaf8;border-left:4px solid #2980b9;
+      padding:7px 14px;font-size:12px;color:#1a5276;flex-shrink:0}
+    .ma{display:flex;flex:1;overflow:hidden}
+    #map{flex:1;height:100%}
+    #dp{display:none;flex-direction:column;width:285px;min-width:240px;
+      background:#fff;border-left:1px solid #e0e0e0;overflow:hidden;flex-shrink:0}
+    #dh{background:#1a252f;color:#fff;padding:9px 12px;display:flex;
+      justify-content:space-between;align-items:center;flex-shrink:0;
+      font-size:13px;font-weight:600}
+    #cp{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 4px}
+    #dc{padding:14px;font-size:13px;overflow-y:auto;flex:1}
+    .legend{background:rgba(255,255,255,.95);padding:7px 10px;border-radius:8px;
+      box-shadow:0 2px 10px rgba(0,0,0,.2);font-size:.75rem;line-height:1.8;
+      color:#333;max-height:55vh;overflow-y:auto;max-width:150px}
+    .legend i{width:14px;height:12px;float:left;margin-right:6px;
+      opacity:.85;border:1px solid rgba(0,0,0,.1)}
+    .gmap{filter:grayscale(100%) contrast(1.1) brightness(1.05)}
+    #time-overlay{position:absolute;top:12px;left:50%;transform:translateX(-50%);
+      z-index:1000;background:rgba(15,25,40,0.62);color:#fff;
+      font-size:1.6rem;font-weight:700;letter-spacing:1px;
+      padding:8px 24px;border-radius:12px;pointer-events:none;
+      text-shadow:0 2px 8px rgba(0,0,0,0.5);backdrop-filter:blur(4px);
+      white-space:nowrap;display:none;}
+    @media(max-width:600px){
+      header{flex-direction:column;align-items:flex-start}
+      .ct{width:100%}
+      #dp{width:100%;max-height:45vh}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🌿 Meteo Guadalentín</h1>
+    <div class="sub">Actualizado: <span id="tl">__FECHA__</span></div>
+  </div>
+  <div class="ct">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <span style="font-size:.68rem;color:#ecf0f1;font-weight:700" id="tl-label">⏱ Últimas 12h — por hora</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button id="pb" style="background:transparent;color:#fff;border:none;cursor:pointer;font-size:1rem;padding:0 3px">▶️</button>
+        <input type="range" id="sl" min="0" max="0" value="0" style="width:100px;cursor:pointer">
+        <input type="date" id="sl-fecha-ini" style="display:none;font-size:10px;padding:2px 4px;border-radius:4px;border:none;width:100px;cursor:pointer">
+        <span id="sl-sep" style="display:none;color:#ecf0f1;font-size:11px;">→</span>
+        <input type="date" id="sl-fecha-fin" style="display:none;font-size:10px;padding:2px 4px;border-radius:4px;border:none;width:100px;cursor:pointer">
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <span style="font-size:.68rem;color:#ecf0f1;font-weight:700">🔆 Opacidad</span>
+      <input type="range" id="op" min="0" max="1" step="0.05" value="0.35" style="width:75px;cursor:pointer">
+    </div>
+    <select id="ps" onchange="onParamChange()">
+      <option value="temp" selected>🌡 Temperatura (°C)</option>
+      <option value="precip">🌧 Precipitación (mm)</option>
+      <option value="humidity">💧 Humedad (%)</option>
+      <option value="wind">💨 Viento (km/h)</option>
+      <option value="oidio">🍇 Riesgo Oídio</option>
+      <option value="mildiu">🍃 Riesgo Mildiu</option>
+    </select>
+
+  </div>
+</header>
+<div id="precip-barra" style="display:none;background:#2471a3;padding:6px 1rem;align-items:center;gap:10px;flex-shrink:0;justify-content:flex-end;">
+  <span style="color:#fff;font-size:13px;font-weight:600;">🌧 Período:</span>
+  <select id="precip-periodo" style="padding:5px 12px;border-radius:6px;border:none;background:#fff;color:#2c3e50;font-weight:700;font-size:13px;cursor:pointer;" onchange="render()">
+    <option value="hoy">📅 Hoy acumulado</option>
+    <option value="ayer">📅 Últimas 24 horas</option>
+    <option value="semana">📅 Últimos 7 días</option>
+  </select>
+</div>
+<div id="aviso-dias"></div>
+<div class="ma" style="position:relative;">
+  <div id="time-overlay"></div>
+  <div id="map"></div>
+  <div id="dp">
+    <div id="dh">
+      <span>Detalle de estación</span>
+      <button id="cp" onclick="hidePanel()" title="Cerrar">✕</button>
+    </div>
+    <div id="dc">
+      <p style="color:#aaa;font-size:13px;line-height:1.7">
+        Haz clic en una estación del mapa para ver sus datos aquí.
+      </p>
+    </div>
+  </div>
+</div>
+<script>__JS__</script>
+<script>
+// Auto-recarga de datos cada 5 minutos
+setTimeout(function(){ location.reload(); }, 5*60*1000);
+</script>
+</body>
+</html>"""
+
+# ── Principal ─────────────────────────────────────────────────
+def principal():
     try:
         from zoneinfo import ZoneInfo
         ahora = datetime.now(ZoneInfo("Europe/Madrid"))
     except ImportError:
         ahora = datetime.now()
-        
-    limite = ahora - timedelta(hours=6)
-    historial_limpio = []
-    for h in historial:
+
+    print(f"\n🚀 Obteniendo datos WU de {len(ESTACIONES)} estaciones...")
+    datos_wu = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=25) as ex:
+        for d in ex.map(wu, ESTACIONES):
+            if d: datos_wu.append(d)
+    print(f"  ✅ {len(datos_wu)}/{len(ESTACIONES)} con datos.")
+    if not datos_wu:
+        print("  ❌ Sin datos WU. Comprueba la conexión."); return
+
+    h_prev = leer(F_H24, [])
+    minutos = 15
+    if h_prev:
         try:
-            t = datetime.fromisoformat(h['timestamp'])
-            if t > limite:
-                historial_limpio.append(h)
-        except:
+            t_prev = datetime.fromisoformat(h_prev[-1]['timestamp'])
+            if t_prev.tzinfo is None: t_prev = t_prev.replace(tzinfo=ahora.tzinfo)
+            minutos = min(60, max(1, round((ahora - t_prev).total_seconds() / 60)))
+        except Exception:
             pass
-            
-    historial_limpio.append({
-        'timestamp': ahora.isoformat(),
-        'stations': nuevos_datos_estaciones
-    })
-    
-    directorio_publico = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(directorio_publico, 'history_24h.json'), 'w', encoding='utf-8') as f:
-        json.dump(historial_limpio, f, ensure_ascii=False)
-        
-    return historial_limpio, ahora
 
-def generar_json(datos_estaciones, ahora):
-    """Genera data.json con datos actuales de todas las estaciones para la app L&A"""
-    estaciones_json = []
-    for est in datos_estaciones:
-        m = est.get('metric', {})
-        estaciones_json.append({
-            "id":          est.get('stationID', ''),
-            "nombre":      est.get('neighborhood', est.get('stationID', '')),
-            "lat":         est.get('lat'),
-            "lon":         est.get('lon'),
-            "temp":        m.get('temp'),
-            "tempMin":     m.get('tempLow'),
-            "tempMax":     m.get('tempHigh'),
-            "humedad":     est.get('humidity'),
-            "lluvia":      m.get('precipTotal', 0),
-            "lluviaHora":  m.get('precipRate', 0),
-            "viento":      m.get('windSpeed'),
-            "rachaViento": m.get('windGust'),
-            "presion":     m.get('pressure'),
-            "dewPoint":    m.get('dewpt'),
-            "uv":          est.get('uv'),
-            "solar":       est.get('solarRadiation'),
-            "actualizado": ahora.strftime("%d/%m/%Y %H:%M:%S")
-        })
+    print("\n📚 Historial 24h...")
+    h24 = hist24(datos_wu, ahora)
 
-    payload = {
-        "actualizado": ahora.strftime("%d/%m/%Y %H:%M:%S"),
-        "timestamp":   ahora.isoformat(),
-        "estaciones":  estaciones_json
-    }
+    print(f"\n🌾 Historial agrícola... (+{minutos} min)")
+    hagri = hist_agri(datos_wu, ahora, minutos)
+    dias_acum = len(hagri)
 
-    directorio_publico = os.path.dirname(os.path.abspath(__file__))
-    ruta_json = os.path.join(directorio_publico, 'data.json')
-    with open(ruta_json, 'w', encoding='utf-8') as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-    print(f"✅ data.json generado con {len(estaciones_json)} estaciones")
+    if dias_acum < MIN_DIAS:
+        falt = MIN_DIAS - dias_acum
+        print(f"\n  ⏳ Faltan {falt} día{'s' if falt>1 else ''} más para activar el cálculo de riesgo.")
+        print(f"     Ejecuta el script diariamente — el riesgo se activará solo.")
 
+    print("\n🔬 Calculando riesgo...")
+    r = calcular_riesgo(hagri, datos_wu)
+    niveles = ['Sin riesgo','Bajo','Medio','ALTO']
+    for sid, rv in r.items():
+        ot = niveles[rv['oidio']]  if rv['oidio']  >= 0 else '⏳ Pendiente'
+        mt = niveles[rv['mildiu']] if rv['mildiu'] >= 0 else '⏳ Pendiente'
+        print(f"  {sid}: Oídio={ot} | Mildiu={mt} | {rv['fuente_datos']}")
 
-def _goidanich(dias):
-    """Puntuación Goidanich para una lista de días."""
-    puntos = 0
-    dias_inf = 0
-    for dia in dias:
-        tmax, tmin = dia['tempMax'], dia['tempMin']
-        prec  = dia['precipTotal']
-        hum_h = dia['humedadAltaMinutos'] / 60.0
-        if tmax is None or tmin is None:
-            continue
-        tmed = (tmax + tmin) / 2.0
-        if tmed < 11 or tmed > 30:
-            continue
-        if prec < 2.0 and hum_h < 2.0:
-            continue
-        dias_inf += 1
-        if 18 <= tmed <= 22:
-            p = 3
-        elif (14 <= tmed < 18) or (22 < tmed <= 25):
-            p = 2
-        else:
-            p = 1
-        if prec >= 10:
-            p += 1
-        puntos += p
-    nivel = 3 if puntos >= 15 else 2 if puntos >= 5 else 1
-    return nivel, puntos, dias_inf
+    print("\n📈 Guardando snapshot de riesgo diario...")
+    guardar_riesgo_dia(r, ahora)
 
+    print("\n🔄 Rellenando riesgo de días anteriores...")
+    recalcular_riesgo_dias_anteriores(hagri, {}, datos_wu, ahora, n_dias=3)
 
-def calcular_historial_agro(historial_agricola, historial_riesgo, historial_dsv, coordenadas):
-    """
-    Calcula mildiu (Goidanich, ventana deslizante 14 días) y oídio (DSV) para cada
-    fecha disponible en historial_agricola.
-    Retorna {YYYY-MM-DD: {station_id: {lat, lon, mildiu_nivel, mildiu_puntos,
-                                       mildiu_dias, oidio_nivel, dsv_7d, dsv_temporada}}}.
-    """
-    fechas_ord = sorted(historial_agricola.keys())
-    resultado  = {}
+    print("\n🗺  Generando HTML...")
+    ruta = generar_html(h24, r, ahora, dias_acum)
 
-    for i, fecha_actual in enumerate(fechas_ord):
-        ventana = fechas_ord[max(0, i - 13): i + 1]   # hasta 14 días
-
-        datos_por_estacion = {}
-        for f in ventana:
-            for sid, d in historial_agricola[f].items():
-                datos_por_estacion.setdefault(sid, []).append({
-                    'tempMax':            d.get('tempMax'),
-                    'tempMin':            d.get('tempMin'),
-                    'precipTotal':        d.get('precipTotal', 0) or 0,
-                    'humedadAltaMinutos': d.get('humedadAltaMinutos', 0) or 0
-                })
-
-        oidio_fecha = historial_riesgo.get(fecha_actual, {})
-        resultado_fecha = {}
-
-        for sid, dias in datos_por_estacion.items():
-            lat, lon = coordenadas.get(sid, (None, None))
-            if not lat or not lon:
-                continue
-
-            mildiu_nivel, puntos, dias_inf = _goidanich(dias)
-
-            oidio_d = oidio_fecha.get(sid, {})
-            if oidio_d and oidio_d.get('datos_ok'):
-                oidio_nivel  = oidio_d.get('oidio', 1)
-                dsv_7d       = oidio_d.get('dsv_7d', 0)
-                dsv_temp     = oidio_d.get('dsv_temporada', 0)
-            else:
-                dsv_acum    = historial_dsv.get(sid, {}).get('dsv_acumulado', 0)
-                oidio_nivel = 3 if dsv_acum >= 60 else 2 if dsv_acum >= 20 else 1
-                dsv_7d      = 0
-                dsv_temp    = dsv_acum
-
-            resultado_fecha[sid] = {
-                'lat':           lat,   'lon':          lon,
-                'mildiu_nivel':  mildiu_nivel,
-                'mildiu_puntos': puntos, 'mildiu_dias': dias_inf,
-                'oidio_nivel':   oidio_nivel,
-                'dsv_7d':        dsv_7d, 'dsv_temporada': dsv_temp
-            }
-
-        if resultado_fecha:
-            resultado[fecha_actual] = resultado_fecha
-
-    n_est = round(sum(len(v) for v in resultado.values()) / len(resultado)) if resultado else 0
-    print(f"✅ Historial agro: {len(resultado)} fechas · ~{n_est} estaciones/día "
-          f"(Goidanich mildiu · DSV oídio)")
-    return resultado
-
-
-def generar_html(historial_data, ahora, historial_agro=None):
-    if historial_agro is None:
-        historial_agro = {}
-    fecha_actualizada = ahora.strftime("%d/%m/%Y %H:%M:%S")
-
-    html_content = f"""
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Meteo Guadalentín</title>
-
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-SP9MPQ1FFN"></script>
-        <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){{dataLayer.push(arguments);}}
-          gtag('js', new Date());
-          gtag('config', 'G-SP9MPQ1FFN');
-        </script>
-
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-        
-        <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #0d1117; display: flex; flex-direction: column; height: 100vh; }}
-            header {{ background-color: #161b22; color: #e6edf3; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 1px 0 #30363d; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid #30363d; }}
-            .header-left h1 {{ margin: 0; font-size: 1.5rem; font-weight: 600; color: #58a6ff; letter-spacing: 0.5px; }}
-            .subtitle {{ font-size: 0.85rem; color: #8b949e; margin-top: 4px; }}
-            .controls {{ display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }}
-            .controls select {{ padding: 8px 15px; border-radius: 6px; border: 1px solid #30363d; background: #21262d; color: #e6edf3; font-weight: bold; font-size: 1rem; outline: none; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }}
-
-            .container {{ display: flex; flex: 1; overflow: hidden; position: relative; }}
-            #map {{ flex: 1; height: 100%; }}
-
-            .legend {{ background: rgba(13,17,23,0.92); padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); font-size: 0.75rem; font-weight: bold; line-height: 1.4; color: #e6edf3; max-height: 50vh; overflow-y: auto; max-width: 110px; border: 1px solid #30363d; }}
-            .legend i {{ width: 14px; height: 12px; float: left; margin-right: 6px; opacity: 0.85; border: 1px solid rgba(255,255,255,0.1); }}
-
-            .station-label {{ background: transparent; border: none; box-shadow: none; font-size: 11px; font-weight: bold; color: #e6edf3; text-shadow: 1px 1px 3px #0d1117, -1px -1px 3px #0d1117; text-align: center; }}
-            .grayscale-map {{ filter: grayscale(100%) contrast(1.1) brightness(1.05); }}
-
-            #loading {{ display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(13,17,23,0.8); z-index: 2000; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; color: #58a6ff; flex-direction: column; }}
-            #mapa-tiempo-label {{ position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%); background: rgba(13,17,23,0.72); color: #e6edf3; font-size: 3rem; font-weight: bold; padding: 10px 28px; border-radius: 14px; z-index: 1000; pointer-events: none; text-align: center; line-height: 1.2; text-shadow: 0 2px 8px rgba(0,0,0,0.9); display: none; backdrop-filter: blur(4px); border: 1px solid #30363d; }}
-
-            @media (max-width: 600px) {{
-                header {{ padding: 0.8rem 1rem; flex-direction: column; align-items: flex-start; gap: 10px; }}
-                .controls {{ width: 100%; }}
-                .controls select, #controles-agro select {{ width: 100%; padding: 10px; font-size: 1rem; }}
-                .legend {{ font-size: 0.75rem; padding: 6px 8px; }}
-                .legend i {{ width: 14px; height: 12px; }}
-            }}
-            .tab-btn {{ background: rgba(88,166,255,0.08); color: #8b949e; border: 1px solid #30363d; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: all 0.2s; }}
-            .tab-btn.active {{ background: #58a6ff; color: #0d1117; border-color: #58a6ff; }}
-            .tab-btn:hover:not(.active) {{ background: rgba(88,166,255,0.15); color: #e6edf3; }}
-            .btn-capa {{ border-radius: 6px; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: bold; border: 1px solid #30363d; color: #8b949e; opacity: 0.5; transition: opacity 0.2s, border-color 0.2s, color 0.2s; }}
-            .btn-capa.activo {{ opacity: 1; border-color: #58a6ff; color: #e6edf3; }}
-            .btn-filtro-agro {{ background: rgba(88,166,255,0.08); color: #8b949e; border: 1px solid #30363d; border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 0.78rem; font-weight: bold; transition: all 0.2s; }}
-            .btn-filtro-agro.activo {{ background: #58a6ff; color: #0d1117; border-color: #58a6ff; }}
-            .btn-filtro-agro:hover:not(.activo) {{ background: rgba(88,166,255,0.18); color: #e6edf3; }}
-        </style>
-    </head>
-    <body>
-        <header>
-            <div class="header-left">
-                <h1>Meteo Guadalentín</h1>
-                <div class="subtitle">Actualizado: <span id="time-label">{fecha_actualizada}</span></div>
-                <div style="display:flex; gap:6px; margin-top:6px;">
-                    <button class="tab-btn active" id="tab-meteo-btn" onclick="switchTab('meteo')">Meteorológico</button>
-                    <button class="tab-btn" id="tab-agro-btn" onclick="switchTab('agro')">Agrometeorológico</button>
-                </div>
-            </div>
-            <div class="controls">
-                <div id="controles-meteo" style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
-                    <div style="display:flex; flex-direction:column; align-items:center;">
-                        <span style="font-size:0.75rem; color:#ecf0f1; font-weight:bold;">Máquina del Tiempo</span>
-                        <div style="display:flex; align-items:center; gap:5px;">
-                            <button id="play-btn" style="background:transparent; color:white; border:none; border-radius:4px; cursor:pointer; font-size:1.1rem; padding:0 5px;" title="Reproducir Animación">▶️</button>
-                            <input type="range" id="time-slider" min="0" max="0" value="0" style="width: 100px; cursor: pointer;" title="Desliza para ver el historial">
-                        </div>
-                    </div>
-                    <div style="display:flex; flex-direction:column; align-items:center;">
-                        <span style="font-size:0.75rem; color:#ecf0f1; font-weight:bold;">Transparencia</span>
-                        <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="0.35" style="width: 80px; cursor: pointer;">
-                    </div>
-                    <select id="param-select" onchange="actualizarMapa()">
-                        <option value="precip">Precipitación Acumulada (mm)</option>
-                        <option value="temp" selected>Temperatura (°C)</option>
-                        <option value="humidity">Humedad (%)</option>
-                        <option value="wind">Rachas de Viento (km/h)</option>
-                    </select>
-                </div>
-                <div id="controles-agro" style="display:none; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <button id="btn-capa-mildiu" class="btn-capa activo" onclick="toggleCapa('mildiu')" style="background:#1565c0;">● Mildiu</button>
-                    <button id="btn-capa-oidio"  class="btn-capa activo" onclick="toggleCapa('oidio')"  style="background:#e65100;">■ Oídio</button>
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
-                        <span style="font-size:0.72rem;color:#ecf0f1;font-weight:bold;">Máquina del Tiempo</span>
-                        <div style="display:flex; gap:4px;">
-                            <button id="filtro-7d"   class="btn-filtro-agro activo" onclick="setFiltroAgro(7)">7d</button>
-                            <button id="filtro-15d"  class="btn-filtro-agro"        onclick="setFiltroAgro(15)">15d</button>
-                            <button id="filtro-todo" class="btn-filtro-agro"        onclick="setFiltroAgro(0)">Todo</button>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:5px;">
-                            <button id="agro-play-btn" style="background:transparent;color:white;border:none;cursor:pointer;font-size:1.1rem;padding:0 5px;" onclick="toggleAgroPlay()" title="Reproducir">▶️</button>
-                            <input type="range" id="agro-time-slider" min="0" max="0" value="0" style="width:100px;cursor:pointer;">
-                            <span id="agro-date-label" style="font-size:0.78rem;color:#ecf0f1;min-width:90px;"></span>
-                        </div>
-                    </div>
-                    <span style="font-size:0.7rem;color:#bdc3c7;line-height:1.4;">B=Bajo&nbsp; M=Mod&nbsp; A=Alto</span>
-                </div>
-            </div>
-        </header>
-        
-        <div class="container">
-            <div id="map"></div>
-            <div id="mapa-tiempo-label"></div>
-            <div id="info-agro-panel" style="display:none;position:absolute;bottom:90px;left:16px;z-index:1500;background:rgba(13,17,23,0.95);color:#e6edf3;border:1px solid #30363d;border-radius:10px;padding:14px 16px;max-width:260px;font-size:0.8rem;line-height:1.6;box-shadow:0 4px 20px rgba(0,0,0,0.6);backdrop-filter:blur(4px);">
-                <button onclick="toggleInfoAgro(null)" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#8b949e;font-size:1rem;cursor:pointer;">✕</button>
-                <div id="info-agro-contenido"></div>
-            </div>
-            <div id="loading">
-                <div>Calculando mapa de calor...</div>
-            </div>
-        </div>
-
-        <script>
-            var nombresPersonalizados = {{
-                "ITOTAN8": "Mirador - Lebor Alto",
-                "ITOTAN2": "METEO UNDERWORLD",
-                "ITOTAN16": "Mortí Bajo -  Camino Aleurrosas",
-                "ITOTAN5": "Estación Meteorológica Tierno Galván",
-                "ITOTAN33": "Huerto Hostench",
-                "ITOTAN43": "Casa Totana",
-                "ITOTAN31": "CAMPING - Lebor - Totana",
-                "ITOTAN42": "Secanos",
-                "ITOTAN9": "LA CANAL - Raiguero",
-                "ITOTAN41": "Ecowitt WN1981",
-                "ITOTAN10": "WS Rancho",
-                "ITOTAN17": "La Barquilla"
-            }};
-
-            var historyData = (function(raw) {{
-                var porHora = {{}};
-                raw.forEach(function(e) {{
-                    var d = new Date(e.timestamp);
-                    var k = d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()+'-'+d.getHours();
-                    porHora[k] = e;
-                }});
-                return Object.values(porHora).sort(function(a,b) {{
-                    return new Date(a.timestamp)-new Date(b.timestamp);
-                }});
-            }})({json.dumps(historial_data)});
-            var historialAgro = {json.dumps(historial_agro)};
-            var currentTimestampIndex = historyData.length - 1;
-            var modoActivo = 'meteo';
-            window.globalHeatmapOpacity = 0.35;
-            var capaMildiuActiva = true;
-            var capaOidioActiva  = true;
-            var capaMildiuGroup     = L.layerGroup();
-            var capaOidioGroup      = L.layerGroup();
-            var heatmapMildiuGroup  = L.layerGroup();
-            var heatmapOidioGroup   = L.layerGroup();
-            var historialAgroFechas = [];
-            var filtroAgroDias      = 7;
-            var agroSliderIndex     = 0;
-            var agroPlayInterval    = null;
-
-            var mapaOscuro = L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; CARTO Dark Matter' }});
-            var mapaClaro = L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{ attribution: '&copy; CARTO' }});
-            var terreno = L.tileLayer('http://{{s}}.google.com/vt/lyrs=p&x={{x}}&y={{y}}&z={{z}}', {{
-                maxZoom: 20,
-                subdomains:['mt0','mt1','mt2','mt3'],
-                attribution: '&copy; Google Terrain',
-                className: 'grayscale-map'
-            }});
-            var estandar = L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{ attribution: '&copy; OpenStreetMap' }});
-            var googleStreets = L.tileLayer('http://{{s}}.google.com/vt/lyrs=m&x={{x}}&y={{y}}&z={{z}}', {{
-                maxZoom: 20,
-                subdomains:['mt0','mt1','mt2','mt3'],
-                attribution: '&copy; Google'
-            }});
-            var googleSatelite = L.tileLayer('http://{{s}}.google.com/vt/lyrs=s,h&x={{x}}&y={{y}}&z={{z}}', {{
-                maxZoom: 20,
-                subdomains:['mt0','mt1','mt2','mt3'],
-                attribution: '&copy; Google'
-            }});
-
-            var map = L.map('map', {{
-                center: [37.76, -1.53],
-                zoom: 10,
-                layers: [terreno]
-            }});
-
-            map.createPane('heatmapPane');
-            map.getPane('heatmapPane').style.zIndex = 390;
-            map.getPane('heatmapPane').style.filter = 'blur(15px)';
-            map.createPane('heatmapMildiuPane');
-            map.getPane('heatmapMildiuPane').style.zIndex = 387;
-            map.getPane('heatmapMildiuPane').style.filter = 'blur(18px)';
-            map.createPane('heatmapOidioPane');
-            map.getPane('heatmapOidioPane').style.zIndex = 388;
-            map.getPane('heatmapOidioPane').style.filter = 'blur(18px)';
-
-            var baseMaps = {{
-                "Oscuro": mapaOscuro,
-                "Relieve": terreno,
-                "Mapa Claro": mapaClaro,
-                "Google Maps": googleStreets,
-                "Google Satélite": googleSatelite,
-                "Estándar": estandar
-            }};
-
-            var radarLayer = L.layerGroup();
-            fetch('https://api.rainviewer.com/public/weather-maps.json')
-                .then(res => res.json())
-                .then(data => {{
-                    var lastPast = data.radar.past[data.radar.past.length - 1];
-                    var radarUrl = data.host + lastPast.path + '/256/{{z}}/{{x}}/{{y}}/2/1_1.png';
-                    var realRadarLayer = L.tileLayer(radarUrl, {{ opacity: 0.7, zIndex: 400, attribution: 'RainViewer', maxNativeZoom: 7, maxZoom: 18 }});
-                    radarLayer.addLayer(realRadarLayer);
-                }});
-
-            var markersLayer = L.layerGroup();
-            var heatmapLayerGroup = L.layerGroup();
-            var heatmapLayer = null;
-
-            var overlayMaps = {{
-                "Radar de Lluvia": radarLayer,
-                "Mapa de Calor": heatmapLayerGroup,
-                "Etiquetas de Datos": markersLayer
-            }};
-            
-            L.control.layers(baseMaps, overlayMaps, {{position: 'topright', collapsed: true}}).addTo(map);
-
-            heatmapLayerGroup.addTo(map);
-            markersLayer.addTo(map);
-
-            var locateControl = L.control({{position: 'topleft'}});
-            locateControl.onAdd = function (map) {{
-                var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                div.innerHTML = '<a href="#" title="Mi Ubicación" style="font-size:20px; font-weight:normal; color:#2c3e50; background:white; display:flex; justify-content:center; align-items:center; text-decoration:none; width:30px; height:30px;">🎯</a>';
-                div.onclick = function(e){{
-                    e.preventDefault();
-                    map.locate({{setView: true, maxZoom: 13}});
-                }};
-                return div;
-            }};
-            locateControl.addTo(map);
-
-            var userMarker = null;
-            map.on('locationfound', function(e){{
-                if(userMarker) map.removeLayer(userMarker);
-                userMarker = L.circleMarker(e.latlng, {{radius: 8, color: '#3498db', fillColor: '#3498db', fillOpacity: 0.8}}).addTo(map)
-                 .bindPopup("Estás aquí").openPopup();
-            }});
-            map.on('locationerror', function(e){{
-                alert("No se pudo obtener tu ubicación. Verifica los permisos de localización en tu navegador o dispositivo.");
-            }});
-
-            function interpolateColor(c1, c2, factor) {{
-                var r = Math.round(c1[0] + factor * (c2[0] - c1[0]));
-                var g = Math.round(c1[1] + factor * (c2[1] - c1[1]));
-                var b = Math.round(c1[2] + factor * (c2[2] - c1[2]));
-                return `rgb(${{r}}, ${{g}}, ${{b}})`;
-            }}
-
-            function getColor(val, param) {{
-                if (param === 'temp') {{
-                    var stops = [
-                        {{v: -5, c: [148, 0, 211]}},   // Violeta
-                        {{v: 0,  c: [0, 0, 200]}},     // Azul oscuro
-                        {{v: 5,  c: [0, 115, 255]}},   // Azul
-                        {{v: 10, c: [0, 200, 200]}},   // Cian
-                        {{v: 15, c: [50, 205, 50]}},   // Verde Lima
-                        {{v: 20, c: [255, 255, 0]}},   // Amarillo
-                        {{v: 25, c: [255, 140, 0]}},   // Naranja oscuro
-                        {{v: 30, c: [220, 20, 60]}},   // Rojo Carmesí
-                        {{v: 35, c: [139, 0, 0]}},     // Rojo oscuro
-                        {{v: 40, c: [200, 0, 200]}}    // Magenta
-                    ];
-                    if (val <= stops[0].v) return `rgb(${{stops[0].c.join(',')}})`;
-                    if (val >= stops[stops.length-1].v) return `rgb(${{stops[stops.length-1].c.join(',')}})`;
-                    
-                    for (var i = 0; i < stops.length - 1; i++) {{
-                        if (val >= stops[i].v && val <= stops[i+1].v) {{
-                            var factor = (val - stops[i].v) / (stops[i+1].v - stops[i].v);
-                            return interpolateColor(stops[i].c, stops[i+1].c, factor);
-                        }}
-                    }}
-
-                }} else if (param === 'precip') {{
-                    return val >= 70 ? '#ff0000' :
-                           val >= 50 ? '#ff99ff' :
-                           val >= 40 ? '#cc66ff' :
-                           val >= 30 ? '#993399' :
-                           val >= 20 ? '#660099' :
-                           val >= 10 ? '#0000ff' :
-                           val >= 4  ? '#3366ff' :
-                           val >= 2  ? '#00ccff' :
-                           val >= 0.5 ? '#99ffff':
-                           val >  0   ? '#e6ffff': 'transparent';
-                }} else if (param === 'humidity') {{
-                    return val >= 90 ? '#0d47a1' :
-                           val >= 70 ? '#1976d2' :
-                           val >= 50 ? '#42a5f5' :
-                           val >= 30 ? '#90caf9' : '#e3f2fd';
-                }} else if (param === 'wind') {{
-                    return val >= 40 ? '#b71c1c' : 
-                           val >= 30 ? '#e65100' : 
-                           val >= 20 ? '#f57f17' : 
-                           val >= 10 ? '#fbc02d' : 
-                           val >= 5  ? '#81c784' : 
-                           val >= 2  ? '#b2dfdb' : 'transparent';
-                }}
-            }}
-
-            function getRawValue(est, param) {{
-                var m = est.metric;
-                if (!m) return null;
-                if (param === 'precip') return m.precipTotal;
-                if (param === 'temp') return m.temp;
-                if (param === 'humidity') return est.humidity;
-                if (param === 'wind') return m.windGust;
-                return null;
-            }}
-
-            var legend = L.control({{position: 'bottomleft'}});
-            legend.onAdd = function (map) {{
-                this._div = L.DomUtil.create('div', 'legend');
-                return this._div;
-            }};
-            legend.update = function (param) {{
-                var grades, title, unit;
-                if (param === 'precip') {{
-                    title = 'Precipitación'; unit = 'L/m² o mm'; grades = [0.5, 2, 4, 10, 20, 30, 40, 50, 70];
-                }} else if (param === 'temp') {{
-                    title = 'Temperatura'; unit = '°C'; grades = [5, 10, 15, 20, 25, 30, 35, 40];
-                }} else if (param === 'humidity') {{
-                    title = 'Humedad'; unit = '%'; grades = [30, 50, 70, 90];
-                }} else if (param === 'wind') {{
-                    title = 'Rachas Viento'; unit = 'km/h'; grades = [2, 5, 10, 20, 30, 40];
-                }}
-
-                let html = `<div style="margin-bottom:6px;font-size:0.85rem;line-height:1.1;">${{title}}<br><span style="font-size:0.7rem;color:#666">${{unit}}</span></div>`;
-                html += `<div><i style="background:${{getColor(grades[grades.length-1], param)}}"></i> > ${{grades[grades.length-1]}}</div>`;
-                for (var i = grades.length - 2; i >= 0; i--) {{
-                    html += `<div><i style="background:${{getColor(grades[i], param)}}"></i> ${{grades[i]}} - ${{grades[i+1]}}</div>`;
-                }}
-                if (param === 'precip') {{
-                    html += `<div><i style="background:transparent; border:1px solid #ccc;"></i> 0</div>`;
-                }}
-                this._div.innerHTML = html;
-            }};
-            legend.addTo(map);
-
-            var legendMildiu = L.control({{position: 'bottomleft'}});
-            legendMildiu.onAdd = function(map) {{
-                this._div = L.DomUtil.create('div', 'legend');
-                this._div.style.display = 'none';
-                this._div.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-                        <span style="font-size:0.85rem;font-weight:bold;color:#58a6ff;">● Mildiu</span>
-                        <span onclick="toggleInfoAgro('mildiu')" title="Ver modelo" style="cursor:pointer;font-size:0.9rem;color:#8b949e;margin-left:8px;">ⓘ</span>
-                    </div>
-                    <div><i style="background:#0d47a1"></i> Alto</div>
-                    <div><i style="background:#1976d2"></i> Moderado</div>
-                    <div><i style="background:#64b5f6"></i> Bajo</div>`;
-                L.DomEvent.disableClickPropagation(this._div);
-                return this._div;
-            }};
-            legendMildiu.addTo(map);
-
-            var legendOidio = L.control({{position: 'bottomleft'}});
-            legendOidio.onAdd = function(map) {{
-                this._div = L.DomUtil.create('div', 'legend');
-                this._div.style.display = 'none';
-                this._div.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-                        <span style="font-size:0.85rem;font-weight:bold;color:#e65100;">■ Oídio</span>
-                        <span onclick="toggleInfoAgro('oidio')" title="Ver modelo" style="cursor:pointer;font-size:0.9rem;color:#8b949e;margin-left:8px;">ⓘ</span>
-                    </div>
-                    <div><i style="background:#b71c1c"></i> Alto</div>
-                    <div><i style="background:#e65100"></i> Moderado</div>
-                    <div><i style="background:#ffa000"></i> Bajo</div>`;
-                L.DomEvent.disableClickPropagation(this._div);
-                return this._div;
-            }};
-            legendOidio.addTo(map);
-
-            var _infoAgroActual = null;
-            var INFO_AGRO = {{
-                mildiu: `<div style="font-weight:bold;color:#58a6ff;margin-bottom:8px;font-size:0.88rem;">● Mildiu — Modelo Goidanich</div>
-                    <b>Condición de infección diaria:</b><br>
-                    T<sub>med</sub> entre 11 °C y 30 °C<br>
-                    + lluvia &ge;2 mm <em>o</em> HR&ge;85% durante &ge;2 h<br><br>
-                    <b>Puntuación diaria:</b><br>
-                    18–22 °C → 3 pts (óptimo)<br>
-                    14–18 °C o 22–25 °C → 2 pts<br>
-                    Resto → 1 pt<br>
-                    Lluvia &ge;10 mm → +1 pt extra<br><br>
-                    <b>Ventana:</b> 14 días deslizantes<br><br>
-                    <b>Niveles:</b><br>
-                    &ge;15 pts → <span style="color:#0d47a1;font-weight:bold;">Alto</span><br>
-                    5–14 pts → <span style="color:#1976d2;font-weight:bold;">Moderado</span><br>
-                    &lt;5 pts &nbsp;→ <span style="color:#64b5f6;font-weight:bold;">Bajo</span>`,
-                oidio: `<div style="font-weight:bold;color:#e65100;margin-bottom:8px;font-size:0.88rem;">■ Oídio — DSV Gubler-Thomas (1982)</div>
-                    <b>Condición:</b> T<sub>med</sub> entre 15 °C y 40 °C<br>
-                    + horas con HR &ge;85%<br>
-                    (precipitación &gt;2,5 mm anula el día)<br><br>
-                    <b>Tabla DSV diario:</b><br>
-                    15–19 °C: 1–4 pts según horas HR<br>
-                    19–22 °C: 2–5 pts<br>
-                    22–26 °C: 3–6 pts (óptimo)<br>
-                    26–40 °C: 2–5 pts<br><br>
-                    <b>Niveles (DSV acumulado 7 días):</b><br>
-                    &ge;20 → <span style="color:#b71c1c;font-weight:bold;">Alto</span><br>
-                    1–19 &nbsp;→ <span style="color:#e65100;font-weight:bold;">Moderado</span><br>
-                    0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ <span style="color:#ffa000;font-weight:bold;">Bajo</span>`
-            }};
-            function toggleInfoAgro(enfermedad) {{
-                var panel = document.getElementById('info-agro-panel');
-                if (!enfermedad || _infoAgroActual === enfermedad) {{
-                    panel.style.display = 'none';
-                    _infoAgroActual = null;
-                }} else {{
-                    document.getElementById('info-agro-contenido').innerHTML = INFO_AGRO[enfermedad];
-                    panel.style.display = '';
-                    _infoAgroActual = enfermedad;
-                }}
-            }}
-
-            function actualizarOverlayMeteo(isoString) {{
-                var d = new Date(isoString);
-                var today = new Date();
-                var isToday = (d.getDate() === today.getDate() && d.getMonth() === today.getMonth());
-                var hora = d.toLocaleTimeString('es-ES', {{hour:'2-digit', minute:'2-digit'}});
-                var dia = isToday ? 'Hoy' : 'Ayer ' + d.getDate() + '/' + String(d.getMonth()+1).padStart(2,'0');
-                var el = document.getElementById('mapa-tiempo-label');
-                el.innerHTML = `<div>${{hora}}</div><div style="font-size:1rem;font-weight:normal;opacity:0.85;">${{dia}}</div>`;
-                el.style.display = '';
-            }}
-
-            function actualizarOverlayAgro(fecha) {{
-                var el = document.getElementById('mapa-tiempo-label');
-                if (fecha) {{
-                    var hoy = new Date().toISOString().slice(0,10);
-                    var etiq = fecha === hoy ? 'Hoy' : '';
-                    el.innerHTML = `<div style="font-size:2.2rem;">${{formatFechaAgro(fecha)}}</div>` +
-                                   (etiq ? `<div style="font-size:0.95rem;font-weight:normal;opacity:0.85;">${{etiq}}</div>` : '');
-                    el.style.display = '';
-                }} else {{
-                    el.style.display = 'none';
-                }}
-            }}
-
-            function formatTimeLabel(isoString) {{
-                var d = new Date(isoString);
-                var today = new Date();
-                var isToday = (d.getDate() === today.getDate() && d.getMonth() === today.getMonth());
-                var timePart = d.toLocaleTimeString('es-ES', {{hour: '2-digit', minute:'2-digit'}});
-                if (isToday) {{
-                    return "Hoy, " + timePart;
-                }} else {{
-                    return "Ayer, " + timePart;
-                }}
-            }}
-
-            document.getElementById('time-slider').addEventListener('input', function(e) {{
-                currentTimestampIndex = parseInt(e.target.value);
-                var isLatest = (currentTimestampIndex === historyData.length - 1);
-                var ts = historyData[currentTimestampIndex].timestamp;
-                document.getElementById('time-label').innerText = formatTimeLabel(ts) + (isLatest ? " (Actual)" : " (Histórico)");
-                actualizarOverlayMeteo(ts);
-                actualizarMapa();
-            }});
-
-            var playInterval = null;
-            document.getElementById('play-btn').addEventListener('click', function() {{
-                var btn = this;
-                var slider = document.getElementById('time-slider');
-                
-                if (playInterval) {{
-                    clearInterval(playInterval);
-                    playInterval = null;
-                    btn.innerText = "▶️";
-                    btn.title = "Reproducir Animación";
-                }} else {{
-                    btn.innerText = "⏸️";
-                    btn.title = "Pausar Animación";
-                    
-                    if (currentTimestampIndex >= historyData.length - 1) {{
-                        currentTimestampIndex = 0; // Si está al final, vuelve al principio
-                    }}
-                    
-                    playInterval = setInterval(function() {{
-                        currentTimestampIndex++;
-                        if (currentTimestampIndex >= historyData.length) {{
-                            currentTimestampIndex = 0; // Bucle infinito
-                        }}
-                        slider.value = currentTimestampIndex;
-                        slider.dispatchEvent(new Event('input')); 
-                    }}, 500); // 0.5 segundos por fotograma
-                }}
-            }});
-
-            document.getElementById('opacity-slider').addEventListener('input', function(e) {{
-                window.globalHeatmapOpacity = parseFloat(e.target.value);
-                if (heatmapLayer) {{
-                    heatmapLayer.setStyle({{fillOpacity: window.globalHeatmapOpacity}});
-                }}
-            }});
-
-            document.getElementById('agro-time-slider').addEventListener('input', function(e) {{
-                agroSliderIndex = parseInt(e.target.value);
-                actualizarCapasAgro();
-            }});
-
-            function actualizarMapa() {{
-                try {{
-                    var param = document.getElementById('param-select').value;
-                        legend.update(param);
-                        
-                        heatmapLayerGroup.clearLayers();
-                        markersLayer.clearLayers();
-
-                        var currentData = historyData[currentTimestampIndex].stations;
-                        
-                        var features = [];
-                        var bounds = [];
-                        
-                        currentData.forEach(function(est) {{
-                            if (est && est.lat && est.lon) {{
-                                var val = getRawValue(est, param);
-                                if (val !== null && val !== undefined) {{
-                                    features.push(turf.point([est.lon, est.lat], {{value: val}}));
-                                    bounds.push([est.lat, est.lon]);
-                                    
-                                    var textVal;
-                                    if (param === 'precip') {{
-                                        textVal = val.toFixed(1);
-                                    }} else if (param === 'temp') {{
-                                        textVal = Math.round(val).toString() + "°";
-                                    }} else {{
-                                        textVal = Math.round(val).toString();
-                                    }}
-                                    
-                                    var windBarbHtml = "";
-                                    if (param === 'wind' && est.winddir !== null && est.winddir !== undefined) {{
-                                        windBarbHtml = `<svg style="position: absolute; top: -13px; left: -13px; width: 50px; height: 50px; transform: rotate(${{est.winddir}}deg); z-index: -1; pointer-events: none;" viewBox="0 0 50 50">
-                                            <line x1="25" y1="2" x2="25" y2="13" stroke="black" stroke-width="2.5" />
-                                        </svg>`;
-                                    }}
-                                    var bgColor = getColor(val, param);
-                                    
-                                    var markerHtml = `<div style="position: relative;">
-                                        <div style="
-                                            background-color: ${{bgColor}};
-                                            color: white;
-                                            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-                                            border: 1px solid white;
-                                            border-radius: 50%;
-                                            width: 24px;
-                                            height: 24px;
-                                            display: flex;
-                                            justify-content: center;
-                                            align-items: center;
-                                            font-weight: bold;
-                                            font-size: 11px;
-                                            letter-spacing: -0.5px;
-                                            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-                                        ">${{textVal}}</div>
-                                        ${{windBarbHtml}}
-                                    </div>`;
-
-                                    var marker = L.marker([est.lat, est.lon], {{
-                                        icon: L.divIcon({{
-                                            className: 'station-badge',
-                                            html: markerHtml,
-                                            iconSize: [24, 24],
-                                            iconAnchor: [12, 12]
-                                        }})
-                                    }});
-                                    
-                                    var nombrePersonalizado = nombresPersonalizados[est.stationID];
-                                    var nombreEstacion = nombrePersonalizado ? nombrePersonalizado : (est.neighborhood && est.neighborhood.trim() !== "" ? est.neighborhood : est.stationID);
-                                    var isAemet = !est.stationID.startsWith('I');
-                                    var linkUrl = isAemet ? "https://www.aemet.es/es/eltiempo/observacion/ultimosdatos" : "https://www.wunderground.com/dashboard/pws/" + est.stationID;
-                                    var linkText = isAemet ? "Ver en AEMET" : "Ver historial completo";
-                                    var linkColor = isAemet ? "#e67e22" : "#3498db";
-                                    var popupHtml = `<div style="text-align:center;">
-                                        <strong style="font-size:1.1rem; color:#2c3e50;">${{nombreEstacion}}</strong><br>
-                                        <hr style="margin:5px 0; border:0; border-top:1px solid #eee;">
-                                        <span style="font-size:1.2rem; font-weight:bold; display:block; margin-bottom:10px;">${{textVal}}</span>
-                                        <a href="${{linkUrl}}" target="_blank" style="display:inline-block; padding:5px 10px; background-color:${{linkColor}}; color:white; text-decoration:none; border-radius:5px; font-size:0.85rem; font-weight:bold;">${{linkText}}</a>
-                                    </div>`;
-                                    marker.bindPopup(popupHtml);
-                                    marker.bindTooltip(`<strong>${{nombreEstacion}}</strong>`, {{ direction: 'top', offset: [0, -10], opacity: 0.9 }});
-                                    markersLayer.addLayer(marker);
-                                }}
-                            }}
-                        }});
-                        
-                        if (features.length > 2) {{
-                            var collection = turf.featureCollection(features);
-                            var isTemp = (param === 'temp');
-                            var gridOptions = {{
-                                gridType: 'square',
-                                property: 'value',
-                                units: 'kilometers',
-                                weight: isTemp ? 2 : 4
-                            }};
-                            
-                            var cellSide = 2.5; 
-                            var interpolatedGrid = turf.interpolate(collection, cellSide, gridOptions);
-                            
-                            var finalGrid = turf.featureCollection(
-                                interpolatedGrid.features.filter(f => f.properties.value !== null && !isNaN(f.properties.value))
-                            );
-                            
-                            heatmapLayer = L.geoJSON(finalGrid, {{
-                                pane: 'heatmapPane',
-                                style: function(feature) {{
-                                    var val = feature.properties.value;
-                                    return {{
-                                        fillColor: getColor(val, param),
-                                        fillOpacity: window.globalHeatmapOpacity, 
-                                        stroke: false
-                                    }};
-                                }}
-                            }});
-                            heatmapLayerGroup.addLayer(heatmapLayer);
-                        }}
-                }} catch (e) {{
-                    console.error("Error dibujando el mapa de calor:", e);
-                }}
-            }}
-
-            function formatFechaAgro(dateStr) {{
-                var p = dateStr.split('-');
-                return p[2] + '/' + p[1] + '/' + p[0];
-            }}
-
-            function getAgroFechasFiltradas() {{
-                var todas = Object.keys(historialAgro).sort();
-                if (filtroAgroDias === 0) return todas;
-                return todas.slice(-filtroAgroDias);
-            }}
-
-            function setFiltroAgro(dias) {{
-                filtroAgroDias = dias;
-                ['filtro-7d','filtro-15d','filtro-todo'].forEach(function(id) {{
-                    document.getElementById(id).classList.remove('activo');
-                }});
-                var idActivo = dias === 7 ? 'filtro-7d' : dias === 15 ? 'filtro-15d' : 'filtro-todo';
-                document.getElementById(idActivo).classList.add('activo');
-                inicializarAgroSlider();
-            }}
-
-            function inicializarAgroSlider() {{
-                historialAgroFechas = getAgroFechasFiltradas();
-                var slider = document.getElementById('agro-time-slider');
-                var maxIdx = Math.max(0, historialAgroFechas.length - 1);
-                slider.min = 0;
-                slider.max = maxIdx;
-                slider.value = maxIdx;
-                agroSliderIndex = maxIdx;
-                actualizarCapasAgro();
-            }}
-
-            function actualizarCapasAgro() {{
-                var fecha = historialAgroFechas[agroSliderIndex] || null;
-                var label = document.getElementById('agro-date-label');
-                if (fecha) {{
-                    var hoy = new Date().toISOString().slice(0,10);
-                    label.innerText = formatFechaAgro(fecha) + (fecha === hoy ? ' (Hoy)' : '');
-                }} else {{
-                    label.innerText = '';
-                }}
-                actualizarOverlayAgro(fecha);
-                dibujarCapaMildiu(fecha);
-                dibujarCapaOidio(fecha);
-            }}
-
-            function toggleAgroPlay() {{
-                var btn = document.getElementById('agro-play-btn');
-                var slider = document.getElementById('agro-time-slider');
-                if (agroPlayInterval) {{
-                    clearInterval(agroPlayInterval);
-                    agroPlayInterval = null;
-                    btn.innerText = '▶️';
-                    btn.title = 'Reproducir';
-                }} else {{
-                    btn.innerText = '⏸️';
-                    btn.title = 'Pausar';
-                    if (agroSliderIndex >= historialAgroFechas.length - 1) {{
-                        agroSliderIndex = 0;
-                    }}
-                    agroPlayInterval = setInterval(function() {{
-                        agroSliderIndex++;
-                        if (agroSliderIndex >= historialAgroFechas.length) {{
-                            agroSliderIndex = 0;
-                        }}
-                        slider.value = agroSliderIndex;
-                        actualizarCapasAgro();
-                    }}, 400);
-                }}
-            }}
-
-            function colorMildiu(nivel) {{
-                if (nivel >= 3) return '#0d47a1';
-                if (nivel >= 2) return '#1976d2';
-                return '#64b5f6';
-            }}
-            function colorOidio(nivel) {{
-                if (nivel >= 3) return '#b71c1c';
-                if (nivel >= 2) return '#e65100';
-                return '#ffa000';
-            }}
-
-            var NIVEL_TEXTO = {{1:'Bajo', 2:'Moderado', 3:'Alto'}};
-            var NIVEL_LETRA = {{1:'B', 2:'M', 3:'A'}};
-
-            function dibujarCapaMildiu(fecha) {{
-                capaMildiuGroup.clearLayers();
-                heatmapMildiuGroup.clearLayers();
-                if (!capaMildiuActiva) return;
-                var datosF = fecha ? (historialAgro[fecha] || {{}}) : {{}};
-                if (Object.keys(datosF).length === 0) return;
-                var features = [];
-                Object.entries(datosF).forEach(function([estId, d]) {{
-                    if (!d.lat || !d.lon) return;
-                    var nivel = d.mildiu_nivel || 1;
-                    var color = colorMildiu(nivel);
-                    var letra = NIVEL_LETRA[nivel] || '?';
-                    var markerHtml = `<div style="background:${{color}};color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.7);border:2px solid white;border-radius:50%;width:24px;height:24px;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:11px;box-shadow:0 2px 5px rgba(0,0,0,0.5);">${{letra}}</div>`;
-                    var marker = L.marker([d.lat, d.lon], {{
-                        icon: L.divIcon({{className:'station-badge', html:markerHtml, iconSize:[24,24], iconAnchor:[12,12]}})
-                    }});
-                    var nombre = nombresPersonalizados[estId] || estId;
-                    marker.bindPopup(`<div style="min-width:165px;">
-                        <div style="text-align:center;padding-bottom:5px;">
-                            <strong style="font-size:1rem;color:#1565c0;">● Mildiu</strong><br>
-                            <strong style="color:#2c3e50;">${{nombre}}</strong>
-                            <div style="font-size:0.75rem;color:#999;">${{estId}}</div>
-                        </div>
-                        <div style="background:#e3f2fd;border-radius:4px;padding:8px;text-align:center;">
-                            <div style="font-size:1.4rem;font-weight:bold;color:${{color}};">${{NIVEL_TEXTO[nivel]}}</div>
-                        </div>
-                        <div style="font-size:0.78rem;color:#555;margin-top:7px;line-height:1.6;">
-                            Modelo: Goidanich (14 días)<br>
-                            Puntos acumulados: <strong>${{d.mildiu_puntos}}</strong><br>
-                            Días con condición de infección: <strong>${{d.mildiu_dias}}</strong><br>
-                            <span style="color:#888;font-size:0.72rem;">T 11–30°C + lluvia≥2mm o HR≥85%≥2h</span>
-                        </div>
-                    </div>`);
-                    marker.bindTooltip(`<strong>${{nombre}}</strong><br>Mildiu: ${{NIVEL_TEXTO[nivel]}}`, {{direction:'top', offset:[0,-12], opacity:0.95}});
-                    capaMildiuGroup.addLayer(marker);
-                    features.push(turf.point([d.lon, d.lat], {{value: nivel}}));
-                }});
-                if (features.length > 2) {{
-                    try {{
-                        var col = turf.featureCollection(features);
-                        var grid = turf.interpolate(col, 3, {{gridType:'square', property:'value', units:'kilometers', weight:2}});
-                        var filtered = turf.featureCollection(grid.features.filter(function(f) {{ return f.properties.value !== null && !isNaN(f.properties.value); }}));
-                        var heatLayer = L.geoJSON(filtered, {{
-                            pane: 'heatmapMildiuPane',
-                            style: function(feature) {{
-                                var v = Math.max(1, Math.min(3, Math.round(feature.properties.value)));
-                                return {{fillColor: colorMildiu(v), fillOpacity: window.globalHeatmapOpacity, stroke: false}};
-                            }}
-                        }});
-                        heatmapMildiuGroup.addLayer(heatLayer);
-                    }} catch(e) {{ console.error('Heatmap mildiu:', e); }}
-                }}
-            }}
-
-            function dibujarCapaOidio(fecha) {{
-                capaOidioGroup.clearLayers();
-                heatmapOidioGroup.clearLayers();
-                if (!capaOidioActiva) return;
-                var datosF = fecha ? (historialAgro[fecha] || {{}}) : {{}};
-                if (Object.keys(datosF).length === 0) return;
-                var features = [];
-                Object.entries(datosF).forEach(function([estId, d]) {{
-                    if (!d.lat || !d.lon) return;
-                    var nivel = d.oidio_nivel || 1;
-                    var color = colorOidio(nivel);
-                    var letra = NIVEL_LETRA[nivel] || '?';
-                    var markerHtml = `<div style="background:${{color}};color:white;text-shadow:1px 1px 2px rgba(0,0,0,0.7);border:2px solid white;border-radius:3px;width:22px;height:22px;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:11px;box-shadow:0 2px 5px rgba(0,0,0,0.5);">${{letra}}</div>`;
-                    var marker = L.marker([d.lat, d.lon], {{
-                        icon: L.divIcon({{className:'station-badge', html:markerHtml, iconSize:[22,22], iconAnchor:[11,11]}})
-                    }});
-                    var nombre = nombresPersonalizados[estId] || estId;
-                    marker.bindPopup(`<div style="min-width:165px;">
-                        <div style="text-align:center;padding-bottom:5px;">
-                            <strong style="font-size:1rem;color:#e65100;">■ Oídio</strong><br>
-                            <strong style="color:#2c3e50;">${{nombre}}</strong>
-                            <div style="font-size:0.75rem;color:#999;">${{estId}}</div>
-                        </div>
-                        <div style="background:#fff3e0;border-radius:4px;padding:8px;text-align:center;">
-                            <div style="font-size:1.4rem;font-weight:bold;color:${{color}};">${{NIVEL_TEXTO[nivel]}}</div>
-                        </div>
-                        <div style="font-size:0.78rem;color:#555;margin-top:7px;line-height:1.6;">
-                            Modelo: DSV Gubler-Thomas<br>
-                            DSV últimos 7 días: <strong>${{d.dsv_7d}}</strong><br>
-                            DSV temporada (desde 1-Mar): <strong>${{d.dsv_temporada}}</strong><br>
-                            <span style="color:#888;font-size:0.72rem;">T 15–40°C + HR≥85% acumuladas</span>
-                        </div>
-                    </div>`);
-                    marker.bindTooltip(`<strong>${{nombre}}</strong><br>Oídio: ${{NIVEL_TEXTO[nivel]}}`, {{direction:'top', offset:[0,-12], opacity:0.95}});
-                    capaOidioGroup.addLayer(marker);
-                    features.push(turf.point([d.lon, d.lat], {{value: nivel}}));
-                }});
-                if (features.length > 2) {{
-                    try {{
-                        var col = turf.featureCollection(features);
-                        var grid = turf.interpolate(col, 3, {{gridType:'square', property:'value', units:'kilometers', weight:2}});
-                        var filtered = turf.featureCollection(grid.features.filter(function(f) {{ return f.properties.value !== null && !isNaN(f.properties.value); }}));
-                        var heatLayer = L.geoJSON(filtered, {{
-                            pane: 'heatmapOidioPane',
-                            style: function(feature) {{
-                                var v = Math.max(1, Math.min(3, Math.round(feature.properties.value)));
-                                return {{fillColor: colorOidio(v), fillOpacity: window.globalHeatmapOpacity, stroke: false}};
-                            }}
-                        }});
-                        heatmapOidioGroup.addLayer(heatLayer);
-                    }} catch(e) {{ console.error('Heatmap oidio:', e); }}
-                }}
-            }}
-
-            function toggleCapa(enfermedad) {{
-                var fecha = historialAgroFechas[agroSliderIndex] || null;
-                // Solo una capa activa a la vez (radio button)
-                capaMildiuActiva = (enfermedad === 'mildiu');
-                capaOidioActiva  = (enfermedad === 'oidio');
-
-                document.getElementById('btn-capa-mildiu').classList.toggle('activo', capaMildiuActiva);
-                document.getElementById('btn-capa-oidio').classList.toggle('activo',  capaOidioActiva);
-                legendMildiu._div.style.display = capaMildiuActiva ? '' : 'none';
-                legendOidio._div.style.display  = capaOidioActiva  ? '' : 'none';
-
-                capaMildiuGroup.clearLayers();   heatmapMildiuGroup.clearLayers();
-                capaOidioGroup.clearLayers();    heatmapOidioGroup.clearLayers();
-
-                if (capaMildiuActiva) dibujarCapaMildiu(fecha);
-                if (capaOidioActiva)  dibujarCapaOidio(fecha);
-            }}
-
-            function switchTab(modo) {{
-                modoActivo = modo;
-                document.getElementById('tab-meteo-btn').classList.toggle('active', modo === 'meteo');
-                document.getElementById('tab-agro-btn').classList.toggle('active', modo === 'agro');
-                document.getElementById('controles-meteo').style.display = (modo === 'meteo') ? 'flex' : 'none';
-                document.getElementById('controles-agro').style.display = (modo === 'agro') ? 'flex' : 'none';
-
-                if (modo === 'meteo') {{
-                    if (agroPlayInterval) {{ clearInterval(agroPlayInterval); agroPlayInterval = null; document.getElementById('agro-play-btn').innerText = '▶️'; }}
-                    capaMildiuGroup.clearLayers();
-                    capaOidioGroup.clearLayers();
-                    heatmapMildiuGroup.clearLayers();
-                    heatmapOidioGroup.clearLayers();
-                    if (map.hasLayer(capaMildiuGroup))    map.removeLayer(capaMildiuGroup);
-                    if (map.hasLayer(capaOidioGroup))     map.removeLayer(capaOidioGroup);
-                    if (map.hasLayer(heatmapMildiuGroup)) map.removeLayer(heatmapMildiuGroup);
-                    if (map.hasLayer(heatmapOidioGroup))  map.removeLayer(heatmapOidioGroup);
-                    legend._div.style.display       = '';
-                    legendMildiu._div.style.display = 'none';
-                    legendOidio._div.style.display  = 'none';
-                    heatmapLayerGroup.clearLayers();
-                    markersLayer.clearLayers();
-                    if (historyData.length > 0) actualizarOverlayMeteo(historyData[currentTimestampIndex].timestamp);
-                    actualizarMapa();
-                }} else {{
-                    heatmapLayerGroup.clearLayers();
-                    markersLayer.clearLayers();
-                    legend._div.style.display = 'none';
-                    // Al entrar en agro: mildiu activo por defecto, oidio desactivado
-                    capaMildiuActiva = true;
-                    capaOidioActiva  = false;
-                    document.getElementById('btn-capa-mildiu').classList.add('activo');
-                    document.getElementById('btn-capa-oidio').classList.remove('activo');
-                    legendMildiu._div.style.display = '';
-                    legendOidio._div.style.display  = 'none';
-                    capaMildiuGroup.addTo(map);
-                    capaOidioGroup.addTo(map);
-                    heatmapMildiuGroup.addTo(map);
-                    heatmapOidioGroup.addTo(map);
-                    inicializarAgroSlider();
-                }}
-            }}
-
-            // Inicializar
-            if (historyData.length > 0) {{
-                document.getElementById('time-slider').max = historyData.length - 1;
-                document.getElementById('time-slider').value = historyData.length - 1;
-                var tsInit = historyData[currentTimestampIndex].timestamp;
-                document.getElementById('time-label').innerText = formatTimeLabel(tsInit) + " (Actual)";
-                actualizarOverlayMeteo(tsInit);
-                actualizarMapa();
-            }}
-
-        </script>
-    </body>
-    </html>
-    """
-    directorio_publico = os.path.dirname(os.path.abspath(__file__))
-        
-    ruta_archivo = os.path.join(directorio_publico, 'index.html')
-    with open(ruta_archivo, 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    return ruta_archivo
-
-def principal():
-    print(f"Obteniendo datos en tiempo real de {len(ESTACIONES)} estaciones (Multihilo)...")
-    datos_completos = []
-    
-    with concurrent.futures.ThreadPoolExecutor(max_workers=25) as executor:
-        resultados = executor.map(obtener_datos_estacion, ESTACIONES)
-        
-        for estacion, datos in zip(ESTACIONES, resultados):
-            if datos:
-                datos_completos.append(datos)
-                
-                
-
-                
-    print(f"✅ Descarga completada. Se han cargado datos de {len(datos_completos)} estaciones en total.")
-    if datos_completos:
-        historial, ahora = gestionar_historial(datos_completos)
-        historial_agri = gestionar_historial_agricola(datos_completos, ahora)
-        generar_json(datos_completos, ahora)
-
-        directorio = os.path.dirname(os.path.abspath(__file__))
-
-        historial_riesgo = {}
-        try:
-            ruta = os.path.join(directorio, 'historial_riesgo.json')
-            if os.path.exists(ruta):
-                with open(ruta, 'r', encoding='utf-8') as f:
-                    historial_riesgo = json.load(f)
-                print(f"✅ historial_riesgo.json cargado ({len(historial_riesgo)} fechas).")
-        except Exception as e:
-            print(f"No se pudo cargar historial_riesgo.json: {e}")
-
-        historial_dsv = {}
-        try:
-            ruta = os.path.join(directorio, 'historial_dsv.json')
-            if os.path.exists(ruta):
-                with open(ruta, 'r', encoding='utf-8') as f:
-                    historial_dsv = json.load(f)
-                print(f"✅ historial_dsv.json cargado ({len(historial_dsv)} estaciones).")
-        except Exception as e:
-            print(f"No se pudo cargar historial_dsv.json: {e}")
-
-        # Coordenadas por estación: desde observaciones actuales + historial_riesgo
-        coordenadas = {}
-        for est in datos_completos:
-            sid = est.get('stationID')
-            if sid and est.get('lat') and est.get('lon'):
-                coordenadas[sid] = (est['lat'], est['lon'])
-        for fecha_datos in historial_riesgo.values():
-            for sid, d in fecha_datos.items():
-                if sid not in coordenadas and d.get('lat') and d.get('lon'):
-                    coordenadas[sid] = (d['lat'], d['lon'])
-
-        historial_agro = calcular_historial_agro(historial_agri, historial_riesgo, historial_dsv, coordenadas)
-        ruta_html = generar_html(historial, ahora, historial_agro)
-        print("Mapa, Máquina del Tiempo y Datos Agrícolas generados correctamente.")
+    if os.environ.get('CI'):
+        print("\n☁️  En GitHub Actions: el workflow hace el push.")
     else:
-        print("No se han podido cargar datos.")
+        print("\n☁️  Subiendo a GitHub...")
+        git_push(ahora)
+
+    print(f"\n✅ Listo")
+    print(f"🌐 https://jorloan.github.io/meteo-guadalentin/")
+    if not os.environ.get('CI'):
+        webbrowser.open('file://' + ruta)
 
 if __name__ == "__main__":
     principal()

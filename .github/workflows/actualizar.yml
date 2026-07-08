@@ -1,44 +1,37 @@
-name: Actualizar Meteo Guadalentín
+name: Actualizar mapa meteo
 
 on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: actualizar-mapa
+  cancel-in-progress: false
+
 jobs:
-  actualizar-meteo:
+  actualizar:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
-      - name: Checkout repositorio
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Sincronizar historial desde GitHub
-        run: |
-          git config pull.rebase false
-          git pull origin main --no-edit || true
-
-      - name: Verificar historial y rellenar si faltan datos
-        run: |
-          python3 check_historial.py || python3 fix_historial.py
-
+          python-version: '3.12'
       - name: Ejecutar mapa_totana.py
-        run: python3 mapa_totana.py
-        env:
-          DISPLAY: ''
-
-      - name: Commit y push
+        run: python mapa_totana.py
+      - name: Publicar cambios
         run: |
-          git config --local user.email "meteo-bot@lya-agricola.com"
-          git config --local user.name "Meteo Bot"
+          git config user.name "Meteo Guadalentin Bot"
+          git config user.email "actions@github.com"
           git add -A
-          git diff --staged --quiet || git commit -m "Meteo actualizada $(date +'%Y-%m-%d %H:%M')"
-          git push
-        continue-on-error: true
+          if git diff --cached --quiet; then
+            echo "Sin cambios que publicar"
+          else
+            git commit -m "🔄 Auto $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git pull --rebase origin main
+            git push
+          fi
