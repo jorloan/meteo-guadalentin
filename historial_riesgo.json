@@ -8960,6 +8960,16 @@
       "datos_ok": false,
       "fuente_datos": "WU propio 2d"
     },
+    "IALHAM64": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 37.844879,
+      "lon": -1.406302,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d + WU vecinos 1d"
+    },
     "IALHAM81": {
       "oidio": -1,
       "mildiu": -1,
