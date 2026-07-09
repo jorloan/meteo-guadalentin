@@ -9832,16 +9832,6 @@
       "datos_ok": false,
       "fuente_datos": "WU propio 3d"
     },
-    "IALHAM23": {
-      "oidio": -1,
-      "mildiu": -1,
-      "dsv_temporada": 0,
-      "dsv_7d": 0,
-      "lat": 37.844378,
-      "lon": -1.428541,
-      "datos_ok": false,
-      "fuente_datos": "WU propio 3d"
-    },
     "IALHAM31": {
       "oidio": -1,
       "mildiu": -1,
@@ -10159,16 +10149,6 @@
       "dsv_7d": 0,
       "lat": 37.672972,
       "lon": -1.702337,
-      "datos_ok": false,
-      "fuente_datos": "WU propio 3d"
-    },
-    "ILORCA81": {
-      "oidio": -1,
-      "mildiu": -1,
-      "dsv_temporada": 0,
-      "dsv_7d": 0,
-      "lat": 37.512787,
-      "lon": -1.656607,
       "datos_ok": false,
       "fuente_datos": "WU propio 3d"
     },
