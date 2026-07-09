@@ -9922,6 +9922,16 @@
       "datos_ok": false,
       "fuente_datos": "WU propio 3d"
     },
+    "IALHAM92": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 37.848953,
+      "lon": -1.415771,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 3d"
+    },
     "ILORCA100": {
       "oidio": -1,
       "mildiu": -1,
