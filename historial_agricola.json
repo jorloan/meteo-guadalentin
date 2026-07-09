@@ -1981,7 +1981,7 @@
       "lon": -1.52123
     },
     "IGUILA10": {
-      "tempMax": 27.5,
+      "tempMax": 28.1,
       "tempMin": 24.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -2142,7 +2142,7 @@
     },
     "IALHAM92": {
       "tempMax": 38.9,
-      "tempMin": 36.0,
+      "tempMin": 34.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.848953,
