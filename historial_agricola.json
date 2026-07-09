@@ -1366,7 +1366,7 @@
   "2026-07-09": {
     "IALEDO7": {
       "tempMax": 35.3,
-      "tempMin": 24.3,
+      "tempMin": 21.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.771905,
@@ -1374,7 +1374,7 @@
     },
     "IALEDO9": {
       "tempMax": 34.5,
-      "tempMin": 22.6,
+      "tempMin": 21.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.798803,
@@ -1558,7 +1558,7 @@
     },
     "ILORCA24": {
       "tempMax": 42.7,
-      "tempMin": 30.5,
+      "tempMin": 28.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.725495,
@@ -1654,7 +1654,7 @@
     },
     "ILORCA81": {
       "tempMax": 34.4,
-      "tempMin": 26.9,
+      "tempMin": 25.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.512787,
@@ -1718,7 +1718,7 @@
     },
     "IMAZAR19": {
       "tempMax": 31.9,
-      "tempMin": 28.4,
+      "tempMin": 26.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.646405,
@@ -1846,7 +1846,7 @@
     },
     "ITOTAN2": {
       "tempMax": 35.1,
-      "tempMin": 25.5,
+      "tempMin": 25.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.788956,
@@ -1870,7 +1870,7 @@
     },
     "ITOTAN9": {
       "tempMax": 38.0,
-      "tempMin": 26.1,
+      "tempMin": 24.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.702322,
@@ -1966,7 +1966,7 @@
     },
     "ITOTAN42": {
       "tempMax": 40.0,
-      "tempMin": 25.5,
+      "tempMin": 24.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.760454,
@@ -2104,7 +2104,7 @@
       "tempMax": 36.3,
       "tempMin": 24.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 60,
       "lat": 38.272037,
       "lon": -0.646685
     },
@@ -2142,7 +2142,7 @@
     },
     "IALHAM92": {
       "tempMax": 38.9,
-      "tempMin": 31.1,
+      "tempMin": 27.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.848953,
