@@ -2786,7 +2786,7 @@
       "tempMax": 28.2,
       "tempMin": 23.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 60,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -2863,7 +2863,7 @@
       "lon": -0.705037
     },
     "IPILAR71": {
-      "tempMax": 29.3,
+      "tempMax": 30.8,
       "tempMin": 23.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,

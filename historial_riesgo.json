@@ -10794,6 +10794,16 @@
       "datos_ok": false,
       "fuente_datos": "WU propio 4d"
     },
+    "IALHAM64": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 37.844879,
+      "lon": -1.406302,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 3d + WU vecinos 1d"
+    },
     "IALHAM81": {
       "oidio": -1,
       "mildiu": -1,
@@ -10831,16 +10841,6 @@
       "dsv_7d": 0,
       "lat": 37.848953,
       "lon": -1.415771,
-      "datos_ok": false,
-      "fuente_datos": "WU propio 4d"
-    },
-    "ILORCA100": {
-      "oidio": -1,
-      "mildiu": -1,
-      "dsv_temporada": 0,
-      "dsv_7d": 0,
-      "lat": 37.627,
-      "lon": -1.725,
       "datos_ok": false,
       "fuente_datos": "WU propio 4d"
     },
@@ -10914,26 +10914,6 @@
       "datos_ok": false,
       "fuente_datos": "WU propio 4d"
     },
-    "ILORCA15": {
-      "oidio": -1,
-      "mildiu": -1,
-      "dsv_temporada": 0,
-      "dsv_7d": 0,
-      "lat": 37.87582,
-      "lon": -1.707165,
-      "datos_ok": false,
-      "fuente_datos": "WU propio 4d"
-    },
-    "ILORCA18": {
-      "oidio": -1,
-      "mildiu": -1,
-      "dsv_temporada": 0,
-      "dsv_7d": 0,
-      "lat": 37.664547,
-      "lon": -1.884168,
-      "datos_ok": false,
-      "fuente_datos": "WU propio 4d"
-    },
     "ILORCA19": {
       "oidio": -1,
       "mildiu": -1,
@@ -10964,16 +10944,6 @@
       "datos_ok": false,
       "fuente_datos": "WU propio 4d"
     },
-    "ILORCA43": {
-      "oidio": -1,
-      "mildiu": -1,
-      "dsv_temporada": 0,
-      "dsv_7d": 0,
-      "lat": 37.926816,
-      "lon": -1.833752,
-      "datos_ok": false,
-      "fuente_datos": "WU propio 4d"
-    },
     "ILORCA45": {
       "oidio": -1,
       "mildiu": -1,
@@ -10991,16 +10961,6 @@
       "dsv_7d": 0,
       "lat": 37.892946,
       "lon": -1.888228,
-      "datos_ok": false,
-      "fuente_datos": "WU propio 4d"
-    },
-    "ILORCA49": {
-      "oidio": -1,
-      "mildiu": -1,
-      "dsv_temporada": 0,
-      "dsv_7d": 0,
-      "lat": 37.874337,
-      "lon": -1.838405,
       "datos_ok": false,
       "fuente_datos": "WU propio 4d"
     },
