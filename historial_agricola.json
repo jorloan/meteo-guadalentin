@@ -2961,7 +2961,7 @@
       "lon": -1.432
     },
     "IALHAM23": {
-      "tempMax": 31.7,
+      "tempMax": 31.9,
       "tempMin": 24.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -3124,7 +3124,7 @@
       "tempMax": 29.8,
       "tempMin": 22.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 400,
+      "humedadAltaMinutos": 453,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -3273,7 +3273,7 @@
       "lon": -1.836982
     },
     "IMAZAR112": {
-      "tempMax": 29.5,
+      "tempMax": 30.0,
       "tempMin": 25.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -3572,7 +3572,7 @@
       "tempMax": 29.1,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 353,
+      "humedadAltaMinutos": 406,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -3652,7 +3652,7 @@
       "tempMax": 29.9,
       "tempMin": 25.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 473,
+      "humedadAltaMinutos": 526,
       "lat": 37.85238,
       "lon": -0.766351
     },
