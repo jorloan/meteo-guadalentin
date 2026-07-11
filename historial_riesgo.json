@@ -11686,6 +11686,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
+    "IALHAM64": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 105,
+      "dsv_7d": 10,
+      "lat": 37.844879,
+      "lon": -1.406302,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 4d + WU vecinos 1d"
+    },
     "IALHAM81": {
       "oidio": 3,
       "mildiu": 1,
@@ -11830,7 +11840,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 90,
-      "dsv_7d": 12,
+      "dsv_7d": 15,
       "lat": 37.534962,
       "lon": -1.45076,
       "datos_ok": true,
@@ -12326,16 +12336,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
-    "IGUILA10": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 91,
-      "dsv_7d": 11,
-      "lat": 37.407152,
-      "lon": -1.572191,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 5d"
-    },
     "IPULP6": {
       "oidio": 3,
       "mildiu": 1,
@@ -12440,7 +12440,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 10,
-      "dsv_7d": 13,
+      "dsv_7d": 11,
       "lat": 37.85238,
       "lon": -0.766351,
       "datos_ok": true,
