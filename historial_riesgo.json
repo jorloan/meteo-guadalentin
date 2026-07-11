@@ -11896,6 +11896,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
+    "ILORCA50": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 43,
+      "dsv_7d": 13,
+      "lat": 37.857225,
+      "lon": -1.829139,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 5d"
+    },
     "ILORCA55": {
       "oidio": 3,
       "mildiu": 1,
@@ -12326,6 +12336,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
+    "IGUILA10": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 91,
+      "dsv_7d": 11,
+      "lat": 37.407152,
+      "lon": -1.572191,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 5d"
+    },
     "IPULP6": {
       "oidio": 3,
       "mildiu": 1,
@@ -12350,7 +12370,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 81,
-      "dsv_7d": 10,
+      "dsv_7d": 13,
       "lat": 37.695322,
       "lon": -0.935908,
       "datos_ok": true,
