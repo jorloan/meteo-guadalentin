@@ -12742,7 +12742,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 92,
-      "dsv_7d": 13,
+      "dsv_7d": 16,
       "lat": 37.534962,
       "lon": -1.45076,
       "datos_ok": true,
@@ -12782,7 +12782,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 50,
-      "dsv_7d": 13,
+      "dsv_7d": 12,
       "lat": 37.949817,
       "lon": -1.811834,
       "datos_ok": true,
@@ -13248,6 +13248,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 6d"
     },
+    "IGUILA10": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 93,
+      "dsv_7d": 13,
+      "lat": 37.407152,
+      "lon": -1.572191,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 6d"
+    },
     "IPULP6": {
       "oidio": 3,
       "mildiu": 1,
@@ -13282,7 +13292,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 78,
-      "dsv_7d": 14,
+      "dsv_7d": 13,
       "lat": 38.471875,
       "lon": -1.421486,
       "datos_ok": true,
