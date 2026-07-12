@@ -13228,16 +13228,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 6d"
     },
-    "IGUILA10": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 93,
-      "dsv_7d": 13,
-      "lat": 37.407152,
-      "lon": -1.572191,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 6d"
-    },
     "IPULP6": {
       "oidio": 3,
       "mildiu": 1,
@@ -13362,7 +13352,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 15,
-      "dsv_7d": 16,
+      "dsv_7d": 14,
       "lat": 38.272037,
       "lon": -0.646685,
       "datos_ok": true,
