@@ -3886,7 +3886,7 @@
       "tempMax": 30.7,
       "tempMin": 20.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 53,
+      "humedadAltaMinutos": 113,
       "lat": 37.87582,
       "lon": -1.707165
     },
@@ -3926,7 +3926,7 @@
       "tempMax": 32.1,
       "tempMin": 17.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 60,
       "lat": 37.926816,
       "lon": -1.833752
     },
@@ -3934,7 +3934,7 @@
       "tempMax": 32.6,
       "tempMin": 19.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 60,
       "lat": 37.949817,
       "lon": -1.811834
     },
@@ -3942,7 +3942,7 @@
       "tempMax": 33.4,
       "tempMin": 20.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 60,
       "lat": 37.892946,
       "lon": -1.888228
     },
@@ -3990,7 +3990,7 @@
       "tempMax": 32.9,
       "tempMin": 19.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 60,
       "lat": 37.846189,
       "lon": -1.78261
     },
@@ -4006,7 +4006,7 @@
       "tempMax": 31.4,
       "tempMin": 20.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 173,
+      "humedadAltaMinutos": 233,
       "lat": 37.512787,
       "lon": -1.656607
     },
@@ -4022,7 +4022,7 @@
       "tempMax": 31.0,
       "tempMin": 18.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 60,
       "lat": 37.648492,
       "lon": -1.952237
     },
@@ -4070,7 +4070,7 @@
       "tempMax": 30.2,
       "tempMin": 22.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 464,
+      "humedadAltaMinutos": 524,
       "lat": 37.646405,
       "lon": -1.249082
     },
@@ -4086,7 +4086,7 @@
       "tempMax": 30.3,
       "tempMin": 24.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 165,
+      "humedadAltaMinutos": 225,
       "lat": 37.567,
       "lon": -1.3
     },
@@ -4118,7 +4118,7 @@
       "tempMax": 30.5,
       "tempMin": 24.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 396,
+      "humedadAltaMinutos": 456,
       "lat": 37.602019,
       "lon": -1.295504
     },
@@ -4286,7 +4286,7 @@
       "tempMax": 32.1,
       "tempMin": 18.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 113,
+      "humedadAltaMinutos": 173,
       "lat": 37.822313,
       "lon": -1.585495
     },
@@ -4350,7 +4350,7 @@
       "tempMax": 30.8,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 412,
+      "humedadAltaMinutos": 472,
       "lat": 37.695322,
       "lon": -0.935908
     },
@@ -4422,7 +4422,7 @@
       "tempMax": 29.9,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 520,
+      "humedadAltaMinutos": 580,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -4446,7 +4446,7 @@
       "tempMax": 30.5,
       "tempMin": 22.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 292,
+      "humedadAltaMinutos": 352,
       "lat": 38.272037,
       "lon": -0.646685
     },
@@ -4483,7 +4483,7 @@
       "lon": -1.944
     },
     "IGUILA10": {
-      "tempMax": 27.9,
+      "tempMax": 28.0,
       "tempMin": 27.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 108,
