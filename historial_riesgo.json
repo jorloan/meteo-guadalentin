@@ -14000,16 +14000,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 7d"
     },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 98,
-      "dsv_7d": 14,
-      "lat": 37.773,
-      "lon": -1.499,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 7d"
-    },
     "ITOTAN8": {
       "oidio": 3,
       "mildiu": 1,
@@ -14130,6 +14120,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 7d"
     },
+    "IGUILA10": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 95,
+      "dsv_7d": 15,
+      "lat": 37.407152,
+      "lon": -1.572191,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 7d"
+    },
     "IPULP6": {
       "oidio": 3,
       "mildiu": 1,
@@ -14234,7 +14234,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 14,
-      "dsv_7d": 16,
+      "dsv_7d": 19,
       "lat": 37.85238,
       "lon": -0.766351,
       "datos_ok": true,

@@ -5192,7 +5192,7 @@
       "tempMax": 28.8,
       "tempMin": 25.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 340,
+      "humedadAltaMinutos": 400,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -5216,7 +5216,7 @@
       "tempMax": 31.6,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 220,
+      "humedadAltaMinutos": 280,
       "lat": 38.272037,
       "lon": -0.646685
     },
@@ -5254,7 +5254,7 @@
     },
     "IGUILA10": {
       "tempMax": 27.4,
-      "tempMin": 27.4,
+      "tempMin": 27.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.407152,
