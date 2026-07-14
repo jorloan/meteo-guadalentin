@@ -14322,16 +14322,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 8d"
     },
-    "IALHAM23": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 114,
-      "dsv_7d": 14,
-      "lat": 37.844378,
-      "lon": -1.428541,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 8d"
-    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -14339,16 +14329,6 @@
       "dsv_7d": 14,
       "lat": 37.756317,
       "lon": -1.382057,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 8d"
-    },
-    "IALHAM36": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 91,
-      "dsv_7d": 14,
-      "lat": 37.72993,
-      "lon": -1.351801,
       "datos_ok": true,
       "fuente_datos": "WU propio 8d"
     },
@@ -14371,6 +14351,16 @@
       "lon": -1.432404,
       "datos_ok": true,
       "fuente_datos": "WU propio 8d"
+    },
+    "IALHAM64": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 111,
+      "dsv_7d": 14,
+      "lat": 37.844879,
+      "lon": -1.406302,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 7d"
     },
     "IALHAM81": {
       "oidio": 3,
