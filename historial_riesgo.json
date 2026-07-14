@@ -14892,16 +14892,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 8d"
     },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 101,
-      "dsv_7d": 14,
-      "lat": 37.773,
-      "lon": -1.499,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 8d"
-    },
     "ITOTAN8": {
       "oidio": 3,
       "mildiu": 1,
@@ -15126,7 +15116,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 16,
-      "dsv_7d": 20,
+      "dsv_7d": 18,
       "lat": 37.85238,
       "lon": -0.766351,
       "datos_ok": true,
