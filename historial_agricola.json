@@ -6660,7 +6660,7 @@
       "tempMax": 29.0,
       "tempMin": 25.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 234,
+      "humedadAltaMinutos": 292,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -6740,7 +6740,7 @@
       "tempMax": 34.9,
       "tempMin": 26.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 120,
+      "humedadAltaMinutos": 178,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -6802,7 +6802,7 @@
     },
     "IALHAM36": {
       "tempMax": 37.6,
-      "tempMin": 33.7,
+      "tempMin": 30.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.72993,
