@@ -6042,7 +6042,7 @@
   "2026-07-15": {
     "IALEDO7": {
       "tempMax": 38.5,
-      "tempMin": 23.7,
+      "tempMin": 23.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.771905,
@@ -6050,7 +6050,7 @@
     },
     "IALEDO9": {
       "tempMax": 37.5,
-      "tempMin": 23.2,
+      "tempMin": 22.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.798803,
@@ -6218,9 +6218,9 @@
     },
     "ILORCA19": {
       "tempMax": 29.3,
-      "tempMin": 26.4,
+      "tempMin": 25.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 300,
+      "humedadAltaMinutos": 355,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -6386,7 +6386,7 @@
     },
     "IMAZAR114": {
       "tempMax": 31.6,
-      "tempMin": 26.1,
+      "tempMin": 25.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
       "lat": 37.580929,
@@ -6412,7 +6412,7 @@
       "tempMax": 30.1,
       "tempMin": 26.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 413,
+      "humedadAltaMinutos": 468,
       "lat": 37.567,
       "lon": -1.3
     },
@@ -6660,7 +6660,7 @@
       "tempMax": 29.0,
       "tempMin": 25.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 411,
+      "humedadAltaMinutos": 466,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -6740,7 +6740,7 @@
       "tempMax": 34.9,
       "tempMin": 26.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 297,
+      "humedadAltaMinutos": 352,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -6764,7 +6764,7 @@
       "tempMax": 34.3,
       "tempMin": 25.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 60,
+      "humedadAltaMinutos": 115,
       "lat": 38.272037,
       "lon": -0.646685
     },
@@ -6802,7 +6802,7 @@
     },
     "IALHAM36": {
       "tempMax": 37.6,
-      "tempMin": 26.8,
+      "tempMin": 25.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.72993,
