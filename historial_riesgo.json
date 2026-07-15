@@ -15394,16 +15394,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 9d"
     },
-    "ILORCA15": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 56,
-      "dsv_7d": 17,
-      "lat": 37.87582,
-      "lon": -1.707165,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 9d"
-    },
     "ILORCA18": {
       "oidio": 2,
       "mildiu": 1,
@@ -15801,16 +15791,6 @@
       "dsv_7d": 14,
       "lat": 37.788956,
       "lon": -1.523104,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 9d"
-    },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 104,
-      "dsv_7d": 14,
-      "lat": 37.773,
-      "lon": -1.499,
       "datos_ok": true,
       "fuente_datos": "WU propio 9d"
     },
