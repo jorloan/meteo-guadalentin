@@ -7502,7 +7502,7 @@
       "tempMax": 35.2,
       "tempMin": 25.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 168,
+      "humedadAltaMinutos": 228,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -7572,7 +7572,7 @@
     },
     "ILORCA15": {
       "tempMax": 36.8,
-      "tempMin": 33.7,
+      "tempMin": 31.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.87582,
@@ -7580,7 +7580,7 @@
     },
     "ICARTA267": {
       "tempMax": 34.0,
-      "tempMin": 30.1,
+      "tempMin": 28.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.695322,

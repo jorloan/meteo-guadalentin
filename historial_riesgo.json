@@ -16656,16 +16656,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 10d"
     },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 106,
-      "dsv_7d": 14,
-      "lat": 37.773,
-      "lon": -1.499,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 10d"
-    },
     "ITOTAN8": {
       "oidio": 3,
       "mildiu": 1,
@@ -16813,16 +16803,6 @@
       "dsv_7d": 16,
       "lat": 37.695322,
       "lon": -0.935908,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 10d"
-    },
-    "IJUMIL46": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 89,
-      "dsv_7d": 15,
-      "lat": 38.471875,
-      "lon": -1.421486,
       "datos_ok": true,
       "fuente_datos": "WU propio 10d"
     },
