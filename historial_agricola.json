@@ -7430,7 +7430,7 @@
       "tempMax": 31.4,
       "tempMin": 26.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 168,
+      "humedadAltaMinutos": 228,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -7502,7 +7502,7 @@
       "tempMax": 35.2,
       "tempMin": 25.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 288,
+      "humedadAltaMinutos": 348,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -7526,7 +7526,7 @@
       "tempMax": 33.2,
       "tempMin": 24.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 60,
+      "humedadAltaMinutos": 120,
       "lat": 38.272037,
       "lon": -0.646685
     },
@@ -7580,7 +7580,7 @@
     },
     "ICARTA267": {
       "tempMax": 34.0,
-      "tempMin": 28.0,
+      "tempMin": 26.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.695322,
