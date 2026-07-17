@@ -7767,7 +7767,7 @@
     "ILORCA18": {
       "tempMax": 37.6,
       "tempMin": 22.9,
-      "precipTotal": 0.0,
+      "precipTotal": 0.51,
       "humedadAltaMinutos": 0,
       "lat": 37.664547,
       "lon": -1.884168
@@ -7893,7 +7893,7 @@
       "lon": -1.656607
     },
     "ILORCA84": {
-      "tempMax": 36.9,
+      "tempMax": 37.5,
       "tempMin": 26.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -7933,7 +7933,7 @@
       "lon": -1.836982
     },
     "IMAZAR112": {
-      "tempMax": 29.3,
+      "tempMax": 29.8,
       "tempMin": 26.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -8216,7 +8216,7 @@
       "tempMax": 30.4,
       "tempMin": 25.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 231,
+      "humedadAltaMinutos": 291,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -8325,7 +8325,7 @@
       "lon": -0.646685
     },
     "INJAR43": {
-      "tempMax": 36.1,
+      "tempMax": 36.6,
       "tempMin": 24.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
