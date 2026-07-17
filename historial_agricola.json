@@ -7886,7 +7886,7 @@
     },
     "ILORCA81": {
       "tempMax": 35.7,
-      "tempMin": 29.0,
+      "tempMin": 27.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.512787,
@@ -8216,7 +8216,7 @@
       "tempMax": 30.4,
       "tempMin": 25.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 463,
+      "humedadAltaMinutos": 523,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -8296,7 +8296,7 @@
       "tempMax": 31.3,
       "tempMin": 26.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 463,
+      "humedadAltaMinutos": 523,
       "lat": 37.85238,
       "lon": -0.766351
     },
