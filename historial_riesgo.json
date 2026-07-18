@@ -17860,6 +17860,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 12d"
     },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 122,
+      "dsv_7d": 14,
+      "lat": 37.844378,
+      "lon": -1.428541,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 12d"
+    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -17874,7 +17884,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 101,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.72993,
       "lon": -1.351801,
       "datos_ok": true,
@@ -18110,6 +18120,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 9d"
     },
+    "ILORCA50": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 62,
+      "dsv_7d": 15,
+      "lat": 37.857225,
+      "lon": -1.829139,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 12d"
+    },
     "ILORCA55": {
       "oidio": 3,
       "mildiu": 1,
@@ -18167,16 +18187,6 @@
       "dsv_7d": 14,
       "lat": 37.672972,
       "lon": -1.702337,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 12d"
-    },
-    "ILORCA81": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 103,
-      "dsv_7d": 14,
-      "lat": 37.512787,
-      "lon": -1.656607,
       "datos_ok": true,
       "fuente_datos": "WU propio 12d"
     },
@@ -18334,7 +18344,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 65,
-      "dsv_7d": 15,
+      "dsv_7d": 16,
       "lat": 38.100582,
       "lon": -1.525336,
       "datos_ok": true,
@@ -18444,7 +18454,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 121,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.748662,
       "lon": -1.424707,
       "datos_ok": true,
@@ -18544,7 +18554,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 103,
-      "dsv_7d": 15,
+      "dsv_7d": 16,
       "lat": 37.402118,
       "lon": -1.748503,
       "datos_ok": true,
