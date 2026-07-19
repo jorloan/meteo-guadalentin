@@ -18966,7 +18966,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 65,
-      "dsv_7d": 16,
+      "dsv_7d": 15,
       "lat": 37.926816,
       "lon": -1.833752,
       "datos_ok": true,
@@ -19182,6 +19182,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 13d"
     },
+    "IMAZAR64": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 104,
+      "dsv_7d": 14,
+      "lat": 37.599141,
+      "lon": -1.309821,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 13d"
+    },
     "IMAZAR7": {
       "oidio": 3,
       "mildiu": 1,
@@ -19256,7 +19266,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 66,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 38.141779,
       "lon": -1.592649,
       "datos_ok": true,
@@ -19396,7 +19406,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 106,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.775319,
       "lon": -1.517814,
       "datos_ok": true,
