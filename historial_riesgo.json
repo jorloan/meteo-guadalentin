@@ -20494,6 +20494,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ILOSGA9": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 28,
+      "dsv_7d": 14,
+      "lat": 37.173833,
+      "lon": -1.946667,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 12d"
+    },
     "IHURCA14": {
       "oidio": 1,
       "mildiu": 1,
