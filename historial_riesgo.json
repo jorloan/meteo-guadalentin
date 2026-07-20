@@ -19634,6 +19634,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 126,
+      "dsv_7d": 14,
+      "lat": 37.844378,
+      "lon": -1.428541,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -19648,7 +19658,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 105,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.72993,
       "lon": -1.351801,
       "datos_ok": true,
@@ -19858,7 +19868,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 68,
-      "dsv_7d": 13,
+      "dsv_7d": 12,
       "lat": 37.926816,
       "lon": -1.833752,
       "datos_ok": true,
@@ -20124,16 +20134,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IMULA10": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 71,
-      "dsv_7d": 15,
-      "lat": 38.100582,
-      "lon": -1.525336,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IMULA21": {
       "oidio": 3,
       "mildiu": 1,
@@ -20218,7 +20218,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 101,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.746563,
       "lon": -1.533232,
       "datos_ok": true,
@@ -20258,7 +20258,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 80,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.783714,
       "lon": -1.514744,
       "datos_ok": true,
