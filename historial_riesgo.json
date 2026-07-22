@@ -21868,6 +21868,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IMAZAR64": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 110,
+      "dsv_7d": 14,
+      "lat": 37.599141,
+      "lon": -1.309821,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IMAZAR7": {
       "oidio": 3,
       "mildiu": 1,
