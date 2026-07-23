@@ -10222,7 +10222,7 @@
       "tempMax": 29.8,
       "tempMin": 26.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 660,
+      "humedadAltaMinutos": 720,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -10382,15 +10382,15 @@
       "tempMax": 29.8,
       "tempMin": 28.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 480,
+      "humedadAltaMinutos": 540,
       "lat": 37.566389,
       "lon": -1.305008
     },
     "IMAZAR114": {
       "tempMax": 32.2,
-      "tempMin": 28.8,
+      "tempMin": 28.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 180,
+      "humedadAltaMinutos": 240,
       "lat": 37.580929,
       "lon": -1.242701
     },
@@ -10406,7 +10406,7 @@
       "tempMax": 31.2,
       "tempMin": 28.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 300,
+      "humedadAltaMinutos": 360,
       "lat": 37.564448,
       "lon": -1.264009
     },
@@ -10414,7 +10414,7 @@
       "tempMax": 37.3,
       "tempMin": 27.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 120,
+      "humedadAltaMinutos": 180,
       "lat": 37.599141,
       "lon": -1.309821
     },
@@ -10438,7 +10438,7 @@
       "tempMax": 41.6,
       "tempMin": 27.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 540,
+      "humedadAltaMinutos": 600,
       "lat": 37.602019,
       "lon": -1.295504
     },
@@ -10446,7 +10446,7 @@
       "tempMax": 34.9,
       "tempMin": 26.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 360,
+      "humedadAltaMinutos": 420,
       "lat": 37.638751,
       "lon": -1.335361
     },
@@ -10654,7 +10654,7 @@
       "tempMax": 31.2,
       "tempMin": 27.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 600,
+      "humedadAltaMinutos": 660,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -10793,6 +10793,14 @@
       "humedadAltaMinutos": 300,
       "lat": 37.394,
       "lon": -1.944
+    },
+    "ITOTAN23": {
+      "tempMax": -99,
+      "tempMin": 99,
+      "precipTotal": 0.0,
+      "humedadAltaMinutos": 0,
+      "lat": 37.747365,
+      "lon": -1.466872
     }
   }
 }
