@@ -10181,7 +10181,7 @@
     "ILORCA115": {
       "tempMax": 42.2,
       "tempMin": 20.7,
-      "precipTotal": 0.0,
+      "precipTotal": 0.25,
       "humedadAltaMinutos": 0,
       "lat": 37.906366,
       "lon": -1.799738
@@ -10222,7 +10222,7 @@
       "tempMax": 29.8,
       "tempMin": 26.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 780,
+      "humedadAltaMinutos": 840,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -10269,7 +10269,7 @@
     "ILORCA49": {
       "tempMax": 41.3,
       "tempMin": 23.9,
-      "precipTotal": 0.0,
+      "precipTotal": 0.3,
       "humedadAltaMinutos": 0,
       "lat": 37.874337,
       "lon": -1.838405
@@ -10382,13 +10382,13 @@
       "tempMax": 29.8,
       "tempMin": 28.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 600,
+      "humedadAltaMinutos": 660,
       "lat": 37.566389,
       "lon": -1.305008
     },
     "IMAZAR114": {
       "tempMax": 32.2,
-      "tempMin": 27.9,
+      "tempMin": 27.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 300,
       "lat": 37.580929,
@@ -10654,7 +10654,7 @@
       "tempMax": 31.2,
       "tempMin": 27.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 720,
+      "humedadAltaMinutos": 780,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -10662,7 +10662,7 @@
       "tempMax": 33.1,
       "tempMin": 24.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 420,
+      "humedadAltaMinutos": 480,
       "lat": 37.695322,
       "lon": -0.935908
     },
@@ -10734,7 +10734,7 @@
       "tempMax": 34.9,
       "tempMin": 26.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 360,
+      "humedadAltaMinutos": 420,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -10758,7 +10758,7 @@
       "tempMax": 35.2,
       "tempMin": 26.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 360,
+      "humedadAltaMinutos": 420,
       "lat": 38.272037,
       "lon": -0.646685
     },
@@ -10782,7 +10782,7 @@
       "tempMax": 35.6,
       "tempMin": 26.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 360,
+      "humedadAltaMinutos": 420,
       "lat": 37.173833,
       "lon": -1.946667
     },
