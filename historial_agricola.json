@@ -10051,7 +10051,7 @@
       "lon": -1.428541
     },
     "IALHAM31": {
-      "tempMax": 34.5,
+      "tempMax": 34.7,
       "tempMin": 25.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10171,7 +10171,7 @@
       "lon": -1.590815
     },
     "ILORCA124": {
-      "tempMax": 38.8,
+      "tempMax": 40.5,
       "tempMin": 25.2,
       "precipTotal": 2.03,
       "humedadAltaMinutos": 0,
@@ -10195,7 +10195,7 @@
       "lon": -1.884168
     },
     "ILORCA19": {
-      "tempMax": 29.8,
+      "tempMax": 30.0,
       "tempMin": 25.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 479,
@@ -10299,7 +10299,7 @@
       "lon": -1.702337
     },
     "ILORCA81": {
-      "tempMax": 37.0,
+      "tempMax": 37.7,
       "tempMin": 31.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10347,7 +10347,7 @@
       "lon": -1.836982
     },
     "IMAZAR112": {
-      "tempMax": 29.2,
+      "tempMax": 29.7,
       "tempMin": 26.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 359,
@@ -10363,7 +10363,7 @@
       "lon": -1.242701
     },
     "IMAZAR19": {
-      "tempMax": 33.4,
+      "tempMax": 36.2,
       "tempMin": 27.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10379,7 +10379,7 @@
       "lon": -1.264009
     },
     "IMAZAR64": {
-      "tempMax": 30.0,
+      "tempMax": 30.8,
       "tempMin": 26.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 239,
@@ -10611,7 +10611,7 @@
       "lon": -1.52123
     },
     "IPULP6": {
-      "tempMax": 34.1,
+      "tempMax": 36.3,
       "tempMin": 25.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10619,7 +10619,7 @@
       "lon": -1.748503
     },
     "IVERA31": {
-      "tempMax": 30.9,
+      "tempMax": 31.4,
       "tempMin": 26.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 239,
@@ -10702,7 +10702,7 @@
       "tempMax": 31.3,
       "tempMin": 26.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 360,
+      "humedadAltaMinutos": 420,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -10747,7 +10747,7 @@
       "lon": -2.14387
     },
     "ILOSGA9": {
-      "tempMax": 35.7,
+      "tempMax": 38.2,
       "tempMin": 27.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
