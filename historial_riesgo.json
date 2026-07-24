@@ -23216,7 +23216,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 135,
-      "dsv_7d": 15,
+      "dsv_7d": 14,
       "lat": 37.844378,
       "lon": -1.428541,
       "datos_ok": true,
@@ -23299,6 +23299,16 @@
       "dsv_7d": 14,
       "lat": 37.771672,
       "lon": -1.357693,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "IALHAM92": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 127,
+      "dsv_7d": 12,
+      "lat": 37.848953,
+      "lon": -1.415771,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
@@ -23636,7 +23646,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 112,
-      "dsv_7d": 19,
+      "dsv_7d": 18,
       "lat": 37.567,
       "lon": -1.3,
       "datos_ok": true,
@@ -23782,6 +23792,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ITOTAN5": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 122,
+      "dsv_7d": 14,
+      "lat": 37.773,
+      "lon": -1.499,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "ITOTAN8": {
       "oidio": 3,
       "mildiu": 1,
@@ -23819,6 +23839,16 @@
       "dsv_7d": 12,
       "lat": 37.824391,
       "lon": -1.599507,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "ITOTAN16": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 90,
+      "dsv_7d": 14,
+      "lat": 37.783714,
+      "lon": -1.514744,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
