@@ -10195,7 +10195,7 @@
       "lon": -1.884168
     },
     "ILORCA19": {
-      "tempMax": 30.0,
+      "tempMax": 30.1,
       "tempMin": 25.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 479,
@@ -10702,7 +10702,7 @@
       "tempMax": 31.3,
       "tempMin": 26.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 420,
+      "humedadAltaMinutos": 480,
       "lat": 37.85238,
       "lon": -0.766351
     },
