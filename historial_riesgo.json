@@ -23212,6 +23212,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 135,
+      "dsv_7d": 15,
+      "lat": 37.844378,
+      "lon": -1.428541,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -23386,7 +23396,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 80,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.664547,
       "lon": -1.884168,
       "datos_ok": true,
@@ -23622,6 +23632,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IMAZAR60": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 112,
+      "dsv_7d": 19,
+      "lat": 37.567,
+      "lon": -1.3,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 12d"
+    },
     "IMAZAR64": {
       "oidio": 3,
       "mildiu": 1,
@@ -23676,7 +23696,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 82,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 38.100582,
       "lon": -1.525336,
       "datos_ok": true,
@@ -23746,7 +23766,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 77,
-      "dsv_7d": 10,
+      "dsv_7d": 11,
       "lat": 38.095196,
       "lon": -1.674757,
       "datos_ok": true,
@@ -23799,16 +23819,6 @@
       "dsv_7d": 12,
       "lat": 37.824391,
       "lon": -1.599507,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "ITOTAN16": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 90,
-      "dsv_7d": 14,
-      "lat": 37.783714,
-      "lon": -1.514744,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
@@ -23916,7 +23926,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 109,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 38.471875,
       "lon": -1.421486,
       "datos_ok": true,
@@ -23936,7 +23946,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 108,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 38.635307,
       "lon": -1.097558,
       "datos_ok": true,
