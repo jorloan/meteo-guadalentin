@@ -10020,7 +10020,7 @@
   "2026-07-24": {
     "IALEDO7": {
       "tempMax": 36.3,
-      "tempMin": 27.2,
+      "tempMin": 27.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.771905,
@@ -10068,7 +10068,7 @@
     },
     "IALHAM4": {
       "tempMax": 36.3,
-      "tempMin": 30.3,
+      "tempMin": 27.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.883939,
@@ -10622,7 +10622,7 @@
       "tempMax": 31.4,
       "tempMin": 26.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 239,
+      "humedadAltaMinutos": 299,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -10702,7 +10702,7 @@
       "tempMax": 31.3,
       "tempMin": 26.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 480,
+      "humedadAltaMinutos": 540,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -10726,7 +10726,7 @@
       "tempMax": 31.9,
       "tempMin": 26.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 179,
+      "humedadAltaMinutos": 239,
       "lat": 38.272037,
       "lon": -0.646685
     },
@@ -10740,7 +10740,7 @@
     },
     "INJAR43": {
       "tempMax": 32.3,
-      "tempMin": 25.3,
+      "tempMin": 25.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 180,
       "lat": 36.938852,
