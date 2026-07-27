@@ -10134,7 +10134,7 @@
       "tempMax": 28.0,
       "tempMin": 17.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 60,
       "lat": 37.87582,
       "lon": -1.707165
     },
@@ -10246,7 +10246,7 @@
       "tempMax": 30.4,
       "tempMin": 19.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 239,
+      "humedadAltaMinutos": 299,
       "lat": 37.512787,
       "lon": -1.656607
     },
@@ -10518,7 +10518,7 @@
       "tempMax": 29.1,
       "tempMin": 14.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 179,
+      "humedadAltaMinutos": 239,
       "lat": 37.822313,
       "lon": -1.585495
     },
@@ -10716,7 +10716,7 @@
     },
     "IALHAM92": {
       "tempMax": 35.0,
-      "tempMin": 29.2,
+      "tempMin": 27.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.848953,
@@ -10724,7 +10724,7 @@
     },
     "ILORCA18": {
       "tempMax": 30.7,
-      "tempMin": 27.5,
+      "tempMin": 24.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.664547,
