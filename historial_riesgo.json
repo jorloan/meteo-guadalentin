@@ -26850,16 +26850,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IALHAM92": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 136,
-      "dsv_7d": 12,
-      "lat": 37.848953,
-      "lon": -1.415771,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ILORCA100": {
       "oidio": 3,
       "mildiu": 1,
@@ -27174,7 +27164,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 128,
-      "dsv_7d": 16,
+      "dsv_7d": 19,
       "lat": 37.646405,
       "lon": -1.249082,
       "datos_ok": true,
