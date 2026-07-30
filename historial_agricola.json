@@ -10395,7 +10395,7 @@
       "lon": -1.600633
     },
     "IMULA41": {
-      "tempMax": 36.4,
+      "tempMax": 36.6,
       "tempMin": 18.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10566,7 +10566,7 @@
       "tempMax": 28.3,
       "tempMin": 24.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 300,
+      "humedadAltaMinutos": 360,
       "lat": 37.230999,
       "lon": -1.822
     },
