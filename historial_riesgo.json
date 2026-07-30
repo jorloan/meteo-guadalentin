@@ -28514,16 +28514,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IALEDO9": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 90,
-      "dsv_7d": 19,
-      "lat": 37.798803,
-      "lon": -1.592444,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IALHAM13": {
       "oidio": 3,
       "mildiu": 1,
@@ -29101,16 +29091,6 @@
       "dsv_7d": 15,
       "lat": 37.788956,
       "lon": -1.523104,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 135,
-      "dsv_7d": 14,
-      "lat": 37.773,
-      "lon": -1.499,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
