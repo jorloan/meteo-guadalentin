@@ -29376,6 +29376,16 @@
     }
   },
   "2026-07-31": {
+    "IALEDO7": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 148,
+      "dsv_7d": 16,
+      "lat": 37.771905,
+      "lon": -1.575828,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IALEDO9": {
       "oidio": 3,
       "mildiu": 1,
