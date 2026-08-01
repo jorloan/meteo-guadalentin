@@ -10003,7 +10003,7 @@
       "lon": -1.432404
     },
     "IALHAM64": {
-      "tempMax": 39.6,
+      "tempMax": 39.9,
       "tempMin": 22.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10339,7 +10339,7 @@
       "lon": -1.335361
     },
     "IMULA10": {
-      "tempMax": 33.7,
+      "tempMax": 34.1,
       "tempMin": 20.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
@@ -10355,7 +10355,7 @@
       "lon": -1.450125
     },
     "IMULA25": {
-      "tempMax": 34.3,
+      "tempMax": 35.3,
       "tempMin": 20.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10363,7 +10363,7 @@
       "lon": -1.533938
     },
     "IMULA34": {
-      "tempMax": 33.5,
+      "tempMax": 35.3,
       "tempMin": 22.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10371,7 +10371,7 @@
       "lon": -1.592649
     },
     "IMULA40": {
-      "tempMax": 35.1,
+      "tempMax": 36.3,
       "tempMin": 21.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10379,7 +10379,7 @@
       "lon": -1.600633
     },
     "IMULA41": {
-      "tempMax": 38.3,
+      "tempMax": 38.4,
       "tempMin": 21.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10387,7 +10387,7 @@
       "lon": -1.597045
     },
     "IMULA49": {
-      "tempMax": 33.7,
+      "tempMax": 34.5,
       "tempMin": 21.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10395,7 +10395,7 @@
       "lon": -1.565616
     },
     "IMULACOP3": {
-      "tempMax": 35.6,
+      "tempMax": 36.5,
       "tempMin": 19.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10550,12 +10550,12 @@
       "tempMax": 28.8,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 529,
+      "humedadAltaMinutos": 589,
       "lat": 37.230999,
       "lon": -1.822
     },
     "ICARTA267": {
-      "tempMax": 31.5,
+      "tempMax": 31.8,
       "tempMin": 22.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 236,
@@ -10611,7 +10611,7 @@
       "lon": -1.044818
     },
     "IMURCI180": {
-      "tempMax": 34.8,
+      "tempMax": 34.9,
       "tempMin": 25.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
@@ -10683,7 +10683,7 @@
       "lon": -1.944
     },
     "IBAZA18": {
-      "tempMax": 38.7,
+      "tempMax": 38.8,
       "tempMin": 23.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
