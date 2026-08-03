@@ -10086,7 +10086,7 @@
       "tempMax": 29.6,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 240,
+      "humedadAltaMinutos": 300,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -10278,7 +10278,7 @@
       "tempMax": 30.2,
       "tempMin": 23.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 240,
+      "humedadAltaMinutos": 300,
       "lat": 37.602019,
       "lon": -1.295504
     },
@@ -10286,7 +10286,7 @@
       "tempMax": 33.7,
       "tempMin": 23.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 180,
+      "humedadAltaMinutos": 240,
       "lat": 37.638751,
       "lon": -1.335361
     },
@@ -10582,7 +10582,7 @@
       "tempMax": 29.4,
       "tempMin": 25.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 480,
+      "humedadAltaMinutos": 540,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -10606,7 +10606,7 @@
       "tempMax": 31.0,
       "tempMin": 24.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 240,
+      "humedadAltaMinutos": 300,
       "lat": 38.272037,
       "lon": -0.646685
     },
@@ -10644,7 +10644,7 @@
     },
     "IALHAM92": {
       "tempMax": 41.1,
-      "tempMin": 30.0,
+      "tempMin": 29.4,
       "precipTotal": 5.08,
       "humedadAltaMinutos": 0,
       "lat": 37.848953,
