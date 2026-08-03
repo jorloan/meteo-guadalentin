@@ -10043,7 +10043,7 @@
       "lon": -1.701487
     },
     "ILORCA115": {
-      "tempMax": 34.9,
+      "tempMax": 35.1,
       "tempMin": 17.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10059,7 +10059,7 @@
       "lon": -1.590815
     },
     "ILORCA124": {
-      "tempMax": 36.7,
+      "tempMax": 37.5,
       "tempMin": 23.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10075,7 +10075,7 @@
       "lon": -1.707165
     },
     "ILORCA18": {
-      "tempMax": 35.0,
+      "tempMax": 35.2,
       "tempMin": 21.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10131,7 +10131,7 @@
       "lon": -1.888228
     },
     "ILORCA49": {
-      "tempMax": 34.8,
+      "tempMax": 35.1,
       "tempMin": 24.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10171,7 +10171,7 @@
       "lon": -1.658853
     },
     "ILORCA69": {
-      "tempMax": 34.5,
+      "tempMax": 35.3,
       "tempMin": 24.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10187,7 +10187,7 @@
       "lon": -1.702337
     },
     "ILORCA81": {
-      "tempMax": 32.4,
+      "tempMax": 32.6,
       "tempMin": 25.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10219,7 +10219,7 @@
       "lon": -1.836982
     },
     "IMAZAR112": {
-      "tempMax": 28.7,
+      "tempMax": 28.9,
       "tempMin": 26.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 300,
@@ -10243,7 +10243,7 @@
       "lon": -1.249082
     },
     "IMAZAR20": {
-      "tempMax": 30.6,
+      "tempMax": 30.8,
       "tempMin": 25.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 120,
@@ -10531,7 +10531,7 @@
       "lon": -1.239228
     },
     "IYECLA52": {
-      "tempMax": 35.0,
+      "tempMax": 36.3,
       "tempMin": 18.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10582,7 +10582,7 @@
       "tempMax": 29.4,
       "tempMin": 25.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 300,
+      "humedadAltaMinutos": 360,
       "lat": 37.85238,
       "lon": -0.766351
     },
@@ -10645,7 +10645,7 @@
     "IALHAM92": {
       "tempMax": 41.1,
       "tempMin": 31.4,
-      "precipTotal": 0.0,
+      "precipTotal": 5.08,
       "humedadAltaMinutos": 0,
       "lat": 37.848953,
       "lon": -1.415771
