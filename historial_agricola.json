@@ -10254,7 +10254,7 @@
       "tempMax": 31.9,
       "tempMin": 24.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 240,
+      "humedadAltaMinutos": 300,
       "lat": 37.602019,
       "lon": -1.295504
     },
@@ -10636,7 +10636,7 @@
     },
     "ILORCA104": {
       "tempMax": 35.9,
-      "tempMin": 33.7,
+      "tempMin": 31.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.682,
