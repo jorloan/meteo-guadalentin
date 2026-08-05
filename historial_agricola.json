@@ -9963,7 +9963,7 @@
       "lon": -1.43
     },
     "IALHAM88": {
-      "tempMax": 38.3,
+      "tempMax": 38.8,
       "tempMin": 26.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10486,7 +10486,7 @@
       "tempMax": 29.8,
       "tempMin": 25.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 300,
+      "humedadAltaMinutos": 360,
       "lat": 37.230999,
       "lon": -1.822
     },
