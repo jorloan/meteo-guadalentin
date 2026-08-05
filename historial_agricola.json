@@ -9923,7 +9923,7 @@
       "lon": -1.382057
     },
     "IALHAM36": {
-      "tempMax": 35.8,
+      "tempMax": 36.5,
       "tempMin": 23.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 178,
@@ -9947,7 +9947,7 @@
       "lon": -1.432404
     },
     "IALHAM64": {
-      "tempMax": 38.8,
+      "tempMax": 41.0,
       "tempMin": 23.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -9963,7 +9963,7 @@
       "lon": -1.43
     },
     "IALHAM88": {
-      "tempMax": 37.5,
+      "tempMax": 38.3,
       "tempMin": 26.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10062,7 +10062,7 @@
       "tempMax": 29.0,
       "tempMin": 22.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 358,
+      "humedadAltaMinutos": 418,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -10486,7 +10486,7 @@
       "tempMax": 29.8,
       "tempMin": 25.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 240,
+      "humedadAltaMinutos": 300,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -10571,7 +10571,7 @@
       "lon": -0.683127
     },
     "IORIHU67": {
-      "tempMax": 33.1,
+      "tempMax": 33.2,
       "tempMin": 24.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 60,
@@ -10587,7 +10587,7 @@
       "lon": -0.646685
     },
     "IBAZA18": {
-      "tempMax": 36.2,
+      "tempMax": 36.5,
       "tempMin": 21.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
