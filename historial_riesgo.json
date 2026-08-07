@@ -35520,6 +35520,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IALHAM92": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 160,
+      "dsv_7d": 13,
+      "lat": 37.848953,
+      "lon": -1.415771,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "ILORCA100": {
       "oidio": 3,
       "mildiu": 1,
@@ -35594,7 +35604,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 151,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.472,
       "lon": -1.776,
       "datos_ok": true,
@@ -35624,7 +35634,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 153,
-      "dsv_7d": 20,
+      "dsv_7d": 21,
       "lat": 37.534962,
       "lon": -1.45076,
       "datos_ok": true,
@@ -35814,7 +35824,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 157,
-      "dsv_7d": 15,
+      "dsv_7d": 14,
       "lat": 37.646405,
       "lon": -1.249082,
       "datos_ok": true,
@@ -35894,7 +35904,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 122,
-      "dsv_7d": 15,
+      "dsv_7d": 14,
       "lat": 38.100582,
       "lon": -1.525336,
       "datos_ok": true,
@@ -36120,6 +36130,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ICARTA267": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 142,
+      "dsv_7d": 25,
+      "lat": 37.695322,
+      "lon": -0.935908,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 11d"
+    },
     "IJUMIL46": {
       "oidio": 3,
       "mildiu": 1,
@@ -36184,7 +36204,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 65,
-      "dsv_7d": 17,
+      "dsv_7d": 18,
       "lat": 37.85238,
       "lon": -0.766351,
       "datos_ok": true,
