@@ -534,11 +534,44 @@ NOMBRES = {
 }
 
 WEBCAMS = [
-    # Añade aquí tus cámaras. Ejemplos DGT (sustituye XXXX por el ID real):
-    # {"id":"dgt_a7_lorca","nombre":"A-7 Lorca km 648","lat":37.685,"lon":-1.702,
-    #  "url":"https://infocar.dgt.es/etraffic/camaras/XXXX.jpg","tipo":"DGT","descripcion":"A-7 dir. Murcia"},
-    # {"id":"cam_privada_1","nombre":"Almería Este","lat":37.71,"lon":-1.80,
-    #  "url":"https://tuservidor.com/snap.jpg","tipo":"Privada","descripcion":"Vista sierra"},
+    # ── A-7 Autovía del Mediterráneo ─────────────────────────────────
+    {"id":"dgt_a7_librilla_s",  "nombre":"A-7 Librilla Sur",           "lat":37.893,"lon":-1.380,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1234.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 595 · dirección Murcia"},
+    {"id":"dgt_a7_alhama_n",   "nombre":"A-7 Alhama Norte",            "lat":37.875,"lon":-1.408,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1239.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 598 · acceso norte Alhama"},
+    {"id":"dgt_a7_ciruelo",    "nombre":"A-7 El Ciruelo (Alhama)",     "lat":37.856,"lon":-1.435,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1238.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 601,7 · Alhama de Murcia"},
+    {"id":"dgt_a7_totana",     "nombre":"A-7 Totana",                  "lat":37.791,"lon":-1.499,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1237.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 611,95 · Totana"},
+    {"id":"dgt_a7_sanjulian",  "nombre":"A-7 Ventas de San Julián",    "lat":37.737,"lon":-1.598,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1236.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 628,8"},
+    {"id":"dgt_a7_torrecilla", "nombre":"A-7 Torrecilla",              "lat":37.706,"lon":-1.645,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1235.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 634,15"},
+    {"id":"dgt_a7_itv_lorca",  "nombre":"A-7 ITV Centro Lorca",        "lat":37.690,"lon":-1.671,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1240.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 637 · Lorca"},
+    {"id":"dgt_a7_lorca_sur",  "nombre":"A-7 Lorca Sur (Méndez)",      "lat":37.667,"lon":-1.703,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1241.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 640,5 · Hospital Méndez Lorca"},
+    {"id":"dgt_a7_saprelorca", "nombre":"A-7 Polígono Saprelorca",     "lat":37.646,"lon":-1.732,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1242.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 642,85 · Repsol Lorca"},
+    {"id":"dgt_a7_plumb_n",    "nombre":"A-7 Puerto Lumbreras Norte",  "lat":37.588,"lon":-1.794,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1243.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 649,5"},
+    {"id":"dgt_a7_plumb_c",    "nombre":"A-7 Puerto Lumbreras Centro", "lat":37.572,"lon":-1.807,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1244.jpg",
+     "tipo":"DGT","descripcion":"A-7 km 651,7"},
+    # ── A-91 ─────────────────────────────────────────────────────────
+    {"id":"dgt_a91_henares",   "nombre":"A-91 Henares (Pto. Lumbreras)","lat":37.563,"lon":-1.818,
+     "url":"https://etraffic.dgt.es/camarasEtraffic/1247.jpg",
+     "tipo":"DGT","descripcion":"A-91 km 6,45 · enlace A-7/A-91"},
 ]
 
 def generar_html(historial, riesgo_data, ahora, dias_acum):
