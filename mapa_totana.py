@@ -572,6 +572,23 @@ WEBCAMS = [
     {"id":"dgt_a91_henares",   "nombre":"A-91 Henares (Pto. Lumbreras)","lat":37.611923,"lon":-1.9163889,
      "url":"https://etraffic.dgt.es/camarasEtraffic/1247.jpg",
      "tipo":"DGT","descripcion":"A-91 km 6,45 · enlace A-7/A-91"},
+    # ── Ayuntamiento de Totana ────────────────────────────────────────
+    {"id":"totana_plaza_const", "nombre":"Totana · Plaza Constitución",  "lat":37.7697643,"lon":-1.5027122,
+     "url":"https://www.totana.es/webcam/PLAZA_CONSTITUCION.jpg",
+     "tipo":"Ayuntamiento","descripcion":"Plaza de la Constitución · Totana"},
+    {"id":"totana_balsa",       "nombre":"Totana · Plaza Balsa Vieja",   "lat":37.7700940,"lon":-1.5022171,
+     "url":"https://www.totana.es/webcam/PLAZA_BALSA.jpg",
+     "tipo":"Ayuntamiento","descripcion":"Plaza Balsa Vieja · Totana"},
+    # ── Webcams públicas (webcamgalore.com) ───────────────────────────
+    {"id":"aguilas_puerto",    "nombre":"Águilas · Puerto",             "lat":37.4040191,"lon":-1.5781299,
+     "url":"https://images.webcamgalore.com/28892-current-webcam-Aguilas.jpg",
+     "tipo":"Pública","descripcion":"Puerto de Águilas · vista panorámica"},
+    {"id":"mula_plaza",        "nombre":"Mula · Plaza Ayuntamiento",    "lat":38.0416059,"lon":-1.4910892,
+     "url":"https://images.webcamgalore.com/12619-current-webcam-Mula.jpg",
+     "tipo":"Pública","descripcion":"Plaza del Ayuntamiento · Mula"},
+    {"id":"bullas_plaza",      "nombre":"Bullas · Plaza de España",     "lat":38.0495514,"lon":-1.6708465,
+     "url":"https://images.webcamgalore.com/11960-current-webcam-Bullas.jpg",
+     "tipo":"Pública","descripcion":"Plaza de España · Bullas"},
 ]
 
 def generar_html(historial, riesgo_data, ahora, dias_acum):
