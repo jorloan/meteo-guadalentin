@@ -39972,7 +39972,7 @@
     },
     "ILORCA86": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 89,
       "dsv_7d": 8,
       "lat": 37.648492,
@@ -40374,7 +40374,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 159,
-      "dsv_7d": 11,
+      "dsv_7d": 9,
       "lat": 38.471875,
       "lon": -1.421486,
       "datos_ok": true,
