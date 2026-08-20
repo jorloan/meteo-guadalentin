@@ -623,7 +623,6 @@ WEBCAMS = [
 ]
 
 def generar_html(historial, riesgo_data, ahora, dias_acum):
-    fa = ahora.strftime("%d/%m/%Y %H:%M:%S")
     aviso_dias = ""
     if dias_acum < MIN_DIAS:
         falt = MIN_DIAS - dias_acum
@@ -639,7 +638,7 @@ def generar_html(historial, riesgo_data, ahora, dias_acum):
          +"var AVISO_DIAS="+json.dumps(aviso_dias)+";\n"
          + JS_LOGICA)
 
-    html = HTML_BASE.replace('__FECHA__', fa).replace('__JS__', js)
+    html = HTML_BASE.replace('__JS__', js)
     ruta_pub  = os.path.join(DIR_PUB,   'index.html')
     ruta_repo = os.path.join(REPO_DIR,  'index.html')
     for ruta in [ruta_pub, ruta_repo]:
@@ -839,11 +838,6 @@ function raw(est,p,tsRef){
 function wdL(d){
   if(d==null) return '—';
   return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'][Math.round(d/22.5)%16];
-}
-function fmtT(iso){
-  var d=new Date(iso),n=new Date();
-  return(d.getDate()===n.getDate()&&d.getMonth()===n.getMonth()?'Hoy':'Ayer')+
-    ', '+d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
 }
 
 // ── Leyenda ────────────────────────────────────────────────
@@ -1159,20 +1153,24 @@ function render(){
 // ── Slider máquina del tiempo ──────────────────────────────
 var sl=document.getElementById('sl');
 var tl=document.getElementById('tl');
-var tlLabel=document.getElementById('tl-label');
-var periodoSel=document.getElementById('periodo-sel');
+var tlSub=document.getElementById('tl-sub');
+var tmOffset=document.getElementById('tm-offset');
+var tmCounter=document.getElementById('tm-counter');
+var tmLive=document.getElementById('tm-live');
+var tmPeriodos=document.getElementById('tm-periodos');
 var slFechaIni=document.getElementById('sl-fecha-ini');
 var slFechaFin=document.getElementById('sl-fecha-fin');
 var slSep=document.getElementById('sl-sep');
+var velocidadMs=500;
 
 // ── Periodos disponibles ──────────────────────────────────────
 // 24h: usa historyData embebido (resolución 5 min, ya viene con la página)
 // 2d/7d: se descargan bajo demanda (resolución 30 min / 3 h) para no
 // disparar el tamaño de la página en la carga inicial.
 var PERIODOS={
-  '24h':{archivo:null,               label:'⏱ Últimas 24h'},
-  '2d': {archivo:'history_2d.json',  label:'⏱ Últimos 2 días'},
-  '7d': {archivo:'history_7d.json',  label:'⏱ Última semana'}
+  '24h':{archivo:null},
+  '2d': {archivo:'history_2d.json'},
+  '7d': {archivo:'history_7d.json'}
 };
 var periodoActivo='24h';
 var extData={};        // caché de periodos descargados: {'2d':[...], '7d':[...]}
@@ -1228,7 +1226,9 @@ function cargarPeriodo(p, cb){
     })
     .catch(function(){
       periodoActivo='24h';
-      if(periodoSel) periodoSel.value='24h';
+      tmPeriodos.querySelectorAll('.tm-per-btn').forEach(function(b){
+        b.classList.toggle('active', b.getAttribute('data-per')==='24h');
+      });
       activeData=historyData;
       sl.disabled=false;
       cb();
@@ -1243,9 +1243,9 @@ function actualizarModoSlider(){
   idxActual=indices.length-1;
 
   if(modoRiesgo){
-    tlLabel.textContent='📅 Máquina del Tiempo — por día';
-    periodoSel.style.display='none';
+    tmPeriodos.style.display='none';
     sl.style.display='none';
+    tmCounter.style.display='none';
     slFechaIni.style.display='';
     slFechaFin.style.display='';
     slSep.style.display='';
@@ -1256,9 +1256,9 @@ function actualizarModoSlider(){
       diaFiltroFin=diaIdx[diaIdx.length-1].key;
     }
   } else {
-    tlLabel.textContent=PERIODOS[periodoActivo].label;
-    periodoSel.style.display='';
+    tmPeriodos.style.display='';
     sl.style.display='';
+    tmCounter.style.display='';
     slFechaIni.style.display='none';
     slFechaFin.style.display='none';
     slSep.style.display='none';
@@ -1266,18 +1266,47 @@ function actualizarModoSlider(){
   actualizarLabel();
 }
 
-periodoSel.addEventListener('change', function(){
-  periodoActivo=this.value;
-  cargarPeriodo(periodoActivo, function(){
-    actualizarModoSlider();
-    render();
+tmPeriodos.querySelectorAll('.tm-per-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var p=this.getAttribute('data-per');
+    if(p===periodoActivo) return;
+    periodoActivo=p;
+    tmPeriodos.querySelectorAll('.tm-per-btn').forEach(function(b){
+      b.classList.toggle('active', b===btn);
+    });
+    cargarPeriodo(periodoActivo, function(){
+      actualizarModoSlider();
+      render();
+    });
   });
+});
+
+document.getElementById('tm-speed').querySelectorAll('.tm-vel-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    velocidadMs=parseInt(this.getAttribute('data-vel'));
+    document.getElementById('tm-speed').querySelectorAll('.tm-vel-btn').forEach(function(b){
+      b.classList.toggle('active', b===btn);
+    });
+    if(PT){ clearInterval(PT); PT=setInterval(avanzarFrame, velocidadMs); }
+  });
+});
+
+tmLive.addEventListener('click', function(){
+  if(PT){ clearInterval(PT); PT=null; document.getElementById('pb').textContent='▶'; }
+  var indices=getModoIndices();
+  idxActual=indices.length-1;
+  sl.value=idxActual;
+  actualizarLabel();
+  render();
 });
 
 var timeOverlay=document.getElementById('time-overlay');
 function actualizarLabel(){
   var indices=getModoIndices();
-  if(!indices.length){tl.innerText='Sin datos';timeOverlay.style.display='none';return;}
+  if(!indices.length){
+    tl.textContent='--:--'; tlSub.textContent='Sin datos'; timeOverlay.style.display='none';
+    return;
+  }
   var idx=indices[Math.min(idxActual,indices.length-1)];
   var fuente=modoRiesgo?historyData:activeData;
   var ts=fuente[idx].timestamp;
@@ -1289,20 +1318,40 @@ function actualizarLabel(){
     var refRadar=last?Date.now()/1000:new Date(ts).getTime()/1000;
     actualizarFrameRadar(Math.round(refRadar));
   }
-  var textoHeader, textoOverlay;
+
+  tmCounter.textContent=(Math.min(idxActual,indices.length-1)+1)+' / '+indices.length;
+  tmLive.classList.toggle('mostrar', !last);
+
+  var textoOverlay;
   if(modoRiesgo){
     var d=new Date(ts);
-    var fechaStr=d.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
-    textoHeader=d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'})+(last?' (Hoy)':'');
-    textoOverlay='📅 '+fechaStr+(last?' — Hoy':'');
+    var fechaCorta=d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'});
+    var fechaLarga=d.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'});
+    fechaLarga=fechaLarga.charAt(0).toUpperCase()+fechaLarga.slice(1);
+    tl.textContent=fechaCorta;
+    tlSub.textContent=fechaLarga;
+    tmOffset.textContent=last?'HOY':'HISTÓRICO';
+    tmOffset.classList.toggle('en-vivo', last);
+    textoOverlay='📅 '+fechaLarga+(last?' — Hoy':'');
   } else {
     var d2=new Date(ts);
     var horaStr=d2.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    var fechaStr=d2.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}).replace('.','').toUpperCase();
+    var diffMin=Math.round((Date.now()-d2.getTime())/60000);
+    var relTxt;
+    if(last || diffMin<=1) relTxt='EN VIVO';
+    else if(diffMin<60) relTxt='hace '+diffMin+' min';
+    else{
+      var h=Math.floor(diffMin/60), m=diffMin%60;
+      relTxt='hace '+h+'h'+(m?' '+m+'min':'');
+    }
+    tl.textContent=horaStr;
+    tlSub.textContent=fechaStr+' · '+relTxt;
+    tmOffset.textContent=relTxt;
+    tmOffset.classList.toggle('en-vivo', last);
     var esHoy=d2.getDate()===new Date().getDate()&&d2.getMonth()===new Date().getMonth();
-    textoHeader=fmtT(ts)+(last?' (Actual)':' (Histórico)');
     textoOverlay=(esHoy?'Hoy':'Ayer')+' '+horaStr+(last?' ⬤':'');
   }
-  tl.innerText=textoHeader;
   // Mostrar overlay solo si no es el frame actual o si hay animación
   timeOverlay.textContent=textoOverlay;
   timeOverlay.style.display=last&&!PT?'none':'block';
@@ -1362,24 +1411,26 @@ sl2.addEventListener('input', function(){
   }, 2000);
 });
 
+function avanzarFrame(){
+  var indices = getModoIndices();
+  idxActual = (idxActual+1) % indices.length;
+  sl2.value = idxActual;
+  actualizarLabel();
+  render();
+  if(idxActual === indices.length-1){
+    clearInterval(PT); PT=null;
+    document.getElementById('pb').textContent='▶';
+    timeOverlay.style.display = 'none';
+  }
+}
+
 document.getElementById('pb').addEventListener('click', function(){
-  if(PT){ clearInterval(PT); PT=null; this.textContent='▶️'; return; }
-  this.textContent = '⏸️';
+  if(PT){ clearInterval(PT); PT=null; this.textContent='▶'; return; }
+  this.textContent = '⏸';
   var indices = getModoIndices();
   if(idxActual >= indices.length-1) idxActual = 0;
-  var s = this;
-  var intervalo = modoRiesgo ? 800 : 500;
   timeOverlay.style.display = 'block';
-  PT = setInterval(function(){
-    idxActual = (idxActual+1) % indices.length;
-    sl2.value = idxActual;
-    actualizarLabel();
-    render();
-    if(idxActual === indices.length-1){
-      clearInterval(PT); PT=null; s.textContent='▶️';
-      timeOverlay.style.display = 'none';
-    }
-  }, intervalo);
+  PT = setInterval(avanzarFrame, velocidadMs);
 });
 
 document.getElementById('op').addEventListener('input', function(){
@@ -1500,11 +1551,6 @@ HTML_BASE = """<!DOCTYPE html>
     #logo .ls{font-size:.58rem;color:#6e7f9a;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
     .sep{width:1px;height:26px;background:rgba(255,255,255,0.1);flex-shrink:0}
 
-    /* Timestamp */
-    #ts-wrap{display:flex;flex-direction:column;gap:1px;flex-shrink:0}
-    #ts-wrap .ts-lbl{font-size:.56rem;color:#6e7f9a;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-    #tl{font-size:.7rem;color:#94a3b8;font-variant-numeric:tabular-nums;white-space:nowrap}
-
     /* Selector de parámetro personalizado (permite plegar Riesgos agrícolas) */
     #ps-wrap{position:relative}
     #ps-btn{
@@ -1533,25 +1579,46 @@ HTML_BASE = """<!DOCTYPE html>
     .ps-sub{display:none;padding-left:4px}
     .ps-sub.open{display:block}
 
-    /* Controles de tiempo */
-    #ctrl-t{display:flex;flex-direction:column;align-items:center;gap:3px}
-    #ctrl-t-top{display:flex;align-items:center;gap:5px}
-    #tl-label{font-size:.58rem;color:#6e7f9a;font-weight:700;letter-spacing:.3px;white-space:nowrap}
-    #periodo-sel{
-      background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
-      border-radius:6px;color:#e6edf3;font-size:.6rem;font-weight:700;
-      padding:2px 4px;cursor:pointer;outline:none;
+    /* ── Máquina del tiempo (formato tipo radarspain.es) ───────── */
+    #tm-bar{
+      position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:999;
+      width:min(720px,94vw);
+      background:rgba(13,17,23,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.09);border-radius:16px;
+      box-shadow:0 8px 32px rgba(0,0,0,.5);
+      padding:10px 14px 12px;display:flex;flex-direction:column;gap:7px;
     }
-    #periodo-sel:focus{border-color:rgba(59,130,246,.55)}
-    #periodo-sel option{background:#1c2433;color:#e6edf3}
-    #ctrl-ti{display:flex;align-items:center;gap:5px}
-    #pb{
-      background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
-      border-radius:6px;color:#e6edf3;font-size:.85rem;
-      width:28px;height:28px;display:flex;align-items:center;justify-content:center;
-      cursor:pointer;padding:0;line-height:1;flex-shrink:0;
+    #tm-row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .tm-play{
+      width:32px;height:32px;border-radius:50%;flex-shrink:0;
+      background:rgba(59,130,246,.85);border:none;color:#fff;font-size:.8rem;
+      display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
     }
-    #pb:hover{background:rgba(255,255,255,0.15)}
+    .tm-play:hover{background:#3b82f6}
+    #tm-clock{display:flex;flex-direction:column;line-height:1.05;flex-shrink:0}
+    .tm-clock-lbl{font-size:.54rem;color:#6e7f9a;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+    #tl{font-size:1.28rem;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
+    #tm-info{display:flex;flex-direction:column;line-height:1.35;flex-shrink:0;margin-right:auto}
+    #tm-offset{font-size:.64rem;font-weight:800;color:#3b82f6;letter-spacing:.3px}
+    #tm-offset.en-vivo{color:#27ae60}
+    #tl-sub{font-size:.62rem;color:#6e7f9a}
+    #tm-periodos,#tm-speed{display:flex;gap:2px;background:rgba(255,255,255,0.05);border-radius:8px;padding:2px;flex-shrink:0}
+    .tm-per-btn,.tm-vel-btn{
+      background:transparent;border:none;color:#94a3b8;font-size:.66rem;font-weight:700;
+      padding:5px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;
+    }
+    .tm-per-btn:hover,.tm-vel-btn:hover{color:#e6edf3}
+    .tm-per-btn.active,.tm-vel-btn.active{background:rgba(59,130,246,.85);color:#fff}
+    #tm-live{
+      flex-shrink:0;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);
+      color:#93c5fd;font-size:.64rem;font-weight:700;padding:5px 9px;border-radius:8px;cursor:pointer;
+      display:none;
+    }
+    #tm-live:hover{background:rgba(59,130,246,.3)}
+    #tm-live.mostrar{display:block}
+    #tm-row2{display:flex;align-items:center;gap:8px}
+    #sl{flex:1}
+    #tm-counter{font-size:.6rem;color:#6e7f9a;font-variant-numeric:tabular-nums;flex-shrink:0;min-width:42px;text-align:right}
 
     /* Sliders */
     input[type=range]{
@@ -1605,6 +1672,9 @@ HTML_BASE = """<!DOCTYPE html>
       border:1px solid rgba(255,255,255,0.08);display:none;white-space:nowrap;
     }
 
+    /* Dejar hueco para el panel de la máquina del tiempo (fijo abajo) */
+    .leaflet-bottom.leaflet-left{bottom:104px!important}
+
     /* Leyenda (Leaflet control) */
     .legend{
       background:rgba(13,17,23,0.88)!important;
@@ -1631,7 +1701,7 @@ HTML_BASE = """<!DOCTYPE html>
 
     /* Panel lateral de estación */
     #dp{
-      position:fixed;top:80px;right:12px;bottom:12px;width:300px;
+      position:fixed;top:80px;right:12px;bottom:104px;width:300px;
       display:none;flex-direction:column;z-index:1001;
       background:rgba(13,17,23,0.90);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
       border:1px solid rgba(255,255,255,0.09);border-radius:16px;
@@ -1719,12 +1789,18 @@ HTML_BASE = """<!DOCTYPE html>
     @media(max-width:600px){
       #topbar{top:6px;left:6px;right:6px;border-radius:12px;gap:7px;padding:8px 12px}
       .sep{display:none}
-      #dp{top:auto;right:6px;left:6px;bottom:6px;width:auto;max-height:52vh;border-radius:12px}
+      #dp{top:auto;right:6px;left:6px;bottom:150px;width:auto;max-height:44vh;border-radius:12px}
       #aviso-dias,#time-overlay{top:70px}
       .legend{max-width:130px!important;font-size:.68rem!important}
       .leg-hdr{padding:5px 9px}
       .leg-body{padding:5px 9px 7px}
-      .leaflet-bottom.leaflet-left{bottom:52px!important}
+      .leaflet-bottom.leaflet-left{bottom:150px!important}
+      #tm-bar{bottom:6px;left:6px;right:6px;width:auto;transform:none;padding:8px 10px 10px}
+      #tm-row1{gap:6px}
+      #tl{font-size:1.05rem}
+      #tm-info{margin-right:0}
+      .tm-per-btn,.tm-vel-btn{padding:4px 6px;font-size:.6rem}
+      #tm-live{font-size:.58rem;padding:4px 7px}
     }
   </style>
 </head>
@@ -1736,11 +1812,6 @@ HTML_BASE = """<!DOCTYPE html>
   <div id="logo">
     <span class="lm">🌿 METEO</span>
     <span class="ls">Guadalentín</span>
-  </div>
-  <div class="sep"></div>
-  <div id="ts-wrap">
-    <span class="ts-lbl">Actualizado</span>
-    <span id="tl">__FECHA__</span>
   </div>
   <div class="sep"></div>
   <div id="ps-wrap">
@@ -1772,29 +1843,44 @@ HTML_BASE = """<!DOCTYPE html>
     <span id="radar-fuera-rango" title="RainViewer solo ofrece histórico de radar de las últimas ~2 horas">⚠ sin radar aquí</span>
   </div>
   <div class="sep"></div>
-  <div id="ctrl-t">
-    <div id="ctrl-t-top">
-      <span id="tl-label">⏱ Últimas 24h</span>
-      <select id="periodo-sel" title="Periodo del historial">
-        <option value="24h" selected>24 h</option>
-        <option value="2d">2 días</option>
-        <option value="7d">Semana</option>
-      </select>
-    </div>
-    <div id="ctrl-ti">
-      <button id="pb">▶</button>
-      <input type="range" id="sl" min="0" max="0" value="0" style="width:90px">
-      <input type="date" id="sl-fecha-ini" style="display:none">
-      <span id="sl-sep" style="display:none;color:#6e7f9a;font-size:.72rem">→</span>
-      <input type="date" id="sl-fecha-fin" style="display:none">
-    </div>
-  </div>
-  <div class="sep"></div>
   <div id="ctrl-op">
     <label>🔆 Opacidad</label>
     <input type="range" id="op" min="0" max="1" step="0.05" value="0.35" style="width:65px">
   </div>
   <button id="btn-loc" title="Mi ubicación" onclick="locateMe()">🎯</button>
+</div>
+
+<!-- Máquina del tiempo ─────────────────────────────────────── -->
+<div id="tm-bar">
+  <div id="tm-row1">
+    <button type="button" id="pb" class="tm-play">▶</button>
+    <div id="tm-clock">
+      <span class="tm-clock-lbl">Hora local</span>
+      <span id="tl">--:--</span>
+    </div>
+    <div id="tm-info">
+      <span id="tm-offset">EN VIVO</span>
+      <span id="tl-sub">-</span>
+    </div>
+    <div id="tm-periodos">
+      <button type="button" class="tm-per-btn active" data-per="24h">24h</button>
+      <button type="button" class="tm-per-btn" data-per="2d">2 días</button>
+      <button type="button" class="tm-per-btn" data-per="7d">Semana</button>
+    </div>
+    <div id="tm-speed">
+      <button type="button" class="tm-vel-btn" data-vel="1500">0,5×</button>
+      <button type="button" class="tm-vel-btn active" data-vel="500">1×</button>
+      <button type="button" class="tm-vel-btn" data-vel="200">2×</button>
+    </div>
+    <button type="button" id="tm-live">⟲ Volver al directo</button>
+  </div>
+  <div id="tm-row2">
+    <input type="range" id="sl" min="0" max="0" value="0">
+    <span id="tm-counter">0 / 0</span>
+    <input type="date" id="sl-fecha-ini" style="display:none">
+    <span id="sl-sep" style="display:none">→</span>
+    <input type="date" id="sl-fecha-fin" style="display:none">
+  </div>
 </div>
 
 <div id="aviso-dias"></div>
