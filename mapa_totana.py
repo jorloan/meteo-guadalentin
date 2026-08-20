@@ -670,13 +670,38 @@ map.createPane('hp');
 map.getPane('hp').style.zIndex=390;
 map.getPane('hp').style.filter='blur(14px)';
 
+// ── Radar de lluvia: se guardan todos los frames disponibles (RainViewer
+// solo ofrece históricos de ~2h) para poder sincronizarlos con la
+// máquina del tiempo cuando el momento seleccionado cae dentro de ese rango.
 var rLG=L.layerGroup();
+var radarFrames=[];   // [{time:epochSeg, path:'...'}], orden cronológico
+var radarHost='';
+var radarTileLayer=null;
+var radarFrameActual=-1;
+
+function actualizarFrameRadar(epochSeg){
+  if(!radarFrames.length) return;
+  var mejor=0, mejorDif=Infinity;
+  for(var i=0;i<radarFrames.length;i++){
+    var dif=Math.abs(radarFrames[i].time - epochSeg);
+    if(dif<mejorDif){ mejorDif=dif; mejor=i; }
+  }
+  if(mejor===radarFrameActual) return;
+  radarFrameActual=mejor;
+  var url=radarHost+radarFrames[mejor].path+'/256/{z}/{x}/{y}/2/1_1.png';
+  if(radarTileLayer) radarTileLayer.setUrl(url);
+  else{
+    radarTileLayer=L.tileLayer(url,{opacity:0.7,zIndex:400,maxNativeZoom:7,maxZoom:18});
+    rLG.addLayer(radarTileLayer);
+  }
+}
+
 fetch('https://api.rainviewer.com/public/weather-maps.json')
   .then(function(r){return r.json();})
   .then(function(d){
-    var l=d.radar.past[d.radar.past.length-1];
-    rLG.addLayer(L.tileLayer(d.host+l.path+'/256/{z}/{x}/{y}/2/1_1.png',
-      {opacity:0.7,zIndex:400,maxNativeZoom:7,maxZoom:18}));
+    radarHost=d.host;
+    radarFrames=(d.radar.past||[]).slice();
+    if(radarFrames.length) actualizarFrameRadar(radarFrames[radarFrames.length-1].time);
   }).catch(function(){});
 
 var mLG=L.layerGroup(),hLG=L.layerGroup(),HL=null;
@@ -1280,6 +1305,7 @@ function actualizarLabel(){
   var fuente=modoRiesgo?historyData:activeData;
   var ts=fuente[idx].timestamp;
   var last=idxActual===indices.length-1;
+  if(radarChk&&radarChk.checked) actualizarFrameRadar(Math.round(new Date(ts).getTime()/1000));
   var textoHeader, textoOverlay;
   if(modoRiesgo){
     var d=new Date(ts);
@@ -1394,10 +1420,62 @@ function onParamChange(){
 var radarChk = document.getElementById('radar-chk');
 if(radarChk){
   radarChk.addEventListener('change', function(){
-    if(this.checked){ if(!map.hasLayer(rLG)) rLG.addTo(map); }
-    else { if(map.hasLayer(rLG)) rLG.remove(); }
+    if(this.checked){
+      if(!map.hasLayer(rLG)) rLG.addTo(map);
+      actualizarLabel(); // sincroniza el frame de radar con la posición actual del slider
+    } else { if(map.hasLayer(rLG)) rLG.remove(); }
   });
 }
+
+// ── Selector de parámetro personalizado (grupo Riesgos plegable) ──
+(function(){
+  var btn=document.getElementById('ps-btn');
+  var btnLabel=document.getElementById('ps-btn-label');
+  var menu=document.getElementById('ps-menu');
+  var sel=document.getElementById('ps');
+  var riesgoHdr=document.getElementById('ps-riesgo-hdr');
+  var riesgoSub=document.getElementById('ps-riesgo-sub');
+  var opts=menu.querySelectorAll('.ps-opt');
+
+  function etiquetaDe(v){
+    for(var i=0;i<opts.length;i++) if(opts[i].getAttribute('data-v')===v) return opts[i].textContent;
+    return '';
+  }
+  function marcarActiva(v){
+    for(var i=0;i<opts.length;i++) opts[i].classList.toggle('active', opts[i].getAttribute('data-v')===v);
+  }
+  function cerrarMenu(){
+    menu.classList.remove('open');
+    riesgoSub.classList.remove('open'); // se pliega de nuevo al cerrar
+    riesgoHdr.querySelector('.ps-caret').textContent='▸';
+  }
+  function abrirMenu(){
+    marcarActiva(sel.value);
+    menu.classList.add('open');
+  }
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(menu.classList.contains('open')) cerrarMenu(); else abrirMenu();
+  });
+  riesgoHdr.addEventListener('click', function(e){
+    e.stopPropagation();
+    var abierto=riesgoSub.classList.toggle('open');
+    riesgoHdr.querySelector('.ps-caret').textContent=abierto?'▾':'▸';
+  });
+  for(var i=0;i<opts.length;i++){
+    opts[i].addEventListener('click', function(e){
+      e.stopPropagation();
+      var v=this.getAttribute('data-v');
+      sel.value=v;
+      btnLabel.textContent=etiquetaDe(v);
+      cerrarMenu();
+      onParamChange();
+    });
+  }
+  document.addEventListener('click', function(){
+    if(menu.classList.contains('open')) cerrarMenu();
+  });
+})();
 
 function initSl(){
   var n = historyData.length;
@@ -1443,14 +1521,33 @@ HTML_BASE = """<!DOCTYPE html>
     #ts-wrap .ts-lbl{font-size:.56rem;color:#6e7f9a;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
     #tl{font-size:.7rem;color:#94a3b8;font-variant-numeric:tabular-nums;white-space:nowrap}
 
-    /* Selector de parámetro */
-    #ps{
+    /* Selector de parámetro personalizado (permite plegar Riesgos agrícolas) */
+    #ps-wrap{position:relative}
+    #ps-btn{
       background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
       border-radius:8px;color:#e6edf3;font-size:.82rem;font-weight:600;
-      padding:6px 10px;cursor:pointer;outline:none;
+      padding:6px 10px;cursor:pointer;outline:none;display:flex;align-items:center;gap:6px;
+      font-family:inherit;
     }
-    #ps:focus{border-color:rgba(59,130,246,.55)}
-    #ps optgroup,#ps option{background:#1c2433;color:#e6edf3}
+    #ps-btn:hover,#ps-btn:focus{border-color:rgba(59,130,246,.55)}
+    .ps-caret{font-size:.62rem;color:#6e7f9a}
+    #ps-menu{
+      display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:210px;
+      background:#1c2433;border:1px solid rgba(255,255,255,0.13);border-radius:10px;
+      box-shadow:0 8px 28px rgba(0,0,0,.5);padding:4px;z-index:2000;
+    }
+    #ps-menu.open{display:block}
+    .ps-opt{padding:7px 10px;border-radius:6px;font-size:.8rem;color:#e6edf3;cursor:pointer;white-space:nowrap}
+    .ps-opt:hover{background:rgba(255,255,255,0.08)}
+    .ps-opt.active{background:rgba(59,130,246,.28)}
+    .ps-sep{height:1px;background:rgba(255,255,255,0.1);margin:4px 2px}
+    .ps-grp-hdr{
+      padding:7px 10px;border-radius:6px;font-size:.72rem;font-weight:700;color:#9aa7bd;
+      cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;
+    }
+    .ps-grp-hdr:hover{background:rgba(255,255,255,0.06)}
+    .ps-sub{display:none;padding-left:4px}
+    .ps-sub.open{display:block}
 
     /* Controles de tiempo */
     #ctrl-t{display:flex;flex-direction:column;align-items:center;gap:3px}
@@ -1677,18 +1774,29 @@ HTML_BASE = """<!DOCTYPE html>
     <span id="tl">__FECHA__</span>
   </div>
   <div class="sep"></div>
-  <select id="ps" onchange="onParamChange()">
-    <optgroup label="📡 Datos meteorológicos">
+  <div id="ps-wrap">
+    <button type="button" id="ps-btn"><span id="ps-btn-label">🌡 Temperatura (°C)</span><span class="ps-caret">▾</span></button>
+    <div id="ps-menu">
+      <div class="ps-opt active" data-v="temp">🌡 Temperatura (°C)</div>
+      <div class="ps-opt" data-v="precip">🌧 Precipitación (mm)</div>
+      <div class="ps-opt" data-v="humidity">💧 Humedad (%)</div>
+      <div class="ps-opt" data-v="wind">💨 Viento (km/h)</div>
+      <div class="ps-sep"></div>
+      <div class="ps-grp-hdr" id="ps-riesgo-hdr"><span>🌿 Riesgos agrícolas</span><span class="ps-caret">▸</span></div>
+      <div class="ps-sub" id="ps-riesgo-sub">
+        <div class="ps-opt" data-v="oidio">🍇 Riesgo Oídio</div>
+        <div class="ps-opt" data-v="mildiu">🍃 Riesgo Mildiu</div>
+      </div>
+    </div>
+    <select id="ps" onchange="onParamChange()" style="display:none">
       <option value="temp" selected>🌡 Temperatura (°C)</option>
       <option value="precip">🌧 Precipitación (mm)</option>
       <option value="humidity">💧 Humedad (%)</option>
       <option value="wind">💨 Viento (km/h)</option>
-    </optgroup>
-    <optgroup label="🌿 Riesgos agrícolas">
       <option value="oidio">🍇 Riesgo Oídio</option>
       <option value="mildiu">🍃 Riesgo Mildiu</option>
-    </optgroup>
-  </select>
+    </select>
+  </div>
   <div class="sep"></div>
   <div id="ctrl-radar">
     <label><input type="checkbox" id="radar-chk"> 📡 Radar</label>
