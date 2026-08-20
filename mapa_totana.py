@@ -1300,11 +1300,10 @@ tmLive.addEventListener('click', function(){
   render();
 });
 
-var timeOverlay=document.getElementById('time-overlay');
 function actualizarLabel(){
   var indices=getModoIndices();
   if(!indices.length){
-    tl.textContent='--:--'; tlSub.textContent='Sin datos'; timeOverlay.style.display='none';
+    tl.textContent='--:--'; tlSub.textContent='Sin datos';
     return;
   }
   var idx=indices[Math.min(idxActual,indices.length-1)];
@@ -1322,7 +1321,6 @@ function actualizarLabel(){
   tmCounter.textContent=(Math.min(idxActual,indices.length-1)+1)+' / '+indices.length;
   tmLive.classList.toggle('mostrar', !last);
 
-  var textoOverlay;
   if(modoRiesgo){
     var d=new Date(ts);
     var fechaCorta=d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'});
@@ -1332,7 +1330,6 @@ function actualizarLabel(){
     tlSub.textContent=fechaLarga;
     tmOffset.textContent=last?'HOY':'HISTÓRICO';
     tmOffset.classList.toggle('en-vivo', last);
-    textoOverlay='📅 '+fechaLarga+(last?' — Hoy':'');
   } else {
     var d2=new Date(ts);
     var horaStr=d2.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
@@ -1349,12 +1346,7 @@ function actualizarLabel(){
     tlSub.textContent=fechaStr+' · '+relTxt;
     tmOffset.textContent=relTxt;
     tmOffset.classList.toggle('en-vivo', last);
-    var esHoy=d2.getDate()===new Date().getDate()&&d2.getMonth()===new Date().getMonth();
-    textoOverlay=(esHoy?'Hoy':'Ayer')+' '+horaStr+(last?' ⬤':'');
   }
-  // Mostrar overlay solo si no es el frame actual o si hay animación
-  timeOverlay.textContent=textoOverlay;
-  timeOverlay.style.display=last&&!PT?'none':'block';
 }
 
 // ── Render con soporte historial ─────────────────────────────
@@ -1403,12 +1395,7 @@ var sl2 = document.getElementById('sl');
 sl2.addEventListener('input', function(){
   idxActual = parseInt(this.value);
   actualizarLabel();
-  timeOverlay.style.display = 'block';
   render();
-  clearTimeout(window._ovTimer);
-  window._ovTimer = setTimeout(function(){
-    if(!PT) timeOverlay.style.display = 'none';
-  }, 2000);
 });
 
 function avanzarFrame(){
@@ -1420,7 +1407,6 @@ function avanzarFrame(){
   if(idxActual === indices.length-1){
     clearInterval(PT); PT=null;
     document.getElementById('pb').textContent='▶';
-    timeOverlay.style.display = 'none';
   }
 }
 
@@ -1429,7 +1415,6 @@ document.getElementById('pb').addEventListener('click', function(){
   this.textContent = '⏸';
   var indices = getModoIndices();
   if(idxActual >= indices.length-1) idxActual = 0;
-  timeOverlay.style.display = 'block';
   PT = setInterval(avanzarFrame, velocidadMs);
 });
 
@@ -1662,16 +1647,6 @@ HTML_BASE = """<!DOCTYPE html>
       white-space:nowrap;backdrop-filter:blur(8px);
     }
 
-    /* Overlay de tiempo */
-    #time-overlay{
-      position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:1000;
-      background:rgba(13,17,23,0.82);color:#e6edf3;
-      font-size:1.2rem;font-weight:700;letter-spacing:.5px;
-      padding:7px 22px;border-radius:10px;pointer-events:none;
-      backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-      border:1px solid rgba(255,255,255,0.08);display:none;white-space:nowrap;
-    }
-
     /* Dejar hueco para el panel de la máquina del tiempo (fijo abajo) */
     .leaflet-bottom.leaflet-left{bottom:104px!important}
 
@@ -1790,7 +1765,7 @@ HTML_BASE = """<!DOCTYPE html>
       #topbar{top:6px;left:6px;right:6px;border-radius:12px;gap:7px;padding:8px 12px}
       .sep{display:none}
       #dp{top:auto;right:6px;left:6px;bottom:150px;width:auto;max-height:44vh;border-radius:12px}
-      #aviso-dias,#time-overlay{top:70px}
+      #aviso-dias{top:70px}
       .legend{max-width:130px!important;font-size:.68rem!important}
       .leg-hdr{padding:5px 9px}
       .leg-body{padding:5px 9px 7px}
@@ -1884,7 +1859,6 @@ HTML_BASE = """<!DOCTYPE html>
 </div>
 
 <div id="aviso-dias"></div>
-<div id="time-overlay"></div>
 
 <!-- Panel lateral de estación -->
 <div id="dp">
@@ -1922,13 +1896,6 @@ HTML_BASE = """<!DOCTYPE html>
           actualizarLabel();
         }
         render();
-        if(datos.length){
-          var t=new Date(datos[datos.length-1].timestamp);
-          var tl=document.getElementById('tl');
-          if(tl&&!document.getElementById('ps').value.match(/oidio|mildiu/)){
-            tl.textContent=t.toLocaleString('es-ES');
-          }
-        }
       }).catch(function(){});
   }
   function programar(){clearTimeout(timer);timer=setTimeout(function(){actualizarDatos();programar();},INTERVALO);}
