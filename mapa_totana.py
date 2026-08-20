@@ -783,36 +783,49 @@ function fmtT(iso){
 
 // ── Leyenda ────────────────────────────────────────────────
 var leg=L.control({position:'bottomleft'});
-leg.onAdd=function(){this._d=L.DomUtil.create('div','legend');return this._d;};
+var _legCollapsed=(window.innerWidth<=600);
+leg.onAdd=function(){
+  this._d=L.DomUtil.create('div','legend');
+  L.DomEvent.disableClickPropagation(this._d);
+  return this._d;
+};
 leg.upd=function(p){
-  var h='';
+  var title='',body='';
   if(p==='radar'){
-    h='<b>📡 Radar lluvia</b><br><small style="color:#888">RainViewer — Tiempo real</small>';
-    this._d.innerHTML=h; return;
-  }
-  if(p==='oidio'||p==='mildiu'){
-    h='<b>'+(p==='oidio'?'🍇 Oídio':'🍃 Mildiu')+'</b><br>';
-    h+='<i style="background:#aaa"></i>Sin datos<br>';
-    for(var i=3;i>=0;i--) h+='<i style="background:'+RC[i]+'"></i>'+RL[i]+'<br>';
-    h+='<small style="color:#888">'+(p==='oidio'?'Gubler-Thomas (UC Davis)':'Regla 10-10-10 + EPI')+'</small>';
+    title='📡 Radar';
+    body='<div style="color:#94a3b8;font-size:.68rem;line-height:1.5">RainViewer<br>Tiempo real</div>';
+  } else if(p==='oidio'||p==='mildiu'){
+    title=(p==='oidio'?'🍇 Oídio':'🍃 Mildiu');
+    body+='<span class="li-row"><i style="background:#aaa"></i>Sin datos</span>';
+    for(var i=3;i>=0;i--) body+='<span class="li-row"><i style="background:'+RC[i]+'"></i>'+RL[i]+'</span>';
+    body+='<div style="color:#6b7280;font-size:.66rem;margin-top:4px">'+(p==='oidio'?'Gubler-Thomas':'10-10-10+EPI')+'</div>';
   } else {
     var g,ti,u;
     if(p==='precip'){
       var pp=precipPeriodo?precipPeriodo.value:'hoy';
-      var sf=pp==='semana'?' (7d)':pp==='ayer'?' (24h)':' (hoy)';
-      ti='🌧 Precipitación'+sf;u='mm';g=[0.5,2,4,10,20,30,40,50,70];
-    }
-    else if(p==='temp'){ti='🌡 Temperatura';  u='°C';   g=[5,10,15,20,25,30,35,40];}
-    else if(p==='humidity'){ti='💧 Humedad'; u='%';    g=[30,50,70,90];}
-    else               {ti='💨 Viento';      u='km/h'; g=[2,5,10,20,30,40];}
-    h='<b>'+ti+'</b> <small>'+u+'</small><br>';
-    h+='<i style="background:'+col(g[g.length-1],p)+'"></i>&gt;'+g[g.length-1]+'<br>';
+      var sf=pp==='semana'?' 7d':pp==='ayer'?' 24h':' hoy';
+      ti='🌧 Precip'+sf;u='mm';g=[0.5,2,4,10,20,30,40,50,70];
+    } else if(p==='temp'){ti='🌡 Temp';u='°C';g=[5,10,15,20,25,30,35,40];}
+    else if(p==='humidity'){ti='💧 Humedad';u='%';g=[30,50,70,90];}
+    else{ti='💨 Viento';u='km/h';g=[2,5,10,20,30,40];}
+    title=ti+' <span style="color:#6b7280;font-weight:400;font-size:.68rem">'+u+'</span>';
+    body+='<span class="li-row"><i style="background:'+col(g[g.length-1],p)+'"></i>&gt;'+g[g.length-1]+'</span>';
     for(var i=g.length-2;i>=0;i--)
-      h+='<i style="background:'+col(g[i],p)+'"></i>'+g[i]+'-'+g[i+1]+'<br>';
+      body+='<span class="li-row"><i style="background:'+col(g[i],p)+'"></i>'+g[i]+'–'+g[i+1]+'</span>';
   }
-  this._d.innerHTML=h;
+  var tog=_legCollapsed?'▼':'▲';
+  var bst=_legCollapsed?'display:none':'';
+  this._d.innerHTML='<div class="leg-hdr" onclick="legToggle()"><span>'+title+'</span><span class="leg-tog">'+tog+'</span></div>'
+    +'<div class="leg-body" id="leg-body" style="'+bst+'">'+body+'</div>';
 };
 leg.addTo(map);
+function legToggle(){
+  _legCollapsed=!_legCollapsed;
+  var b=document.getElementById('leg-body');
+  var t=document.querySelector('.leg-tog');
+  if(b){b.style.display=_legCollapsed?'none':'';}
+  if(t){t.textContent=_legCollapsed?'▼':'▲';}
+}
 
 // ── Panel lateral fijo ─────────────────────────────────────
 var PS=null;
@@ -1427,16 +1440,27 @@ HTML_BASE = """<!DOCTYPE html>
 
     /* Leyenda (Leaflet control) */
     .legend{
-      background:rgba(13,17,23,0.85)!important;
+      background:rgba(13,17,23,0.88)!important;
       backdrop-filter:blur(16px)!important;-webkit-backdrop-filter:blur(16px)!important;
       border:1px solid rgba(255,255,255,0.09)!important;border-radius:12px!important;
       box-shadow:0 4px 20px rgba(0,0,0,.45)!important;
       color:#cbd5e1!important;font-size:.72rem!important;
-      padding:10px 13px!important;line-height:1.9!important;max-width:155px;
+      padding:0!important;max-width:150px;overflow:hidden;
     }
-    .legend i{border-radius:3px!important;border:none!important;opacity:.9!important}
-    .legend b{color:#f1f5f9!important}
-    .legend small{color:#4b5563!important}
+    .leg-hdr{
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+      padding:7px 11px;cursor:pointer;user-select:none;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+    }
+    .leg-hdr:hover{background:rgba(255,255,255,0.04)}
+    .leg-hdr span:first-child{color:#f1f5f9;font-weight:700;font-size:.73rem}
+    .leg-tog{color:#6b7280;font-size:.65rem;flex-shrink:0}
+    .leg-body{padding:7px 11px 9px;line-height:1;}
+    .li-row{display:flex;align-items:center;gap:5px;padding:2px 0;white-space:nowrap}
+    .legend i{
+      display:inline-block!important;width:12px!important;height:12px!important;
+      border-radius:2px!important;border:none!important;flex-shrink:0;
+    }
 
     /* Panel lateral de estación */
     #dp{
@@ -1530,6 +1554,10 @@ HTML_BASE = """<!DOCTYPE html>
       .sep{display:none}
       #dp{top:auto;right:6px;left:6px;bottom:6px;width:auto;max-height:52vh;border-radius:12px}
       #precip-barra,#aviso-dias,#time-overlay{top:70px}
+      .legend{max-width:130px!important;font-size:.68rem!important}
+      .leg-hdr{padding:5px 9px}
+      .leg-body{padding:5px 9px 7px}
+      .leaflet-bottom.leaflet-left{bottom:52px!important}
     }
   </style>
 </head>
