@@ -774,16 +774,21 @@ function col(v,p){
   if(p==='wind') return v>=40?'#b71c1c':v>=30?'#e65100':v>=20?'#f57f17':v>=10?'#fbc02d':v>=5?'#81c784':'#b2dfdb';
   return '#aaa';
 }
-// Precipitación de la última hora: diferencia entre el precipTotal
-// actual y el de hace 1h (precipTotal es acumulado desde medianoche,
-// así que la resta da lo llovido en la última hora).
-function getPrecipUltimaHora(sid){
-  var ahora = new Date();
-  var haceHora = new Date(ahora.getTime() - 3600*1000);
-  var valorActual = null, valorHace = null;
-  for(var i=historyData.length-1; i>=0; i--){
-    var snap = historyData[i];
-    var t = new Date(snap.timestamp);
+// Precipitación en la hora anterior AL MOMENTO MOSTRADO en la máquina del
+// tiempo (no respecto al reloj real): diferencia entre el precipTotal en
+// ese momento y el de 1h antes (precipTotal es acumulado desde medianoche,
+// así que la resta da lo llovido en esa hora concreta). Busca en el mismo
+// dataset (activeData) que está usando el slider en ese momento, para no
+// mezclar datos de otro periodo.
+function getPrecipHoraDe(sid, tsRef){
+  var refT = new Date(tsRef).getTime();
+  var haceHora = refT - 3600*1000;
+  var datos = activeData;
+  var valorRef = null, valorHace = null;
+  for(var i=datos.length-1; i>=0; i--){
+    var snap = datos[i];
+    var t = new Date(snap.timestamp).getTime();
+    if(t > refT) continue; // ignorar frames posteriores al momento mostrado
     var ests = snap.stations || [];
     var p = null;
     for(var j=0; j<ests.length; j++){
@@ -793,34 +798,36 @@ function getPrecipUltimaHora(sid){
       }
     }
     if(p === null) continue;
-    if(valorActual === null){ valorActual = p; continue; }
+    if(valorRef === null){ valorRef = p; continue; }
     if(t <= haceHora){ valorHace = p; break; }
   }
-  if(valorActual === null) return null;
-  if(valorHace === null) return Math.round(valorActual*10)/10; // aún sin 1h de histórico
-  var delta = valorActual - valorHace;
-  return Math.round((delta>=0?delta:valorActual)*10)/10;
+  if(valorRef === null) return null;
+  if(valorHace === null) return Math.round(valorRef*10)/10; // aún sin 1h de histórico antes de ese momento
+  var delta = valorRef - valorHace;
+  return Math.round((delta>=0?delta:valorRef)*10)/10;
 }
 
-function getPrecipAcumulada(sid, periodo){
-  if(periodo==='hora') return getPrecipUltimaHora(sid);
+// Precipitación acumulada en las 24h ANTERIORES AL MOMENTO MOSTRADO (no a
+// "ahora"). Suma el máximo precipTotal de cada día dentro de esa ventana,
+// usando el mismo dataset que el slider (activeData).
+function getPrecipAcumulada(sid, periodo, tsRef){
+  var refDate = tsRef ? new Date(tsRef) : new Date();
+  if(periodo==='hora') return getPrecipHoraDe(sid, refDate);
 
-  // Calcula precipitación acumulada usando historial 24h
-  // Suma el máximo precipTotal de cada día en el período
-  var ahora = new Date();
   var desde;
   if(periodo==='ayer'){
-    desde = new Date(ahora.getTime() - 24*3600*1000);
+    desde = new Date(refDate.getTime() - 24*3600*1000);
   } else {
     return null;
   }
 
   // Agrupar por día y coger el máximo precipTotal de cada día
+  var datos = activeData;
   var maxPorDia = {};
-  for(var i=0; i<historyData.length; i++){
-    var snap = historyData[i];
+  for(var i=0; i<datos.length; i++){
+    var snap = datos[i];
     var t = new Date(snap.timestamp);
-    if(t < desde) continue;
+    if(t < desde || t > refDate) continue;
     var diaKey = t.getFullYear()+'-'+t.getMonth()+'-'+t.getDate();
     var ests = snap.stations || [];
     for(var j=0; j<ests.length; j++){
@@ -841,12 +848,12 @@ function getPrecipAcumulada(sid, periodo){
   return Math.round(total * 10) / 10;
 }
 
-function raw(est,p){
+function raw(est,p,tsRef){
   if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}
   var m=est.metric; if(!m) return null;
   if(p==='precip'){
     var periodo=precipPeriodo?precipPeriodo.value:'hora';
-    var acum=getPrecipAcumulada(est.stationID, periodo);
+    var acum=getPrecipAcumulada(est.stationID, periodo, tsRef);
     return acum!=null?acum:(m.precipTotal!=null?m.precipTotal:0);
   }
   if(p==='temp')     return m.temp;
@@ -948,7 +955,7 @@ function render(){
 
   (snap.stations||[]).forEach(function(est){
     if(!est||est.lat==null||est.lon==null) return;
-    var v=raw(est,pRender); if(v==null) return;
+    var v=raw(est,pRender,snap.timestamp); if(v==null) return;
     var bg=col(v,pRender);
     var lb;
     if(isR)             lb=v<0?'?':['0','B','M','A'][Math.min(3,Math.max(0,Math.round(v)))];
@@ -1118,7 +1125,7 @@ function render(){
         +'<tr><td style="color:#888">🌧 Precipitación</td>'
         +'<td style="font-weight:700">'+(function(){
           var periodo=precipPeriodo?precipPeriodo.value:'hora';
-          var acum=getPrecipAcumulada(est.stationID,periodo);
+          var acum=getPrecipAcumulada(est.stationID,periodo,snap.timestamp);
           var label=periodo==='hora'?'1h':'24h';
           return acum!=null?(acum.toFixed(1)+' mm ('+label+')'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
         })()+' </td></tr>'
