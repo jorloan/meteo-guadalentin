@@ -21,6 +21,8 @@ def _repo():
 REPO_DIR = _repo()
 DIR_PUB  = os.path.join(REPO_DIR, 'public')
 F_H24    = os.path.join(REPO_DIR, 'history_24h.json')
+F_H2D    = os.path.join(REPO_DIR, 'history_2d.json')
+F_H7D    = os.path.join(REPO_DIR, 'history_7d.json')
 F_AGRI   = os.path.join(REPO_DIR, 'historial_agricola.json')
 F_DSV    = os.path.join(REPO_DIR, 'historial_dsv.json')
 F_RIESGO = os.path.join(REPO_DIR, 'historial_riesgo.json')
@@ -82,6 +84,35 @@ def hist24(nuevos, ahora):
     ok.append({'timestamp': ahora.isoformat(), 'stations': nuevos})
     guardar(F_H24, ok)
     print(f"  ✅ Historial 24h: {len(ok)} entradas")
+    return ok
+
+# ── Historial extendido (2 días / 7 días) a resolución reducida ──
+# Se usan para los periodos largos de la "máquina del tiempo": no se
+# guarda cada ejecución (cada 5 min), solo cuando ha pasado el
+# intervalo indicado, para no disparar el tamaño del archivo.
+def hist_extendido(nuevos, ahora, ruta, horas_retencion, minutos_intervalo):
+    h   = leer(ruta, [])
+    lim = ahora - timedelta(hours=horas_retencion)
+    ok  = []
+    for e in h:
+        try:
+            t = datetime.fromisoformat(e['timestamp'])
+            if t.tzinfo is None: t = t.replace(tzinfo=ahora.tzinfo)
+            if t > lim: ok.append(e)
+        except: pass
+
+    debe_anadir = True
+    if ok:
+        try:
+            t_ult = datetime.fromisoformat(ok[-1]['timestamp'])
+            if t_ult.tzinfo is None: t_ult = t_ult.replace(tzinfo=ahora.tzinfo)
+            debe_anadir = (ahora - t_ult) >= timedelta(minutes=minutos_intervalo)
+        except: pass
+
+    if debe_anadir:
+        ok.append({'timestamp': ahora.isoformat(), 'stations': nuevos})
+
+    guardar(ruta, ok)
     return ok
 
 # ── Historial agrícola 14 días ────────────────────────────────
@@ -488,8 +519,8 @@ def git_push(ahora):
         for cmd in [
             ["git","-C",REPO_DIR,"config","user.email","joseroquel@lopezyandreo.com"],
             ["git","-C",REPO_DIR,"config","user.name","Meteo Guadalentin Bot"],
-            ["git","-C",REPO_DIR,"add","history_24h.json","historial_agricola.json",
-             "public/index.html"],
+            ["git","-C",REPO_DIR,"add","history_24h.json","history_2d.json","history_7d.json",
+             "historial_agricola.json","public/index.html"],
             ["git","-C",REPO_DIR,"commit","-m",f"Auto {fecha_str}"],
             ["git","-C",REPO_DIR,"push"],
         ]:
@@ -863,7 +894,7 @@ function render(){
   leg.upd(p);
   if(heatActive && !esRadar) hLG.clearLayers(); mLG.clearLayers(); HL=null;
 
-  var snap=isR?historyData[historyData.length-1]:historyData[CI];
+  var snap=isR?historyData[historyData.length-1]:activeData[CI];
   if(!snap) return;
   var feats=[];
 
@@ -1103,54 +1134,79 @@ function render(){
 var sl=document.getElementById('sl');
 var tl=document.getElementById('tl');
 var tlLabel=document.getElementById('tl-label');
+var periodoSel=document.getElementById('periodo-sel');
 var slFechaIni=document.getElementById('sl-fecha-ini');
 var slFechaFin=document.getElementById('sl-fecha-fin');
 var slSep=document.getElementById('sl-sep');
 
-// ── Construir índices ────────────────────────────────────────
-// Modo hora: una entrada por hora (última de cada hora) — últimas 12h
-// Modo día:  una entrada por día (última del día) — para oidio/mildiu
-var horaIdx = [];   // índices en historyData, uno por hora
-var diaIdx  = [];   // índices en historyData, uno por día
+// ── Periodos disponibles ──────────────────────────────────────
+// 24h: usa historyData embebido (resolución 5 min, ya viene con la página)
+// 2d/7d: se descargan bajo demanda (resolución 30 min / 3 h) para no
+// disparar el tamaño de la página en la carga inicial.
+var PERIODOS={
+  '24h':{archivo:null,               label:'⏱ Últimas 24h'},
+  '2d': {archivo:'history_2d.json',  label:'⏱ Últimos 2 días'},
+  '7d': {archivo:'history_7d.json',  label:'⏱ Última semana'}
+};
+var periodoActivo='24h';
+var extData={};        // caché de periodos descargados: {'2d':[...], '7d':[...]}
+var activeData=historyData;   // dataset que alimenta el slider en modo no-riesgo
+
+// ── Índices por día (para oidio/mildiu) ────────────────────────
+var diaIdx = [];   // índices en historyData, uno por día
 
 (function(){
-  // Agrupar por hora
-  var porHora={}, porDia={};
+  var porDia={};
   historyData.forEach(function(e,i){
     var d=new Date(e.timestamp);
     var mm=String(d.getMonth()+1).padStart(2,'0');
     var dd=String(d.getDate()).padStart(2,'0');
-    var hh=String(d.getHours()).padStart(2,'0');
-    var hk=d.getFullYear()+'-'+mm+'-'+dd+'T'+hh;
     var dk=d.getFullYear()+'-'+mm+'-'+dd;
-    porHora[hk]=i;  // última lectura de cada hora
     porDia[dk]=i;   // última lectura de cada día
   });
-  // Últimas 12 horas
-  var ahora=new Date();
-  var hace12=new Date(ahora.getTime()-12*3600000);
-  Object.keys(porHora).sort().forEach(function(k){
-    var idx=porHora[k];
-    var t=new Date(historyData[idx].timestamp);
-    if(t>=hace12) horaIdx.push(idx);
-  });
-  // Todos los días disponibles
   Object.keys(porDia).sort().forEach(function(k){
     diaIdx.push({key:k, idx:porDia[k]});
   });
 })();
 
 var modoRiesgo=false;
-var idxActual=horaIdx.length-1;  // índice dentro de horaIdx o diaIdx
+var idxActual=activeData.length-1;  // índice dentro de activeData o diaIdx
 var diaFiltroIni='', diaFiltroFin='';
 
 function getModoIndices(){
-  if(!modoRiesgo) return horaIdx;
+  if(!modoRiesgo){
+    var idxs=[];
+    for(var i=0;i<activeData.length;i++) idxs.push(i);
+    return idxs;
+  }
   // Filtrar diaIdx por rango seleccionado
   if(!diaFiltroIni && !diaFiltroFin) return diaIdx.map(function(d){return d.idx;});
   return diaIdx.filter(function(d){
     return (!diaFiltroIni || d.key>=diaFiltroIni) && (!diaFiltroFin || d.key<=diaFiltroFin);
   }).map(function(d){return d.idx;});
+}
+
+// Descarga (con caché) el histórico del periodo seleccionado y lo
+// convierte en el dataset activo del slider.
+function cargarPeriodo(p, cb){
+  if(p==='24h'){ activeData=historyData; cb(); return; }
+  if(extData[p]){ activeData=extData[p]; cb(); return; }
+  sl.disabled=true;
+  fetch(PERIODOS[p].archivo+'?v='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(datos){
+      extData[p]=(datos&&datos.length)?datos:historyData;
+      activeData=extData[p];
+      sl.disabled=false;
+      cb();
+    })
+    .catch(function(){
+      periodoActivo='24h';
+      if(periodoSel) periodoSel.value='24h';
+      activeData=historyData;
+      sl.disabled=false;
+      cb();
+    });
 }
 
 function actualizarModoSlider(){
@@ -1163,6 +1219,7 @@ function actualizarModoSlider(){
 
   if(modoRiesgo){
     tlLabel.textContent='📅 Máquina del Tiempo — por día';
+    periodoSel.style.display='none';
     sl.style.display='none';
     slFechaIni.style.display='';
     slFechaFin.style.display='';
@@ -1175,12 +1232,14 @@ function actualizarModoSlider(){
     }
   } else if(esRadar){
     tlLabel.textContent='📡 Radar — Tiempo real';
+    periodoSel.style.display='none';
     sl.style.display='none';
     slFechaIni.style.display='none';
     slFechaFin.style.display='none';
     slSep.style.display='none';
   } else {
-    tlLabel.textContent='⏱ Últimas 12h — por hora';
+    tlLabel.textContent=PERIODOS[periodoActivo].label;
+    periodoSel.style.display='';
     sl.style.display='';
     slFechaIni.style.display='none';
     slFechaFin.style.display='none';
@@ -1189,13 +1248,22 @@ function actualizarModoSlider(){
   actualizarLabel();
 }
 
+periodoSel.addEventListener('change', function(){
+  periodoActivo=this.value;
+  cargarPeriodo(periodoActivo, function(){
+    actualizarModoSlider();
+    render();
+  });
+});
+
 var timeOverlay=document.getElementById('time-overlay');
 precipPeriodo=document.getElementById('precip-periodo');
 function actualizarLabel(){
   var indices=getModoIndices();
   if(!indices.length){tl.innerText='Sin datos';timeOverlay.style.display='none';return;}
   var idx=indices[Math.min(idxActual,indices.length-1)];
-  var ts=historyData[idx].timestamp;
+  var fuente=modoRiesgo?historyData:activeData;
+  var ts=fuente[idx].timestamp;
   var last=idxActual===indices.length-1;
   var textoHeader, textoOverlay;
   if(modoRiesgo){
@@ -1366,7 +1434,15 @@ HTML_BASE = """<!DOCTYPE html>
 
     /* Controles de tiempo */
     #ctrl-t{display:flex;flex-direction:column;align-items:center;gap:3px}
+    #ctrl-t-top{display:flex;align-items:center;gap:5px}
     #tl-label{font-size:.58rem;color:#6e7f9a;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+    #periodo-sel{
+      background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
+      border-radius:6px;color:#e6edf3;font-size:.6rem;font-weight:700;
+      padding:2px 4px;cursor:pointer;outline:none;
+    }
+    #periodo-sel:focus{border-color:rgba(59,130,246,.55)}
+    #periodo-sel option{background:#1c2433;color:#e6edf3}
     #ctrl-ti{display:flex;align-items:center;gap:5px}
     #pb{
       background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
@@ -1591,7 +1667,14 @@ HTML_BASE = """<!DOCTYPE html>
   </select>
   <div class="sep"></div>
   <div id="ctrl-t">
-    <span id="tl-label">⏱ Últimas 12h — por hora</span>
+    <div id="ctrl-t-top">
+      <span id="tl-label">⏱ Últimas 24h</span>
+      <select id="periodo-sel" title="Periodo del historial">
+        <option value="24h" selected>24 h</option>
+        <option value="2d">2 días</option>
+        <option value="7d">Semana</option>
+      </select>
+    </div>
     <div id="ctrl-ti">
       <button id="pb">▶</button>
       <input type="range" id="sl" min="0" max="0" value="0" style="width:90px">
@@ -1646,6 +1729,7 @@ HTML_BASE = """<!DOCTYPE html>
       .then(function(datos){
         if(!datos||!datos.length) return;
         historyData=datos;
+        if(periodoActivo==='24h') activeData=historyData;
         var indices=getModoIndices();
         var eraActual=(idxActual>=indices.length-1);
         actualizarModoSlider();
@@ -1678,6 +1762,20 @@ HTML_BASE = """<!DOCTYPE html>
 
 # ── Principal ─────────────────────────────────────────────────
 def principal():
+    # Sincronizar con el remoto antes de leer/escribir el historial local.
+    # Evita que una ejecución manual con un checkout desactualizado
+    # sobrescriba (al hacer push) el historial ya acumulado en producción.
+    print("\n🔄 Sincronizando historial con el remoto...")
+    try:
+        subprocess.run(["git","-C",REPO_DIR,"config","pull.rebase","false"],
+                        capture_output=True, text=True, timeout=10)
+        r = subprocess.run(["git","-C",REPO_DIR,"pull","origin","main","--no-edit"],
+                            capture_output=True, text=True, timeout=20)
+        if r.returncode != 0:
+            print(f"  ⚠ No se pudo sincronizar: {r.stderr.strip()[:150]}")
+    except Exception as e:
+        print(f"  ⚠ Git pull error: {e}")
+
     try:
         from zoneinfo import ZoneInfo
         ahora = datetime.now(ZoneInfo("Europe/Madrid"))
@@ -1705,6 +1803,12 @@ def principal():
 
     print("\n📚 Historial 24h...")
     h24 = hist24(datos_wu, ahora)
+
+    print("\n📚 Historial 2 días (resolución 30 min)...")
+    hist_extendido(datos_wu, ahora, F_H2D, horas_retencion=48, minutos_intervalo=30)
+
+    print("\n📚 Historial 7 días (resolución 3 h)...")
+    hist_extendido(datos_wu, ahora, F_H7D, horas_retencion=24*7, minutos_intervalo=180)
 
     print(f"\n🌾 Historial agrícola... (+{minutos} min)")
     hagri = hist_agri(datos_wu, ahora, minutos)
