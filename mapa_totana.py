@@ -653,7 +653,6 @@ var RC=['#27ae60','#f39c12','#e67e22','#c0392b'];
 var RL=['Sin riesgo','Riesgo bajo','Riesgo medio','Riesgo ALTO'];
 var CI=historyData.length-1;
 var PT=null;
-var precipPeriodo=null;
 window.HO=0.35;
 
 // ── Mapa base ──────────────────────────────────────────────
@@ -807,53 +806,11 @@ function getPrecipHoraDe(sid, tsRef){
   return Math.round((delta>=0?delta:valorRef)*10)/10;
 }
 
-// Precipitación acumulada en las 24h ANTERIORES AL MOMENTO MOSTRADO (no a
-// "ahora"). Suma el máximo precipTotal de cada día dentro de esa ventana,
-// usando el mismo dataset que el slider (activeData).
-function getPrecipAcumulada(sid, periodo, tsRef){
-  var refDate = tsRef ? new Date(tsRef) : new Date();
-  if(periodo==='hora') return getPrecipHoraDe(sid, refDate);
-
-  var desde;
-  if(periodo==='ayer'){
-    desde = new Date(refDate.getTime() - 24*3600*1000);
-  } else {
-    return null;
-  }
-
-  // Agrupar por día y coger el máximo precipTotal de cada día
-  var datos = activeData;
-  var maxPorDia = {};
-  for(var i=0; i<datos.length; i++){
-    var snap = datos[i];
-    var t = new Date(snap.timestamp);
-    if(t < desde || t > refDate) continue;
-    var diaKey = t.getFullYear()+'-'+t.getMonth()+'-'+t.getDate();
-    var ests = snap.stations || [];
-    for(var j=0; j<ests.length; j++){
-      var est = ests[j];
-      if(!est || est.stationID !== sid) continue;
-      var p = est.metric && est.metric.precipTotal != null ? est.metric.precipTotal : null;
-      if(p === null) continue;
-      if(maxPorDia[diaKey] === undefined || p > maxPorDia[diaKey]){
-        maxPorDia[diaKey] = p;
-      }
-    }
-  }
-
-  // Sumar máximos de cada día
-  var total = 0;
-  var keys = Object.keys(maxPorDia);
-  for(var k=0; k<keys.length; k++) total += maxPorDia[keys[k]];
-  return Math.round(total * 10) / 10;
-}
-
 function raw(est,p,tsRef){
   if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}
   var m=est.metric; if(!m) return null;
   if(p==='precip'){
-    var periodo=precipPeriodo?precipPeriodo.value:'hora';
-    var acum=getPrecipAcumulada(est.stationID, periodo, tsRef);
+    var acum=getPrecipHoraDe(est.stationID, tsRef||new Date());
     return acum!=null?acum:(m.precipTotal!=null?m.precipTotal:0);
   }
   if(p==='temp')     return m.temp;
@@ -890,9 +847,7 @@ leg.upd=function(p){
   } else {
     var g,ti,u;
     if(p==='precip'){
-      var pp=precipPeriodo?precipPeriodo.value:'hora';
-      var sf=pp==='hora'?' 1h':' 24h';
-      ti='🌧 Precip'+sf;u='mm';g=[0.5,2,4,10,20,30,40,50,70];
+      ti='🌧 Precip 1h';u='mm';g=[0.5,2,4,10,20,30,40,50,70];
     } else if(p==='temp'){ti='🌡 Temp';u='°C';g=[5,10,15,20,25,30,35,40];}
     else if(p==='humidity'){ti='💧 Humedad';u='%';g=[30,50,70,90];}
     else{ti='💨 Viento';u='km/h';g=[2,5,10,20,30,40];}
@@ -1124,10 +1079,8 @@ function render(){
         +'<td style="font-weight:700">'+sensacion.toFixed(1)+'°C</td></tr>':'')
         +'<tr><td style="color:#888">🌧 Precipitación</td>'
         +'<td style="font-weight:700">'+(function(){
-          var periodo=precipPeriodo?precipPeriodo.value:'hora';
-          var acum=getPrecipAcumulada(est.stationID,periodo,snap.timestamp);
-          var label=periodo==='hora'?'1h':'24h';
-          return acum!=null?(acum.toFixed(1)+' mm ('+label+')'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
+          var acum=getPrecipHoraDe(est.stationID,snap.timestamp);
+          return acum!=null?(acum.toFixed(1)+' mm (1h)'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
         })()+' </td></tr>'
         +'<tr><td style="color:#888">💨 Viento</td>'
         +'<td style="font-weight:700">'+(m.windSpeed!=null?m.windSpeed.toFixed(0)+' km/h':'—')+' '+wdL(est.winddir)+'</td></tr>'
@@ -1304,7 +1257,6 @@ periodoSel.addEventListener('change', function(){
 });
 
 var timeOverlay=document.getElementById('time-overlay');
-precipPeriodo=document.getElementById('precip-periodo');
 function actualizarLabel(){
   var indices=getModoIndices();
   if(!indices.length){tl.innerText='Sin datos';timeOverlay.style.display='none';return;}
@@ -1417,8 +1369,6 @@ function onParamChange(){
   var eraRiesgo = (_prevParam==='oidio'||_prevParam==='mildiu');
   if(esRiesgo && !eraRiesgo) _legCollapsed = true; // al entrar en riesgo, plegada por defecto
   _prevParam = p;
-  var barra = document.getElementById('precip-barra');
-  if(barra) barra.style.display = (p==='precip') ? 'flex' : 'none';
   actualizarModoSlider();
   render();
 }
@@ -1609,22 +1559,6 @@ HTML_BASE = """<!DOCTYPE html>
     }
     #btn-loc:hover{background:rgba(255,255,255,0.15)}
 
-    /* Barra de precipitación flotante */
-    #precip-barra{
-      display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:999;
-      padding:7px 16px;align-items:center;gap:10px;
-      background:rgba(13,17,23,0.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-      border:1px solid rgba(255,255,255,0.09);border-radius:10px;
-      box-shadow:0 4px 16px rgba(0,0,0,.4);white-space:nowrap;
-    }
-    #precip-barra span{color:#94a3b8;font-size:.78rem;font-weight:600}
-    #precip-periodo{
-      background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
-      border-radius:6px;color:#e6edf3;font-size:.78rem;font-weight:600;
-      padding:4px 8px;cursor:pointer;outline:none;
-    }
-    #precip-periodo option{background:#1c2433}
-
     /* Aviso días */
     #aviso-dias{
       display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:998;
@@ -1758,7 +1692,7 @@ HTML_BASE = """<!DOCTYPE html>
       #topbar{top:6px;left:6px;right:6px;border-radius:12px;gap:7px;padding:8px 12px}
       .sep{display:none}
       #dp{top:auto;right:6px;left:6px;bottom:6px;width:auto;max-height:52vh;border-radius:12px}
-      #precip-barra,#aviso-dias,#time-overlay{top:70px}
+      #aviso-dias,#time-overlay{top:70px}
       .legend{max-width:130px!important;font-size:.68rem!important}
       .leg-hdr{padding:5px 9px}
       .leg-body{padding:5px 9px 7px}
@@ -1832,15 +1766,6 @@ HTML_BASE = """<!DOCTYPE html>
     <input type="range" id="op" min="0" max="1" step="0.05" value="0.35" style="width:65px">
   </div>
   <button id="btn-loc" title="Mi ubicación" onclick="locateMe()">🎯</button>
-</div>
-
-<!-- Barra de período de precipitación -->
-<div id="precip-barra">
-  <span>🌧 Período:</span>
-  <select id="precip-periodo" onchange="render()">
-    <option value="hora" selected>🕐 Última hora</option>
-    <option value="ayer">📅 Últimas 24 horas</option>
-  </select>
 </div>
 
 <div id="aviso-dias"></div>
