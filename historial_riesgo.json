@@ -40130,6 +40130,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IMULA35": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 59,
+      "dsv_7d": 19,
+      "lat": 38.062219,
+      "lon": -1.42856,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IMULA40": {
       "oidio": 3,
       "mildiu": 1,
