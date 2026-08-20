@@ -40432,7 +40432,7 @@
     },
     "IJUMIL46": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 159,
       "dsv_7d": 9,
       "lat": 38.471875,
@@ -40587,6 +40587,56 @@
       "dsv_7d": 0,
       "lat": 38.35,
       "lon": -0.474,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
+    },
+    "ICHIRI9": {
+      "oidio": 0,
+      "mildiu": 2,
+      "dsv_temporada": 10,
+      "dsv_7d": 8,
+      "lat": 37.594659,
+      "lon": -2.267846,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 11d"
+    },
+    "IVLEZB9": {
+      "oidio": 0,
+      "mildiu": 2,
+      "dsv_temporada": 8,
+      "dsv_7d": 6,
+      "lat": 37.686755,
+      "lon": -2.07633,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 11d"
+    },
+    "IPUEBL84": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 37.957602,
+      "lon": -2.429414,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
+    },
+    "IBAZA18": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 37.492,
+      "lon": -2.772,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
+    },
+    "IANDALUC159": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 36.839912,
+      "lon": -2.464639,
       "datos_ok": false,
       "fuente_datos": "WU propio 1d"
     }
