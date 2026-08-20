@@ -715,7 +715,8 @@ L.control.layers(
 ).addTo(map);
 hLG.addTo(map);
 mLG.addTo(map);
-camLG.addTo(map);
+// camLG (webcams) se deja desactivada por defecto; el usuario la activa
+// desde el control de capas si quiere verla.
 // Detectar cuando el usuario activa/desactiva el mapa de calor
 map.on('overlayadd',   function(e){ if(e.name==='🌈 Mapa de calor'){ heatActive=true;  render(); }});
 map.on('overlayremove',function(e){ if(e.name==='🌈 Mapa de calor'){ heatActive=false; hLG.clearLayers(); }});
@@ -748,17 +749,43 @@ function col(v,p){
   if(p==='wind') return v>=40?'#b71c1c':v>=30?'#e65100':v>=20?'#f57f17':v>=10?'#fbc02d':v>=5?'#81c784':'#b2dfdb';
   return '#aaa';
 }
+// Precipitación de la última hora: diferencia entre el precipTotal
+// actual y el de hace 1h (precipTotal es acumulado desde medianoche,
+// así que la resta da lo llovido en la última hora).
+function getPrecipUltimaHora(sid){
+  var ahora = new Date();
+  var haceHora = new Date(ahora.getTime() - 3600*1000);
+  var valorActual = null, valorHace = null;
+  for(var i=historyData.length-1; i>=0; i--){
+    var snap = historyData[i];
+    var t = new Date(snap.timestamp);
+    var ests = snap.stations || [];
+    var p = null;
+    for(var j=0; j<ests.length; j++){
+      if(ests[j] && ests[j].stationID === sid){
+        p = ests[j].metric && ests[j].metric.precipTotal != null ? ests[j].metric.precipTotal : null;
+        break;
+      }
+    }
+    if(p === null) continue;
+    if(valorActual === null){ valorActual = p; continue; }
+    if(t <= haceHora){ valorHace = p; break; }
+  }
+  if(valorActual === null) return null;
+  if(valorHace === null) return Math.round(valorActual*10)/10; // aún sin 1h de histórico
+  var delta = valorActual - valorHace;
+  return Math.round((delta>=0?delta:valorActual)*10)/10;
+}
+
 function getPrecipAcumulada(sid, periodo){
+  if(periodo==='hora') return getPrecipUltimaHora(sid);
+
   // Calcula precipitación acumulada usando historial 24h
   // Suma el máximo precipTotal de cada día en el período
   var ahora = new Date();
   var desde;
-  if(periodo==='hoy'){
-    desde = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
-  } else if(periodo==='ayer'){
+  if(periodo==='ayer'){
     desde = new Date(ahora.getTime() - 24*3600*1000);
-  } else if(periodo==='semana'){
-    desde = new Date(ahora.getTime() - 7*24*3600*1000);
   } else {
     return null;
   }
@@ -793,7 +820,7 @@ function raw(est,p){
   if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}
   var m=est.metric; if(!m) return null;
   if(p==='precip'){
-    var periodo=precipPeriodo?precipPeriodo.value:'hoy';
+    var periodo=precipPeriodo?precipPeriodo.value:'hora';
     var acum=getPrecipAcumulada(est.stationID, periodo);
     return acum!=null?acum:(m.precipTotal!=null?m.precipTotal:0);
   }
@@ -815,6 +842,7 @@ function fmtT(iso){
 // ── Leyenda ────────────────────────────────────────────────
 var leg=L.control({position:'bottomleft'});
 var _legCollapsed=(window.innerWidth<=600);
+var _prevParam=null; // para colapsar la leyenda solo al ENTRAR en modo riesgo
 leg.onAdd=function(){
   this._d=L.DomUtil.create('div','legend');
   L.DomEvent.disableClickPropagation(this._d);
@@ -822,10 +850,7 @@ leg.onAdd=function(){
 };
 leg.upd=function(p){
   var title='',body='';
-  if(p==='radar'){
-    title='📡 Radar';
-    body='<div style="color:#94a3b8;font-size:.68rem;line-height:1.5">RainViewer<br>Tiempo real</div>';
-  } else if(p==='oidio'||p==='mildiu'){
+  if(p==='oidio'||p==='mildiu'){
     title=(p==='oidio'?'🍇 Oídio':'🍃 Mildiu');
     body+='<span class="li-row"><i style="background:#aaa"></i>Sin datos</span>';
     for(var i=3;i>=0;i--) body+='<span class="li-row"><i style="background:'+RC[i]+'"></i>'+RL[i]+'</span>';
@@ -833,8 +858,8 @@ leg.upd=function(p){
   } else {
     var g,ti,u;
     if(p==='precip'){
-      var pp=precipPeriodo?precipPeriodo.value:'hoy';
-      var sf=pp==='semana'?' 7d':pp==='ayer'?' 24h':' hoy';
+      var pp=precipPeriodo?precipPeriodo.value:'hora';
+      var sf=pp==='hora'?' 1h':' 24h';
       ti='🌧 Precip'+sf;u='mm';g=[0.5,2,4,10,20,30,40,50,70];
     } else if(p==='temp'){ti='🌡 Temp';u='°C';g=[5,10,15,20,25,30,35,40];}
     else if(p==='humidity'){ti='💧 Humedad';u='%';g=[30,50,70,90];}
@@ -888,11 +913,9 @@ function esEstiado(est){
 function render(){
   var p=document.getElementById('ps').value;
   var isR=p==='oidio'||p==='mildiu';
-  var esRadar=(p==='radar');
-  // En modo radar mostrar marcadores de temperatura sobre la capa de lluvia
-  var pRender=esRadar?'temp':p;
+  var pRender=p;
   leg.upd(p);
-  if(heatActive && !esRadar) hLG.clearLayers(); mLG.clearLayers(); HL=null;
+  if(heatActive) hLG.clearLayers(); mLG.clearLayers(); HL=null;
 
   var snap=isR?historyData[historyData.length-1]:activeData[CI];
   if(!snap) return;
@@ -1069,9 +1092,9 @@ function render(){
         +'<td style="font-weight:700">'+sensacion.toFixed(1)+'°C</td></tr>':'')
         +'<tr><td style="color:#888">🌧 Precipitación</td>'
         +'<td style="font-weight:700">'+(function(){
-          var periodo=precipPeriodo?precipPeriodo.value:'hoy';
+          var periodo=precipPeriodo?precipPeriodo.value:'hora';
           var acum=getPrecipAcumulada(est.stationID,periodo);
-          var label=periodo==='semana'?'7d':'24h';
+          var label=periodo==='hora'?'1h':'24h';
           return acum!=null?(acum.toFixed(1)+' mm ('+label+')'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
         })()+' </td></tr>'
         +'<tr><td style="color:#888">💨 Viento</td>'
@@ -1106,9 +1129,9 @@ function render(){
     feats.push(turf.point([est.lon,est.lat],{value:v}));
   });
 
-  // Heatmap interpolado — no en modo radar (la capa de tiles RainViewer ya lo muestra)
+  // Heatmap interpolado
   var validFeats = isR ? feats.filter(function(f){return f.properties.value>=0;}) : feats;
-  if(!esRadar && validFeats.length>2){
+  if(validFeats.length>2){
     try{
       var c=turf.featureCollection(validFeats);
       var weight=pRender==='temp'?2:pRender==='oidio'||pRender==='mildiu'?6:4;
@@ -1211,7 +1234,6 @@ function cargarPeriodo(p, cb){
 
 function actualizarModoSlider(){
   var p=document.getElementById('ps').value;
-  var esRadar=(p==='radar');
   modoRiesgo=(p==='oidio'||p==='mildiu');
   var indices=getModoIndices();
   sl.min=0; sl.max=Math.max(0,indices.length-1); sl.value=indices.length-1;
@@ -1230,13 +1252,6 @@ function actualizarModoSlider(){
       diaFiltroIni=diaIdx[0].key;
       diaFiltroFin=diaIdx[diaIdx.length-1].key;
     }
-  } else if(esRadar){
-    tlLabel.textContent='📡 Radar — Tiempo real';
-    periodoSel.style.display='none';
-    sl.style.display='none';
-    slFechaIni.style.display='none';
-    slFechaFin.style.display='none';
-    slSep.style.display='none';
   } else {
     tlLabel.textContent=PERIODOS[periodoActivo].label;
     periodoSel.style.display='';
@@ -1365,18 +1380,23 @@ document.getElementById('op').addEventListener('input', function(){
 
 function onParamChange(){
   var p = document.getElementById('ps').value;
+  var esRiesgo = (p==='oidio'||p==='mildiu');
+  var eraRiesgo = (_prevParam==='oidio'||_prevParam==='mildiu');
+  if(esRiesgo && !eraRiesgo) _legCollapsed = true; // al entrar en riesgo, plegada por defecto
+  _prevParam = p;
   var barra = document.getElementById('precip-barra');
   if(barra) barra.style.display = (p==='precip') ? 'flex' : 'none';
-  // Gestionar visibilidad de la capa de radar
-  if(p==='radar'){
-    if(!map.hasLayer(rLG)) rLG.addTo(map);
-    if(map.hasLayer(hLG)) hLG.remove();
-  } else {
-    if(map.hasLayer(rLG)) rLG.remove();
-    if(heatActive && !map.hasLayer(hLG)) hLG.addTo(map);
-  }
   actualizarModoSlider();
   render();
+}
+
+// ── Radar de lluvia: capa independiente, combinable con cualquier parámetro ──
+var radarChk = document.getElementById('radar-chk');
+if(radarChk){
+  radarChk.addEventListener('change', function(){
+    if(this.checked){ if(!map.hasLayer(rLG)) rLG.addTo(map); }
+    else { if(map.hasLayer(rLG)) rLG.remove(); }
+  });
 }
 
 function initSl(){
@@ -1470,6 +1490,11 @@ HTML_BASE = """<!DOCTYPE html>
     /* Control de opacidad */
     #ctrl-op{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0}
     #ctrl-op label{font-size:.58rem;color:#6e7f9a;font-weight:700;letter-spacing:.3px}
+
+    /* Toggle radar (independiente del parámetro) */
+    #ctrl-radar{display:flex;align-items:center;flex-shrink:0}
+    #ctrl-radar label{display:flex;align-items:center;gap:4px;font-size:.72rem;color:#e6edf3;font-weight:600;cursor:pointer;user-select:none}
+    #ctrl-radar input[type=checkbox]{cursor:pointer;accent-color:#3b82f6}
 
     /* Botón ubicación */
     #btn-loc{
@@ -1658,13 +1683,16 @@ HTML_BASE = """<!DOCTYPE html>
       <option value="precip">🌧 Precipitación (mm)</option>
       <option value="humidity">💧 Humedad (%)</option>
       <option value="wind">💨 Viento (km/h)</option>
-      <option value="radar">📡 Radar lluvia</option>
     </optgroup>
     <optgroup label="🌿 Riesgos agrícolas">
       <option value="oidio">🍇 Riesgo Oídio</option>
       <option value="mildiu">🍃 Riesgo Mildiu</option>
     </optgroup>
   </select>
+  <div class="sep"></div>
+  <div id="ctrl-radar">
+    <label><input type="checkbox" id="radar-chk"> 📡 Radar</label>
+  </div>
   <div class="sep"></div>
   <div id="ctrl-t">
     <div id="ctrl-t-top">
@@ -1695,9 +1723,8 @@ HTML_BASE = """<!DOCTYPE html>
 <div id="precip-barra">
   <span>🌧 Período:</span>
   <select id="precip-periodo" onchange="render()">
-    <option value="hoy">📅 Hoy acumulado</option>
+    <option value="hora" selected>🕐 Última hora</option>
     <option value="ayer">📅 Últimas 24 horas</option>
-    <option value="semana">📅 Últimos 7 días</option>
   </select>
 </div>
 
@@ -1743,7 +1770,7 @@ HTML_BASE = """<!DOCTYPE html>
         if(datos.length){
           var t=new Date(datos[datos.length-1].timestamp);
           var tl=document.getElementById('tl');
-          if(tl&&!document.getElementById('ps').value.match(/oidio|mildiu|radar/)){
+          if(tl&&!document.getElementById('ps').value.match(/oidio|mildiu/)){
             tl.textContent=t.toLocaleString('es-ES');
           }
         }
