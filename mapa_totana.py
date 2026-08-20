@@ -678,8 +678,26 @@ var radarHost='';
 var radarTileLayer=null;
 var radarFrameActual=-1;
 
+// RainViewer solo cubre ~2h de histórico. Si el momento pedido cae fuera de
+// ese rango, se oculta la capa (en vez de dejar "congelado" el frame más
+// antiguo/reciente disponible, que se veía como una imagen fija) y se avisa.
 function actualizarFrameRadar(epochSeg){
   if(!radarFrames.length) return;
+  var MARGEN=1200; // 20 min de tolerancia (desfase entre ciclos de actualización propios y de RainViewer)
+  var minT=radarFrames[0].time-MARGEN, maxT=radarFrames[radarFrames.length-1].time+MARGEN;
+  var fueraDeRango=(epochSeg<minT || epochSeg>maxT);
+  var aviso=document.getElementById('radar-fuera-rango');
+  var chk=document.getElementById('radar-chk');
+
+  if(fueraDeRango){
+    if(aviso) aviso.style.display='inline';
+    if(chk && chk.checked && map.hasLayer(rLG)) rLG.remove();
+    radarFrameActual=-1;
+    return;
+  }
+  if(aviso) aviso.style.display='none';
+  if(chk && chk.checked && !map.hasLayer(rLG)) rLG.addTo(map);
+
   var mejor=0, mejorDif=Infinity;
   for(var i=0;i<radarFrames.length;i++){
     var dif=Math.abs(radarFrames[i].time - epochSeg);
@@ -1264,7 +1282,13 @@ function actualizarLabel(){
   var fuente=modoRiesgo?historyData:activeData;
   var ts=fuente[idx].timestamp;
   var last=idxActual===indices.length-1;
-  if(radarChk&&radarChk.checked) actualizarFrameRadar(Math.round(new Date(ts).getTime()/1000));
+  if(radarChk&&radarChk.checked){
+    // En el frame "actual" usamos el reloj real (no el timestamp del último
+    // dato propio, que puede llevar unos minutos de retraso) para no marcar
+    // la vista en vivo como fuera de rango por un desfase de ciclos.
+    var refRadar=last?Date.now()/1000:new Date(ts).getTime()/1000;
+    actualizarFrameRadar(Math.round(refRadar));
+  }
   var textoHeader, textoOverlay;
   if(modoRiesgo){
     var d=new Date(ts);
@@ -1378,9 +1402,12 @@ var radarChk = document.getElementById('radar-chk');
 if(radarChk){
   radarChk.addEventListener('change', function(){
     if(this.checked){
-      if(!map.hasLayer(rLG)) rLG.addTo(map);
-      actualizarLabel(); // sincroniza el frame de radar con la posición actual del slider
-    } else { if(map.hasLayer(rLG)) rLG.remove(); }
+      actualizarLabel(); // añade la capa y sincroniza el frame con la posición del slider
+    } else {
+      if(map.hasLayer(rLG)) rLG.remove();
+      var aviso=document.getElementById('radar-fuera-rango');
+      if(aviso) aviso.style.display='none';
+    }
   });
 }
 
@@ -1546,9 +1573,10 @@ HTML_BASE = """<!DOCTYPE html>
     #ctrl-op label{font-size:.58rem;color:#6e7f9a;font-weight:700;letter-spacing:.3px}
 
     /* Toggle radar (independiente del parámetro) */
-    #ctrl-radar{display:flex;align-items:center;flex-shrink:0}
+    #ctrl-radar{display:flex;align-items:center;gap:6px;flex-shrink:0}
     #ctrl-radar label{display:flex;align-items:center;gap:4px;font-size:.72rem;color:#e6edf3;font-weight:600;cursor:pointer;user-select:none}
     #ctrl-radar input[type=checkbox]{cursor:pointer;accent-color:#3b82f6}
+    #radar-fuera-rango{display:none;font-size:.62rem;color:#f0ad4e;font-weight:700;white-space:nowrap;cursor:help}
 
     /* Botón ubicación */
     #btn-loc{
@@ -1741,6 +1769,7 @@ HTML_BASE = """<!DOCTYPE html>
   <div class="sep"></div>
   <div id="ctrl-radar">
     <label><input type="checkbox" id="radar-chk"> 📡 Radar</label>
+    <span id="radar-fuera-rango" title="RainViewer solo ofrece histórico de radar de las últimas ~2 horas">⚠ sin radar aquí</span>
   </div>
   <div class="sep"></div>
   <div id="ctrl-t">
