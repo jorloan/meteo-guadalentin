@@ -39700,6 +39700,26 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 13d"
     },
+    "ILIBRI6": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 31,
+      "dsv_7d": 17,
+      "lat": 37.897934,
+      "lon": -1.367283,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 13d"
+    },
+    "ILIBRILL2": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 31,
+      "dsv_7d": 17,
+      "lat": 37.88858,
+      "lon": -1.350858,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 13d"
+    },
     "ILORCA100": {
       "oidio": 3,
       "mildiu": 1,
@@ -39852,9 +39872,9 @@
     },
     "ILORCA43": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 124,
-      "dsv_7d": 10,
+      "dsv_7d": 8,
       "lat": 37.926816,
       "lon": -1.833752,
       "datos_ok": true,
@@ -39874,7 +39894,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 131,
-      "dsv_7d": 10,
+      "dsv_7d": 8,
       "lat": 37.892946,
       "lon": -1.888228,
       "datos_ok": true,
@@ -40132,7 +40152,7 @@
     },
     "IMULA34": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 124,
       "dsv_7d": 10,
       "lat": 38.141779,
@@ -40162,7 +40182,7 @@
     },
     "IMULA49": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 128,
       "dsv_7d": 10,
       "lat": 38.138751,
@@ -40172,13 +40192,53 @@
     },
     "IMULACOP3": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 129,
-      "dsv_7d": 10,
+      "dsv_7d": 8,
       "lat": 38.095196,
       "lon": -1.674757,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
+    },
+    "IPUERT124": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 21,
+      "dsv_7d": 14,
+      "lat": 37.544651,
+      "lon": -1.865574,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 13d"
+    },
+    "IPUERT363": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 26,
+      "dsv_7d": 16,
+      "lat": 37.564941,
+      "lon": -1.802364,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 13d"
+    },
+    "IPUERT79": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 21,
+      "dsv_7d": 13,
+      "lat": 37.606012,
+      "lon": -1.79346,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 12d"
+    },
+    "IREGINDE92": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 21,
+      "dsv_7d": 13,
+      "lat": 37.576363,
+      "lon": -1.743472,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 12d"
     },
     "ITOTAN2": {
       "oidio": 3,
@@ -40419,6 +40479,116 @@
       "lon": -1.17308,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
+    },
+    "ITORRE508": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 22,
+      "dsv_7d": 11,
+      "lat": 37.749,
+      "lon": -0.967,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 12d"
+    },
+    "ILOSAL11": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 22,
+      "dsv_7d": 11,
+      "lat": 37.747,
+      "lon": -0.852,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 12d"
+    },
+    "ISANJA25": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 22,
+      "dsv_7d": 11,
+      "lat": 37.805,
+      "lon": -0.836,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 12d"
+    },
+    "ISANPE182": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 37.833,
+      "lon": -0.795,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
+    },
+    "ICARTA80": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 22,
+      "dsv_7d": 11,
+      "lat": 37.642285,
+      "lon": -0.715088,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 12d"
+    },
+    "IPILARDE8": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 37.871845,
+      "lon": -0.78009,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
+    },
+    "ITORRE277": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 37.979,
+      "lon": -0.683,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
+    },
+    "IGUARD3": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 38.089937,
+      "lon": -0.652781,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
+    },
+    "ISANTA1907": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 38.195,
+      "lon": -0.556,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
+    },
+    "IELCHE60": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 32,
+      "dsv_7d": 16,
+      "lat": 38.258921,
+      "lon": -0.704358,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 13d"
+    },
+    "IALICA56": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 38.35,
+      "lon": -0.474,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
     }
   }
 }
