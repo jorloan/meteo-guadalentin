@@ -40762,6 +40762,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IALHAM64": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 176,
+      "dsv_7d": 16,
+      "lat": 37.844879,
+      "lon": -1.406302,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IALHAM81": {
       "oidio": 3,
       "mildiu": 1,
@@ -40929,6 +40939,16 @@
       "dsv_7d": 16,
       "lat": 37.677097,
       "lon": -1.646632,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "ILORCA43": {
+      "oidio": 3,
+      "mildiu": 2,
+      "dsv_temporada": 125,
+      "dsv_7d": 9,
+      "lat": 37.926816,
+      "lon": -1.833752,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
