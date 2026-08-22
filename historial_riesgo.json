@@ -42066,7 +42066,7 @@
     },
     "ILORCA46": {
       "oidio": 3,
-      "mildiu": 3,
+      "mildiu": 2,
       "dsv_temporada": 135,
       "dsv_7d": 10,
       "lat": 37.892946,
@@ -42336,7 +42336,7 @@
     },
     "IMULA49": {
       "oidio": 3,
-      "mildiu": 2,
+      "mildiu": 3,
       "dsv_temporada": 133,
       "dsv_7d": 9,
       "lat": 38.138751,
@@ -42838,7 +42838,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 22,
-      "dsv_7d": 12,
+      "dsv_7d": 11,
       "lat": 37.548583,
       "lon": -2.254495,
       "datos_ok": true,
