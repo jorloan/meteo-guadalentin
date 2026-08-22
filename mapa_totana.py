@@ -1,4 +1,4 @@
-import urllib.request, json, ssl, os, webbrowser, concurrent.futures, subprocess
+import urllib.request, json, ssl, os, webbrowser, concurrent.futures, subprocess, math, shutil
 from datetime import datetime, timedelta
 
 ctx = ssl.create_default_context()
@@ -26,7 +26,10 @@ F_H7D    = os.path.join(REPO_DIR, 'history_7d.json')
 F_AGRI   = os.path.join(REPO_DIR, 'historial_agricola.json')
 F_DSV    = os.path.join(REPO_DIR, 'historial_dsv.json')
 F_RIESGO = os.path.join(REPO_DIR, 'historial_riesgo.json')
+DIR_RADAR = os.path.join(REPO_DIR, 'radar_tiles')
+F_RADAR_MANIFEST = os.path.join(DIR_RADAR, 'manifest.json')
 os.makedirs(DIR_PUB, exist_ok=True)
+os.makedirs(DIR_RADAR, exist_ok=True)
 
 MIN_DIAS = 5   # días mínimos para calcular riesgo
 
@@ -114,6 +117,76 @@ def hist_extendido(nuevos, ahora, ruta, horas_retencion, minutos_intervalo):
 
     guardar(ruta, ok)
     return ok
+
+# ── Archivado de radar (tiles propios) ─────────────────────────
+# RainViewer solo da ~2h de histórico público. Para poder ver radar de
+# días anteriores en la máquina del tiempo, archivamos aquí mismo los
+# tiles PNG de cada frame nuevo (uno cada ~10 min, que es lo que tarda
+# RainViewer en publicar un frame nuevo) y los servimos desde el propio
+# repo. Retención acotada para no disparar el tamaño del repositorio.
+RADAR_ZOOM = 7          # mismo zoom nativo que ya usa la capa en vivo
+RADAR_RETENCION_H = 48  # hasta 48h de histórico propio
+RADAR_LAT_MIN, RADAR_LAT_MAX = 36.7, 38.8   # bounding box de la zona cubierta
+RADAR_LON_MIN, RADAR_LON_MAX = -3.0, -0.3
+
+def _tile_xy(lat, lon, z):
+    lat_rad = math.radians(lat)
+    n = 2.0 ** z
+    x = int((lon + 180.0) / 360.0 * n)
+    y = int((1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n)
+    return x, y
+
+def archivar_radar(ahora):
+    manifest = leer(F_RADAR_MANIFEST, [])
+
+    try:
+        req = urllib.request.Request(
+            "https://api.rainviewer.com/public/weather-maps.json",
+            headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, context=ctx, timeout=8) as r:
+            d = json.loads(r.read().decode('utf-8'))
+        host = d['host']
+        ultimo = d['radar']['past'][-1]
+        epoch, path = ultimo['time'], ultimo['path']
+    except Exception as e:
+        print(f"  ⚠ Radar (archivado): no se pudo consultar RainViewer: {e}")
+        host = None
+
+    if host and (not manifest or manifest[-1].get('epoch') != epoch):
+        x0, y1 = _tile_xy(RADAR_LAT_MIN, RADAR_LON_MIN, RADAR_ZOOM)
+        x1, y0 = _tile_xy(RADAR_LAT_MAX, RADAR_LON_MAX, RADAR_ZOOM)
+        carpeta = os.path.join(DIR_RADAR, str(epoch))
+        os.makedirs(carpeta, exist_ok=True)
+        tiles_ok = []
+        for x in range(min(x0, x1), max(x0, x1) + 1):
+            for y in range(min(y0, y1), max(y0, y1) + 1):
+                url = f"{host}{path}/256/{RADAR_ZOOM}/{x}/{y}/2/1_1.png"
+                try:
+                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, context=ctx, timeout=8) as r:
+                        data = r.read()
+                    with open(os.path.join(carpeta, f"{x}_{y}.png"), 'wb') as f:
+                        f.write(data)
+                    tiles_ok.append([x, y])
+                except Exception as e:
+                    print(f"  ⚠ Radar tile {x},{y}: {e}")
+        if tiles_ok:
+            manifest.append({'epoch': epoch, 'z': RADAR_ZOOM, 'tiles': tiles_ok})
+            print(f"  ✅ Radar archivado: frame {epoch} ({len(tiles_ok)} tiles)")
+        else:
+            shutil.rmtree(carpeta, ignore_errors=True)
+    elif host:
+        print("  ℹ Radar: frame ya archivado, nada nuevo")
+
+    # Podar frames fuera de la ventana de retención
+    limite = ahora.timestamp() - RADAR_RETENCION_H * 3600
+    conservar = [m for m in manifest if m.get('epoch', 0) >= limite]
+    for m in manifest:
+        if m not in conservar:
+            shutil.rmtree(os.path.join(DIR_RADAR, str(m.get('epoch'))), ignore_errors=True)
+    guardar(F_RADAR_MANIFEST, conservar)
+    if len(conservar) != len(manifest):
+        print(f"  🗑 Radar: {len(manifest)-len(conservar)} frames antiguos podados")
 
 # ── Historial agrícola 14 días ────────────────────────────────
 def hist_agri(nuevos, ahora, minutos=15):
@@ -520,7 +593,7 @@ def git_push(ahora):
             ["git","-C",REPO_DIR,"config","user.email","joseroquel@lopezyandreo.com"],
             ["git","-C",REPO_DIR,"config","user.name","Meteo Guadalentin Bot"],
             ["git","-C",REPO_DIR,"add","history_24h.json","history_2d.json","history_7d.json",
-             "historial_agricola.json","public/index.html"],
+             "historial_agricola.json","radar_tiles","public/index.html"],
             ["git","-C",REPO_DIR,"commit","-m",f"Auto {fecha_str}"],
             ["git","-C",REPO_DIR,"push"],
         ]:
@@ -668,48 +741,85 @@ map.createPane('hp');
 map.getPane('hp').style.zIndex=390;
 map.getPane('hp').style.filter='blur(14px)';
 
-// ── Radar de lluvia: se guardan todos los frames disponibles (RainViewer
-// solo ofrece históricos de ~2h) para poder sincronizarlos con la
-// máquina del tiempo cuando el momento seleccionado cae dentro de ese rango.
+// ── Radar de lluvia ────────────────────────────────────────────
+// Dos fuentes:
+//  1) RainViewer en vivo: todos los frames disponibles (~2h de histórico
+//     público), para el momento actual y el pasado reciente.
+//  2) Archivo propio (radar_tiles/manifest.json): tiles que vamos
+//     guardando nosotros mismos en cada ejecución, para poder ver radar
+//     de momentos más antiguos que esas ~2h (hasta ~48h).
+// Si el momento pedido no está en ninguna de las dos, se avisa en vez
+// de dejar "congelado" un frame que no corresponde a ese momento.
+var RADAR_ZOOM=7;
 var rLG=L.layerGroup();
-var radarFrames=[];   // [{time:epochSeg, path:'...'}], orden cronológico
+var radarFrames=[];   // [{time:epochSeg, path:'...'}], orden cronológico (RainViewer)
 var radarHost='';
-var radarTileLayer=null;
-var radarFrameActual=-1;
+var radarArchivo=[];  // [{epoch,z,tiles:[[x,y],...]}], orden cronológico (propio)
+var radarArchivoCargado=false;
+var radarModoActual=null;   // 'vivo' | 'archivo' | null
+var radarClaveActual=null;  // frame ya mostrado, para no recrear la capa si no cambia
 
-// RainViewer solo cubre ~2h de histórico. Si el momento pedido cae fuera de
-// ese rango, se oculta la capa (en vez de dejar "congelado" el frame más
-// antiguo/reciente disponible, que se veía como una imagen fija) y se avisa.
-function actualizarFrameRadar(epochSeg){
-  if(!radarFrames.length) return;
-  var MARGEN=1200; // 20 min de tolerancia (desfase entre ciclos de actualización propios y de RainViewer)
-  var minT=radarFrames[0].time-MARGEN, maxT=radarFrames[radarFrames.length-1].time+MARGEN;
-  var fueraDeRango=(epochSeg<minT || epochSeg>maxT);
-  var aviso=document.getElementById('radar-fuera-rango');
-  var chk=document.getElementById('radar-chk');
+function cargarManifiestoRadar(cb){
+  if(radarArchivoCargado){ cb(); return; }
+  fetch('radar_tiles/manifest.json?v='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(datos){ radarArchivo=(datos&&datos.length)?datos:[]; radarArchivoCargado=true; cb(); })
+    .catch(function(){ radarArchivo=[]; radarArchivoCargado=true; cb(); });
+}
 
-  if(fueraDeRango){
-    if(aviso) aviso.style.display='inline';
-    if(chk && chk.checked && map.hasLayer(rLG)) rLG.remove();
-    radarFrameActual=-1;
+function mostrarCapaRadar(url, modo, clave, chk){
+  if(radarModoActual===modo && radarClaveActual===clave){
+    if(chk && chk.checked && !map.hasLayer(rLG)) rLG.addTo(map);
     return;
   }
-  if(aviso) aviso.style.display='none';
+  radarModoActual=modo; radarClaveActual=clave;
+  rLG.clearLayers();
+  rLG.addLayer(L.tileLayer(url,{opacity:0.7,zIndex:400,maxNativeZoom:RADAR_ZOOM,maxZoom:18}));
   if(chk && chk.checked && !map.hasLayer(rLG)) rLG.addTo(map);
+}
 
-  var mejor=0, mejorDif=Infinity;
-  for(var i=0;i<radarFrames.length;i++){
-    var dif=Math.abs(radarFrames[i].time - epochSeg);
-    if(dif<mejorDif){ mejorDif=dif; mejor=i; }
+function ocultarCapaRadar(chk){
+  var aviso=document.getElementById('radar-fuera-rango');
+  if(aviso) aviso.style.display='inline';
+  if(chk && chk.checked && map.hasLayer(rLG)) rLG.remove();
+  radarModoActual=null; radarClaveActual=null;
+}
+
+function actualizarFrameRadar(epochSeg){
+  var chk=document.getElementById('radar-chk');
+  var aviso=document.getElementById('radar-fuera-rango');
+  if(!radarFrames.length) return;
+
+  var MARGEN=1200; // 20 min de tolerancia (desfase entre ciclos propios y de RainViewer)
+  var minT=radarFrames[0].time-MARGEN, maxT=radarFrames[radarFrames.length-1].time+MARGEN;
+
+  if(epochSeg>=minT && epochSeg<=maxT){
+    if(aviso) aviso.style.display='none';
+    var mejor=0, mejorDif=Infinity;
+    for(var i=0;i<radarFrames.length;i++){
+      var dif=Math.abs(radarFrames[i].time-epochSeg);
+      if(dif<mejorDif){ mejorDif=dif; mejor=i; }
+    }
+    var url=radarHost+radarFrames[mejor].path+'/256/{z}/{x}/{y}/2/1_1.png';
+    mostrarCapaRadar(url,'vivo',mejor,chk);
+    return;
   }
-  if(mejor===radarFrameActual) return;
-  radarFrameActual=mejor;
-  var url=radarHost+radarFrames[mejor].path+'/256/{z}/{x}/{y}/2/1_1.png';
-  if(radarTileLayer) radarTileLayer.setUrl(url);
-  else{
-    radarTileLayer=L.tileLayer(url,{opacity:0.7,zIndex:400,maxNativeZoom:7,maxZoom:18});
-    rLG.addLayer(radarTileLayer);
-  }
+
+  // Fuera de la ventana en vivo de RainViewer: buscar en el archivo propio.
+  cargarManifiestoRadar(function(){
+    var mejorA=null, mejorDifA=Infinity;
+    for(var j=0;j<radarArchivo.length;j++){
+      var difA=Math.abs(radarArchivo[j].epoch-epochSeg);
+      if(difA<mejorDifA){ mejorDifA=difA; mejorA=radarArchivo[j]; }
+    }
+    if(mejorA && mejorDifA<=900){ // 15 min de tolerancia (nuestro propio ciclo es cada ~10 min)
+      if(aviso) aviso.style.display='none';
+      var urlA='radar_tiles/'+mejorA.epoch+'/{x}_{y}.png';
+      mostrarCapaRadar(urlA,'archivo',mejorA.epoch,chk);
+    } else {
+      ocultarCapaRadar(chk);
+    }
+  });
 }
 
 fetch('https://api.rainviewer.com/public/weather-maps.json')
@@ -1815,7 +1925,7 @@ HTML_BASE = """<!DOCTYPE html>
   <div class="sep"></div>
   <div id="ctrl-radar">
     <label><input type="checkbox" id="radar-chk"> 📡 Radar</label>
-    <span id="radar-fuera-rango" title="RainViewer solo ofrece histórico de radar de las últimas ~2 horas">⚠ sin radar aquí</span>
+    <span id="radar-fuera-rango" title="Radar disponible: en vivo (~2h vía RainViewer) y hasta ~48h atrás (archivo propio)">⚠ sin radar aquí</span>
   </div>
   <div class="sep"></div>
   <div id="ctrl-op">
@@ -1958,6 +2068,9 @@ def principal():
 
     print("\n📚 Historial 7 días (resolución 3 h)...")
     hist_extendido(datos_wu, ahora, F_H7D, horas_retencion=24*7, minutos_intervalo=180)
+
+    print("\n📡 Archivando radar propio...")
+    archivar_radar(ahora)
 
     print(f"\n🌾 Historial agrícola... (+{minutos} min)")
     hagri = hist_agri(datos_wu, ahora, minutos)
