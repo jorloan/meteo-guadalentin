@@ -43826,6 +43826,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 4d + WU vecinos 8d"
     },
+    "IVLEZB9": {
+      "oidio": 0,
+      "mildiu": 2,
+      "dsv_temporada": 16,
+      "dsv_7d": 12,
+      "lat": 37.686755,
+      "lon": -2.07633,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 4d + WU vecinos 8d"
+    },
     "IPUEBL84": {
       "oidio": -1,
       "mildiu": -1,
