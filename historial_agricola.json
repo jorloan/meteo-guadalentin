@@ -10107,7 +10107,7 @@
       "lon": -1.575828
     },
     "IALEDO9": {
-      "tempMax": 30.1,
+      "tempMax": 30.3,
       "tempMin": 16.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 416,
@@ -10115,7 +10115,7 @@
       "lon": -1.592444
     },
     "IALHAM13": {
-      "tempMax": 35.3,
+      "tempMax": 35.7,
       "tempMin": 22.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10171,7 +10171,7 @@
       "lon": -1.406302
     },
     "IALHAM81": {
-      "tempMax": 33.0,
+      "tempMax": 33.2,
       "tempMin": 22.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10243,7 +10243,7 @@
       "lon": -1.923552
     },
     "ILORCA108": {
-      "tempMax": 32.0,
+      "tempMax": 32.1,
       "tempMin": 20.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10267,7 +10267,7 @@
       "lon": -1.799738
     },
     "ILORCA123": {
-      "tempMax": 32.7,
+      "tempMax": 33.1,
       "tempMin": 20.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 181,
@@ -10291,7 +10291,7 @@
       "lon": -1.707165
     },
     "ILORCA18": {
-      "tempMax": 29.8,
+      "tempMax": 30.5,
       "tempMin": 18.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 408,
@@ -10531,7 +10531,7 @@
       "lon": -1.533938
     },
     "IMULA34": {
-      "tempMax": 32.4,
+      "tempMax": 32.6,
       "tempMin": 18.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 533,
@@ -10555,7 +10555,7 @@
       "lon": -1.597045
     },
     "IMULA49": {
-      "tempMax": 31.6,
+      "tempMax": 31.9,
       "tempMin": 18.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 495,
@@ -10846,7 +10846,7 @@
       "tempMax": 29.2,
       "tempMin": 25.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 593,
+      "humedadAltaMinutos": 620,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -10931,7 +10931,7 @@
       "lon": -2.464639
     },
     "ILOSGA5": {
-      "tempMax": 31.5,
+      "tempMax": 31.6,
       "tempMin": 21.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 309,
