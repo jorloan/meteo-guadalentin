@@ -43476,16 +43476,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 4d + WU vecinos 10d"
     },
-    "ITOTAN2": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 181,
-      "dsv_7d": 13,
-      "lat": 37.788956,
-      "lon": -1.523104,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ITOTAN5": {
       "oidio": 3,
       "mildiu": 1,
@@ -43680,7 +43670,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 212,
-      "dsv_7d": 15,
+      "dsv_7d": 14,
       "lat": 38.217273,
       "lon": -1.374528,
       "datos_ok": true,
@@ -43836,16 +43826,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 4d + WU vecinos 8d"
     },
-    "IVLEZB9": {
-      "oidio": 0,
-      "mildiu": 2,
-      "dsv_temporada": 16,
-      "dsv_7d": 12,
-      "lat": 37.686755,
-      "lon": -2.07633,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 4d + WU vecinos 8d"
-    },
     "IPUEBL84": {
       "oidio": -1,
       "mildiu": -1,
@@ -43920,7 +43900,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 14,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.770953,
       "lon": -2.285886,
       "datos_ok": true,
