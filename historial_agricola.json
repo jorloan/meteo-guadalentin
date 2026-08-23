@@ -10123,7 +10123,7 @@
       "lon": -1.432
     },
     "IALHAM23": {
-      "tempMax": 33.4,
+      "tempMax": 33.6,
       "tempMin": 22.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10387,7 +10387,7 @@
       "lon": -1.78261
     },
     "ILORCA77": {
-      "tempMax": 34.3,
+      "tempMax": 34.5,
       "tempMin": 20.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10747,7 +10747,7 @@
       "lon": -1.572191
     },
     "IPULP6": {
-      "tempMax": 30.2,
+      "tempMax": 30.6,
       "tempMin": 22.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -10846,7 +10846,7 @@
       "tempMax": 29.2,
       "tempMin": 25.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 620,
+      "humedadAltaMinutos": 638,
       "lat": 37.642285,
       "lon": -0.715088
     },
