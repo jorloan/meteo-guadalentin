@@ -44118,16 +44118,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ILORCA123": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 166,
-      "dsv_7d": 15,
-      "lat": 37.711867,
-      "lon": -1.590815,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ILORCA124": {
       "oidio": 3,
       "mildiu": 1,
@@ -44632,7 +44622,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 201,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.747905,
       "lon": -1.510252,
       "datos_ok": true,
@@ -44892,7 +44882,7 @@
       "oidio": 0,
       "mildiu": 3,
       "dsv_temporada": 17,
-      "dsv_7d": 14,
+      "dsv_7d": 13,
       "lat": 37.686755,
       "lon": -2.07633,
       "datos_ok": true,
