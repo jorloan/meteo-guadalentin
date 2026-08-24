@@ -44038,16 +44038,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IALHAM92": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 178,
-      "dsv_7d": 14,
-      "lat": 37.848953,
-      "lon": -1.415771,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ILIBRI6": {
       "oidio": 2,
       "mildiu": 1,
@@ -44675,16 +44665,6 @@
       "dsv_7d": 14,
       "lat": 37.775914,
       "lon": -1.52123,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "IGUILA10": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 154,
-      "dsv_7d": 14,
-      "lat": 37.407152,
-      "lon": -1.572191,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
