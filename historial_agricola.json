@@ -10363,7 +10363,7 @@
       "lon": -1.591535
     },
     "ILORCA104": {
-      "tempMax": 32.2,
+      "tempMax": 32.7,
       "tempMin": 19.9,
       "precipTotal": 0.2,
       "humedadAltaMinutos": 399,
@@ -10653,7 +10653,7 @@
     "IMULA10": {
       "tempMax": 31.7,
       "tempMin": 20.4,
-      "precipTotal": 0.0,
+      "precipTotal": 0.76,
       "humedadAltaMinutos": 581,
       "lat": 38.100582,
       "lon": -1.525336
