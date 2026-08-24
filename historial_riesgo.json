@@ -43958,6 +43958,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 189,
+      "dsv_7d": 12,
+      "lat": 37.844378,
+      "lon": -1.428541,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -44002,7 +44012,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 183,
-      "dsv_7d": 15,
+      "dsv_7d": 16,
       "lat": 37.844879,
       "lon": -1.406302,
       "datos_ok": true,
@@ -44890,7 +44900,7 @@
     },
     "IVLEZB9": {
       "oidio": 0,
-      "mildiu": 3,
+      "mildiu": 2,
       "dsv_temporada": 17,
       "dsv_7d": 13,
       "lat": 37.686755,
@@ -44907,6 +44917,16 @@
       "lon": -2.429414,
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
+    },
+    "IBAZA18": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 37.492,
+      "lon": -2.772,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 4d"
     },
     "IANDALUC159": {
       "oidio": 0,
@@ -44952,7 +44972,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 37,
-      "dsv_7d": 10,
+      "dsv_7d": 11,
       "lat": 37.308,
       "lon": -1.766,
       "datos_ok": true,
