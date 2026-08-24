@@ -43958,16 +43958,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IALHAM23": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 189,
-      "dsv_7d": 12,
-      "lat": 37.844378,
-      "lon": -1.428541,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -44065,16 +44055,6 @@
       "dsv_7d": 18,
       "lat": 37.627,
       "lon": -1.725,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "ILORCA103": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 160,
-      "dsv_7d": 15,
-      "lat": 37.681107,
-      "lon": -1.591535,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
@@ -44900,7 +44880,7 @@
     },
     "IVLEZB9": {
       "oidio": 0,
-      "mildiu": 2,
+      "mildiu": 3,
       "dsv_temporada": 17,
       "dsv_7d": 13,
       "lat": 37.686755,
