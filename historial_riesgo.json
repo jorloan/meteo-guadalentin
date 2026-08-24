@@ -44288,16 +44288,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ILORCA84": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 135,
-      "dsv_7d": 20,
-      "lat": 37.620039,
-      "lon": -1.94572,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ILORCA86": {
       "oidio": 3,
       "mildiu": 1,
@@ -44432,7 +44422,7 @@
       "oidio": 3,
       "mildiu": 2,
       "dsv_temporada": 144,
-      "dsv_7d": 12,
+      "dsv_7d": 9,
       "lat": 38.100582,
       "lon": -1.525336,
       "datos_ok": true,
@@ -44545,16 +44535,6 @@
       "dsv_7d": 14,
       "lat": 37.788956,
       "lon": -1.523104,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 177,
-      "dsv_7d": 12,
-      "lat": 37.773,
-      "lon": -1.499,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
