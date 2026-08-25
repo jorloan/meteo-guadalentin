@@ -10526,7 +10526,7 @@
       "tempMax": 26.4,
       "tempMin": 15.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 402,
+      "humedadAltaMinutos": 432,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -11235,7 +11235,7 @@
       "lon": -2.012639
     },
     "INJAR45": {
-      "tempMax": 29.7,
+      "tempMax": 29.8,
       "tempMin": 19.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 71,
