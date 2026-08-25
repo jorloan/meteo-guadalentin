@@ -10526,7 +10526,7 @@
       "tempMax": 20.5,
       "tempMin": 15.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 320,
+      "humedadAltaMinutos": 349,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -10891,8 +10891,8 @@
       "lon": -1.523104
     },
     "ITOTAN5": {
-      "tempMax": -99,
-      "tempMin": 99,
+      "tempMax": 22.0,
+      "tempMin": 22.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.773,
@@ -11004,7 +11004,7 @@
     },
     "ITOTAN42": {
       "tempMax": 26.0,
-      "tempMin": 21.2,
+      "tempMin": 21.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.760454,
@@ -11198,13 +11198,13 @@
       "tempMax": 17.6,
       "tempMin": 9.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 103,
+      "humedadAltaMinutos": 132,
       "lat": 37.957602,
       "lon": -2.429414
     },
     "IBAZA18": {
       "tempMax": 20.3,
-      "tempMin": 16.5,
+      "tempMin": 15.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.492,
@@ -11262,7 +11262,7 @@
       "tempMax": 17.1,
       "tempMin": 12.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 61,
+      "humedadAltaMinutos": 90,
       "lat": 37.770953,
       "lon": -2.285886
     },
