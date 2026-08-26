@@ -10686,7 +10686,7 @@
       "tempMax": 28.6,
       "tempMin": 16.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 616,
+      "humedadAltaMinutos": 676,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -11380,7 +11380,7 @@
     },
     "ISORBA17": {
       "tempMax": 34.5,
-      "tempMin": 23.2,
+      "tempMin": 22.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.114408,
@@ -11388,7 +11388,7 @@
     },
     "INJAR45": {
       "tempMax": 30.0,
-      "tempMin": 21.2,
+      "tempMin": 21.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 36.961539,
@@ -11436,7 +11436,7 @@
     },
     "ILORCA123": {
       "tempMax": 35.2,
-      "tempMin": 27.2,
+      "tempMin": 24.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.711867,
@@ -11444,7 +11444,7 @@
     },
     "IMULA21": {
       "tempMax": 28.4,
-      "tempMin": 28.4,
+      "tempMin": 25.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.037623,
