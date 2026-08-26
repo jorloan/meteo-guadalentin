@@ -46622,6 +46622,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IMULA49": {
+      "oidio": 3,
+      "mildiu": 2,
+      "dsv_temporada": 144,
+      "dsv_7d": 18,
+      "lat": 38.138751,
+      "lon": -1.565616,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IMULACOP3": {
       "oidio": 3,
       "mildiu": 2,
@@ -46846,7 +46856,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 168,
-      "dsv_7d": 16,
+      "dsv_7d": 15,
       "lat": 37.230999,
       "lon": -1.822,
       "datos_ok": true,
@@ -47016,7 +47026,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 20,
-      "dsv_7d": 21,
+      "dsv_7d": 20,
       "lat": 37.594659,
       "lon": -2.267846,
       "datos_ok": true,
@@ -47106,7 +47116,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 28,
-      "dsv_7d": 17,
+      "dsv_7d": 16,
       "lat": 37.548583,
       "lon": -2.254495,
       "datos_ok": true,
