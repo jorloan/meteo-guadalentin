@@ -50108,16 +50108,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ICARTA267": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 159,
-      "dsv_7d": 15,
-      "lat": 37.695322,
-      "lon": -0.935908,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 7d"
-    },
     "IJUMIL46": {
       "oidio": 3,
       "mildiu": 2,
