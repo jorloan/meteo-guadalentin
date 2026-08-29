@@ -50402,7 +50402,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 21,
-      "dsv_7d": 17,
+      "dsv_7d": 18,
       "lat": 37.770953,
       "lon": -2.285886,
       "datos_ok": true,
@@ -50567,16 +50567,6 @@
       "lon": -1.314432,
       "datos_ok": true,
       "fuente_datos": "WU propio 1d + WU vecinos 13d"
-    },
-    "IMULA6": {
-      "oidio": 0,
-      "mildiu": 1,
-      "dsv_temporada": 13,
-      "dsv_7d": 13,
-      "lat": 38.012959,
-      "lon": -1.430653,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 1d + WU vecinos 6d"
     },
     "IOJS1": {
       "oidio": 1,
