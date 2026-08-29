@@ -11971,7 +11971,7 @@
       "lon": -2.041163
     },
     "IALMER512": {
-      "tempMax": 26.6,
+      "tempMax": 27.1,
       "tempMin": 21.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12109,7 +12109,7 @@
     "ICARTA137": {
       "tempMax": 28.6,
       "tempMin": 25.0,
-      "precipTotal": 1.09,
+      "precipTotal": 1.7,
       "humedadAltaMinutos": 0,
       "lat": 37.677839,
       "lon": -0.827102
@@ -12172,7 +12172,7 @@
     },
     "ITURRE10": {
       "tempMax": 31.2,
-      "tempMin": 28.3,
+      "tempMin": 28.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.161,
@@ -12203,7 +12203,7 @@
       "lon": -2.403375
     },
     "IORCE4": {
-      "tempMax": 33.3,
+      "tempMax": 33.5,
       "tempMin": 23.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
