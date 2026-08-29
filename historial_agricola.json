@@ -12068,7 +12068,7 @@
     },
     "IFUENT165": {
       "tempMax": 31.2,
-      "tempMin": 27.4,
+      "tempMin": 27.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.662855,
@@ -12148,7 +12148,7 @@
     },
     "IALICA139": {
       "tempMax": 30.4,
-      "tempMin": 27.5,
+      "tempMin": 27.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.327455,
@@ -12299,7 +12299,7 @@
       "lon": -1.46221
     },
     "ICORRA11": {
-      "tempMax": 31.4,
+      "tempMax": 31.5,
       "tempMin": 23.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
