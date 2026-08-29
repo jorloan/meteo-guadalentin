@@ -49602,7 +49602,7 @@
       "oidio": 3,
       "mildiu": 2,
       "dsv_temporada": 137,
-      "dsv_7d": 19,
+      "dsv_7d": 20,
       "lat": 37.926816,
       "lon": -1.833752,
       "datos_ok": true,
@@ -49712,7 +49712,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 145,
-      "dsv_7d": 18,
+      "dsv_7d": 19,
       "lat": 37.620039,
       "lon": -1.94572,
       "datos_ok": true,
@@ -50152,7 +50152,7 @@
       "oidio": 3,
       "mildiu": 2,
       "dsv_temporada": 180,
-      "dsv_7d": 18,
+      "dsv_7d": 19,
       "lat": 38.471875,
       "lon": -1.421486,
       "datos_ok": true,
@@ -50437,6 +50437,86 @@
       "lon": -1.091008,
       "datos_ok": true,
       "fuente_datos": "WU propio 10d"
+    },
+    "IALBAC26": {
+      "oidio": -1,
+      "mildiu": -1,
+      "dsv_temporada": 0,
+      "dsv_7d": 0,
+      "lat": 39.005937,
+      "lon": -1.855815,
+      "datos_ok": false,
+      "fuente_datos": "WU propio 1d"
+    },
+    "IALMAN17": {
+      "oidio": 1,
+      "mildiu": 2,
+      "dsv_temporada": 32,
+      "dsv_7d": 17,
+      "lat": 38.867861,
+      "lon": -1.096675,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 13d"
+    },
+    "IBENID10": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 22,
+      "dsv_7d": 16,
+      "lat": 38.541,
+      "lon": -0.131,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 9d"
+    },
+    "ILAVIL16": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 22,
+      "dsv_7d": 16,
+      "lat": 38.510997,
+      "lon": -0.233971,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 9d"
+    },
+    "IELCAM27": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 22,
+      "dsv_7d": 16,
+      "lat": 38.426564,
+      "lon": -0.398083,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 9d"
+    },
+    "ISORBA26": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 20,
+      "dsv_7d": 14,
+      "lat": 37.048823,
+      "lon": -2.041163,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 9d"
+    },
+    "IALMER512": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 27,
+      "dsv_7d": 19,
+      "lat": 36.854477,
+      "lon": -2.30637,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 9d"
+    },
+    "IBENAM5": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 22,
+      "dsv_7d": 16,
+      "lat": 37.609,
+      "lon": -2.699,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 8d"
     }
   }
 }
