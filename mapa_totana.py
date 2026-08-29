@@ -74,7 +74,33 @@ def wu(sid):
     return None
 
 # ── Historial 24h ─────────────────────────────────────────────
-def hist24(nuevos, ahora):
+# Solo se guardan los campos que realmente lee el frontend (comprobado por
+# grep sobre mapa_totana.py: est.* / m.*), para no arrastrar en cada
+# snapshot campos muertos (country, softwareType, qcStatus, obsTimeUtc,
+# realtimeFrequency, metric.elev, metric.precipRate) que no se muestran
+# en ningún sitio pero sí engordan history_24h/2d/7d.json.
+def _recortar_estacion(est):
+    if not est: return est
+    m = est.get('metric') or {}
+    return {
+        'stationID': est.get('stationID'),
+        'lat': est.get('lat'), 'lon': est.get('lon'),
+        'neighborhood': est.get('neighborhood'),
+        'humidity': est.get('humidity'),
+        'winddir': est.get('winddir'),
+        'uv': est.get('uv'),
+        'solarRadiation': est.get('solarRadiation'),
+        'obsTimeLocal': est.get('obsTimeLocal'),
+        'epoch': est.get('epoch'),
+        'metric': {
+            'temp': m.get('temp'), 'heatIndex': m.get('heatIndex'),
+            'windChill': m.get('windChill'), 'dewpt': m.get('dewpt'),
+            'pressure': m.get('pressure'), 'windSpeed': m.get('windSpeed'),
+            'windGust': m.get('windGust'), 'precipTotal': m.get('precipTotal'),
+        },
+    }
+
+def hist24(nuevos, ahora, minutos_intervalo=15):
     h   = leer(F_H24, [])
     lim = ahora - timedelta(hours=24)
     ok  = []
@@ -84,7 +110,18 @@ def hist24(nuevos, ahora):
             if t.tzinfo is None: t = t.replace(tzinfo=ahora.tzinfo)
             if t > lim: ok.append(e)
         except: pass
-    ok.append({'timestamp': ahora.isoformat(), 'stations': nuevos})
+
+    debe_anadir = True
+    if ok:
+        try:
+            t_ult = datetime.fromisoformat(ok[-1]['timestamp'])
+            if t_ult.tzinfo is None: t_ult = t_ult.replace(tzinfo=ahora.tzinfo)
+            debe_anadir = (ahora - t_ult) >= timedelta(minutes=minutos_intervalo)
+        except: pass
+
+    if debe_anadir:
+        ok.append({'timestamp': ahora.isoformat(),
+                   'stations': [_recortar_estacion(e) for e in nuevos]})
     guardar(F_H24, ok)
     print(f"  ✅ Historial 24h: {len(ok)} entradas")
     return ok
@@ -113,7 +150,8 @@ def hist_extendido(nuevos, ahora, ruta, horas_retencion, minutos_intervalo):
         except: pass
 
     if debe_anadir:
-        ok.append({'timestamp': ahora.isoformat(), 'stations': nuevos})
+        ok.append({'timestamp': ahora.isoformat(),
+                   'stations': [_recortar_estacion(e) for e in nuevos]})
 
     guardar(ruta, ok)
     return ok
