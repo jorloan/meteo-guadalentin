@@ -11979,7 +11979,7 @@
       "lon": -2.30637
     },
     "IBENAM5": {
-      "tempMax": 32.8,
+      "tempMax": 32.9,
       "tempMin": 11.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12028,7 +12028,7 @@
     },
     "IMAZAR115": {
       "tempMax": 31.7,
-      "tempMin": 28.0,
+      "tempMin": 27.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.597292,
@@ -12107,9 +12107,9 @@
       "lon": -1.411124
     },
     "ICARTA137": {
-      "tempMax": 27.6,
+      "tempMax": 28.3,
       "tempMin": 25.0,
-      "precipTotal": 0.0,
+      "precipTotal": 1.09,
       "humedadAltaMinutos": 0,
       "lat": 37.677839,
       "lon": -0.827102
@@ -12235,7 +12235,7 @@
       "lon": -2.478
     },
     "ICASTI105": {
-      "tempMax": 33.4,
+      "tempMax": 33.8,
       "tempMin": 21.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
