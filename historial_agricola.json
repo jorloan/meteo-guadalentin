@@ -11771,7 +11771,7 @@
       "lon": -0.795
     },
     "ICARTA80": {
-      "tempMax": 28.6,
+      "tempMax": 28.8,
       "tempMin": 21.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -11979,7 +11979,7 @@
       "lon": -2.30637
     },
     "IBENAM5": {
-      "tempMax": 32.7,
+      "tempMax": 32.8,
       "tempMin": 11.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12060,7 +12060,7 @@
     },
     "IGUILA25": {
       "tempMax": 31.0,
-      "tempMin": 26.8,
+      "tempMin": 26.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.478913,
@@ -12235,7 +12235,7 @@
       "lon": -2.478
     },
     "ICASTI105": {
-      "tempMax": 33.3,
+      "tempMax": 33.4,
       "tempMin": 21.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12299,7 +12299,7 @@
       "lon": -1.46221
     },
     "ICORRA11": {
-      "tempMax": 30.9,
+      "tempMax": 31.4,
       "tempMin": 23.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
