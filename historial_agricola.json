@@ -11491,7 +11491,7 @@
       "lon": -1.565616
     },
     "IMULACOP3": {
-      "tempMax": 32.7,
+      "tempMax": 32.8,
       "tempMin": 11.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12099,7 +12099,7 @@
       "lon": -0.734509
     },
     "IJUMIL35": {
-      "tempMax": 31.1,
+      "tempMax": 31.6,
       "tempMin": 24.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12132,7 +12132,7 @@
     },
     "IELCHE140": {
       "tempMax": 23.7,
-      "tempMin": 19.5,
+      "tempMin": 19.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.180948,
@@ -12299,7 +12299,7 @@
       "lon": -1.46221
     },
     "ICORRA11": {
-      "tempMax": 30.3,
+      "tempMax": 30.4,
       "tempMin": 23.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
