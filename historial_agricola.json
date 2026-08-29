@@ -11355,7 +11355,7 @@
       "lon": -1.836982
     },
     "IMAZAR112": {
-      "tempMax": 26.4,
+      "tempMax": 26.5,
       "tempMin": 22.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -11955,7 +11955,7 @@
       "lon": -0.233971
     },
     "IELCAM27": {
-      "tempMax": 33.7,
+      "tempMax": 33.8,
       "tempMin": 23.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12132,7 +12132,7 @@
     },
     "IELCHE140": {
       "tempMax": 23.7,
-      "tempMin": 19.2,
+      "tempMin": 19.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.180948,
