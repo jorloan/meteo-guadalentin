@@ -702,12 +702,17 @@ def generar_html(historial, riesgo_data, ahora, dias_acum):
         aviso_dias = (f"⏳ Acumulando historial: {dias_acum}/{MIN_DIAS} días. "
                       f"Faltan {falt} día{'s' if falt>1 else ''} para activar el cálculo de riesgo.")
 
-    hist_riesgo = leer(F_RIESGO, {})
+    # historyData y riesgoHistData ya NO se embeben completos: solo se
+    # incluye una "semilla" (el último snapshot) para que el mapa renderice
+    # de inmediato con las condiciones actuales; el histórico completo se
+    # descarga aparte (fetch) justo después de cargar la página. Sin esto,
+    # con el cron ahora disparando cada 5 min de verdad, history_24h.json
+    # llega a ~25MB/día y se embebía entero dentro del HTML.
     js = ("var NOMBRES="+json.dumps(NOMBRES, ensure_ascii=False)+";\n"
          +"var WEBCAMS_DATA="+json.dumps(WEBCAMS, ensure_ascii=False)+";\n"
-         +"var historyData="+json.dumps(historial, ensure_ascii=False)+";\n"
+         +"var historyData="+json.dumps(historial[-1:], ensure_ascii=False)+";\n"
          +"var riesgoData="+json.dumps(riesgo_data, ensure_ascii=False)+";\n"
-         +"var riesgoHistData="+json.dumps(hist_riesgo, ensure_ascii=False)+";\n"
+         +"var riesgoHistData={};\n"
          +"var AVISO_DIAS="+json.dumps(aviso_dias)+";\n"
          + JS_LOGICA)
 
@@ -1289,7 +1294,8 @@ var activeData=historyData;   // dataset que alimenta el slider en modo no-riesg
 // ── Índices por día (para oidio/mildiu) ────────────────────────
 var diaIdx = [];   // índices en historyData, uno por día
 
-(function(){
+function construirDiaIdx(){
+  diaIdx = [];
   var porDia={};
   historyData.forEach(function(e,i){
     var d=new Date(e.timestamp);
@@ -1301,7 +1307,8 @@ var diaIdx = [];   // índices en historyData, uno por día
   Object.keys(porDia).sort().forEach(function(k){
     diaIdx.push({key:k, idx:porDia[k]});
   });
-})();
+}
+construirDiaIdx();
 
 var modoRiesgo=false;
 var idxActual=activeData.length-1;  // índice dentro de activeData o diaIdx
@@ -1533,6 +1540,19 @@ document.getElementById('op').addEventListener('input', function(){
   if(HL) HL.setStyle({fillOpacity: window.HO});
 });
 
+var riesgoHistCargado=false;
+function cargarRiesgoHistorico(cb){
+  if(riesgoHistCargado){ if(cb) cb(); return; }
+  fetch('historial_riesgo.json?v='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(datos){
+      riesgoHistData=datos||{};
+      riesgoHistCargado=true;
+      if(cb) cb();
+    })
+    .catch(function(){ riesgoHistCargado=true; if(cb) cb(); });
+}
+
 function onParamChange(){
   var p = document.getElementById('ps').value;
   var esRiesgo = (p==='oidio'||p==='mildiu');
@@ -1541,6 +1561,7 @@ function onParamChange(){
   _prevParam = p;
   actualizarModoSlider();
   render();
+  if(esRiesgo && !riesgoHistCargado) cargarRiesgoHistorico(render);
 }
 
 // ── Radar de lluvia: capa independiente, combinable con cualquier parámetro ──
@@ -1614,7 +1635,29 @@ function initSl(){
   render();
 }
 
+// Solo se embebe el último snapshot en el HTML (para que el mapa aparezca
+// de inmediato con las condiciones actuales); el histórico completo de
+// 24h se descarga aparte justo después, y al llegar se reconstruyen los
+// índices y se refresca el slider con el rango completo.
+function cargarHistoria24hInicial(cb){
+  fetch('history_24h.json?v='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(datos){
+      if(datos && datos.length){
+        historyData=datos;
+        construirDiaIdx();
+        if(periodoActivo==='24h') activeData=historyData;
+      }
+    })
+    .catch(function(){})
+    .then(cb);
+}
+
 initSl();
+cargarHistoria24hInicial(function(){
+  actualizarModoSlider();
+  render();
+});
 """
 
 HTML_BASE = """<!DOCTYPE html>
