@@ -12156,7 +12156,7 @@
     },
     "IALICA95": {
       "tempMax": 30.5,
-      "tempMin": 27.6,
+      "tempMin": 27.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.384,
@@ -12243,7 +12243,7 @@
       "lon": -2.642
     },
     "IBAZA13": {
-      "tempMax": 34.1,
+      "tempMax": 34.2,
       "tempMin": 24.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,

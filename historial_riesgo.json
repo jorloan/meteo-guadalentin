@@ -49918,6 +49918,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IPUERT124": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 43,
+      "dsv_7d": 21,
+      "lat": 37.544651,
+      "lon": -1.865574,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 10d"
+    },
     "IPUERT363": {
       "oidio": 2,
       "mildiu": 1,
