@@ -52380,6 +52380,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 2d + WU vecinos 12d"
     },
+    "IREGINDE53": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 35,
+      "dsv_7d": 19,
+      "lat": 38.694279,
+      "lon": -1.16892,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 2d + WU vecinos 12d"
+    },
     "IALMAN15": {
       "oidio": 1,
       "mildiu": 1,
