@@ -51760,21 +51760,11 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
     },
-    "ISANPE182": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 24,
-      "dsv_7d": 18,
-      "lat": 37.833,
-      "lon": -0.795,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 11d"
-    },
     "ICARTA80": {
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 44,
-      "dsv_7d": 19,
+      "dsv_7d": 18,
       "lat": 37.642285,
       "lon": -0.715088,
       "datos_ok": true,
