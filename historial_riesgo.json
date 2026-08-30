@@ -52482,16 +52482,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IALHAM23": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 205,
-      "dsv_7d": 14,
-      "lat": 37.844378,
-      "lon": -1.428541,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -52526,7 +52516,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 206,
-      "dsv_7d": 19,
+      "dsv_7d": 18,
       "lat": 37.843964,
       "lon": -1.432404,
       "datos_ok": true,
@@ -52836,7 +52826,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 107,
-      "dsv_7d": 18,
+      "dsv_7d": 17,
       "lat": 37.648492,
       "lon": -1.952237,
       "datos_ok": true,
@@ -53056,7 +53046,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 50,
-      "dsv_7d": 19,
+      "dsv_7d": 18,
       "lat": 37.576363,
       "lon": -1.743472,
       "datos_ok": true,
@@ -53186,7 +53176,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 212,
-      "dsv_7d": 16,
+      "dsv_7d": 15,
       "lat": 37.760454,
       "lon": -1.539632,
       "datos_ok": true,
@@ -53682,6 +53672,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 9d"
     },
+    "IGUILA25": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 46,
+      "dsv_7d": 19,
+      "lat": 37.478913,
+      "lon": -1.632191,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 3d + WU vecinos 11d"
+    },
     "IFUENT165": {
       "oidio": 2,
       "mildiu": 1,
@@ -53929,16 +53929,6 @@
       "dsv_7d": 18,
       "lat": 38.628883,
       "lon": -1.230179,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 3d + WU vecinos 11d"
-    },
-    "IREGINDE53": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 37,
-      "dsv_7d": 18,
-      "lat": 38.694279,
-      "lon": -1.16892,
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 11d"
     },
