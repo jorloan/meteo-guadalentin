@@ -52482,16 +52482,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IALHAM23": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 205,
-      "dsv_7d": 13,
-      "lat": 37.844378,
-      "lon": -1.428541,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -53466,7 +53456,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 57,
-      "dsv_7d": 20,
+      "dsv_7d": 21,
       "lat": 36.961539,
       "lon": -2.205054,
       "datos_ok": true,
@@ -53681,16 +53671,6 @@
       "lon": -1.422595,
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 9d"
-    },
-    "IGUILA25": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 46,
-      "dsv_7d": 19,
-      "lat": 37.478913,
-      "lon": -1.632191,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 3d + WU vecinos 11d"
     },
     "IFUENT165": {
       "oidio": 2,
