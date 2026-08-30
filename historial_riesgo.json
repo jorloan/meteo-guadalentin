@@ -52160,16 +52160,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 2d + WU vecinos 9d"
     },
-    "IGUILA25": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 44,
-      "dsv_7d": 20,
-      "lat": 37.478913,
-      "lon": -1.632191,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 2d + WU vecinos 12d"
-    },
     "IFUENT165": {
       "oidio": 1,
       "mildiu": 1,
