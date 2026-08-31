@@ -12374,7 +12374,7 @@
       "tempMax": 26.9,
       "tempMin": 18.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1468,
+      "humedadAltaMinutos": 1488,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -12822,7 +12822,7 @@
       "tempMax": 29.0,
       "tempMin": 20.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1062,
+      "humedadAltaMinutos": 1082,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -12918,7 +12918,7 @@
       "tempMax": 27.3,
       "tempMin": 21.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1479,
+      "humedadAltaMinutos": 1499,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -13083,7 +13083,7 @@
       "lon": -1.096675
     },
     "IBENID10": {
-      "tempMax": 29.7,
+      "tempMax": 29.8,
       "tempMin": 21.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 39,
@@ -13115,7 +13115,7 @@
       "lon": -2.30637
     },
     "IBENAM5": {
-      "tempMax": 35.2,
+      "tempMax": 35.7,
       "tempMin": 11.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -13267,7 +13267,7 @@
       "lon": -1.12
     },
     "IELCHE140": {
-      "tempMax": 21.0,
+      "tempMax": 21.8,
       "tempMin": 14.8,
       "precipTotal": 5.59,
       "humedadAltaMinutos": 1060,
@@ -13339,7 +13339,7 @@
       "lon": -2.403375
     },
     "IORCE4": {
-      "tempMax": 36.4,
+      "tempMax": 36.6,
       "tempMin": 12.9,
       "precipTotal": 0.76,
       "humedadAltaMinutos": 0,
@@ -13435,7 +13435,7 @@
       "lon": -1.46221
     },
     "ICORRA11": {
-      "tempMax": 31.8,
+      "tempMax": 32.0,
       "tempMin": 12.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -13467,7 +13467,7 @@
       "lon": -1.632191
     },
     "IELCAM27": {
-      "tempMax": 33.0,
+      "tempMax": 33.3,
       "tempMin": 21.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -13475,7 +13475,7 @@
       "lon": -0.398083
     },
     "IPUERT124": {
-      "tempMax": 30.7,
+      "tempMax": 31.6,
       "tempMin": 28.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
