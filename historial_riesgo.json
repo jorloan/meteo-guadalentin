@@ -54034,6 +54034,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 208,
+      "dsv_7d": 14,
+      "lat": 37.844378,
+      "lon": -1.428541,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -55271,16 +55281,6 @@
       "dsv_7d": 20,
       "lat": 38.497562,
       "lon": -1.359164,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 4d + WU vecinos 10d"
-    },
-    "IMURCI133": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 38,
-      "dsv_7d": 17,
-      "lat": 37.950335,
-      "lon": -1.239743,
       "datos_ok": true,
       "fuente_datos": "WU propio 4d + WU vecinos 10d"
     },
