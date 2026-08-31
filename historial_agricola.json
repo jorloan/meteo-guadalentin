@@ -12275,7 +12275,7 @@
       "lon": -1.415771
     },
     "ILIBRI6": {
-      "tempMax": 34.2,
+      "tempMax": 34.5,
       "tempMin": 17.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12315,7 +12315,7 @@
       "lon": -1.864
     },
     "ILORCA106": {
-      "tempMax": 24.7,
+      "tempMax": 24.9,
       "tempMin": 15.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1276,
@@ -12374,7 +12374,7 @@
       "tempMax": 26.9,
       "tempMin": 18.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1403,
+      "humedadAltaMinutos": 1418,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -12787,7 +12787,7 @@
       "lon": -1.41
     },
     "ITOTAN42": {
-      "tempMax": 35.6,
+      "tempMax": 35.7,
       "tempMin": 18.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12918,7 +12918,7 @@
       "tempMax": 27.3,
       "tempMin": 21.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1414,
+      "humedadAltaMinutos": 1429,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -12979,7 +12979,7 @@
       "lon": -2.07633
     },
     "IPUEBL84": {
-      "tempMax": 32.3,
+      "tempMax": 32.5,
       "tempMin": 10.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -12987,7 +12987,7 @@
       "lon": -2.429414
     },
     "IBAZA18": {
-      "tempMax": 35.7,
+      "tempMax": 35.9,
       "tempMin": 16.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -13091,7 +13091,7 @@
       "lon": -0.131
     },
     "ILAVIL16": {
-      "tempMax": 29.6,
+      "tempMax": 29.7,
       "tempMin": 20.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -13387,7 +13387,7 @@
       "lon": -2.767517
     },
     "IYECLA87": {
-      "tempMax": 33.9,
+      "tempMax": 34.8,
       "tempMin": 13.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -13467,7 +13467,7 @@
       "lon": -1.632191
     },
     "IELCAM27": {
-      "tempMax": 32.8,
+      "tempMax": 33.0,
       "tempMin": 21.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
