@@ -52706,7 +52706,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 185,
-      "dsv_7d": 16,
+      "dsv_7d": 17,
       "lat": 37.677097,
       "lon": -1.646632,
       "datos_ok": true,
@@ -52749,16 +52749,6 @@
       "dsv_7d": 18,
       "lat": 37.874337,
       "lon": -1.838405,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "ILORCA50": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 142,
-      "dsv_7d": 16,
-      "lat": 37.857225,
-      "lon": -1.829139,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
