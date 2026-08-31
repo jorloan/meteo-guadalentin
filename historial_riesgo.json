@@ -54018,7 +54018,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 147,
-      "dsv_7d": 19,
+      "dsv_7d": 18,
       "lat": 37.798803,
       "lon": -1.592444,
       "datos_ok": true,
@@ -54031,6 +54031,16 @@
       "dsv_7d": 16,
       "lat": 37.85,
       "lon": -1.432,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 208,
+      "dsv_7d": 14,
+      "lat": 37.844378,
+      "lon": -1.428541,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
@@ -54751,16 +54761,6 @@
       "dsv_7d": 17,
       "lat": 37.775914,
       "lon": -1.52123,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "IGUILA10": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 174,
-      "dsv_7d": 18,
-      "lat": 37.407152,
-      "lon": -1.572191,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
