@@ -53062,6 +53062,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ITOTAN5": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 194,
+      "dsv_7d": 16,
+      "lat": 37.773,
+      "lon": -1.499,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "ITOTAN8": {
       "oidio": 3,
       "mildiu": 1,
@@ -53909,6 +53919,16 @@
       "dsv_7d": 17,
       "lat": 38.628883,
       "lon": -1.230179,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 3d + WU vecinos 11d"
+    },
+    "IREGINDE53": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 37,
+      "dsv_7d": 17,
+      "lat": 38.694279,
+      "lon": -1.16892,
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 11d"
     },
