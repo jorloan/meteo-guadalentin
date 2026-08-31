@@ -52916,7 +52916,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 191,
-      "dsv_7d": 23,
+      "dsv_7d": 22,
       "lat": 37.602019,
       "lon": -1.295504,
       "datos_ok": true,
@@ -53556,7 +53556,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 33,
-      "dsv_7d": 21,
+      "dsv_7d": 20,
       "lat": 36.854477,
       "lon": -2.30637,
       "datos_ok": true,
@@ -53636,7 +53636,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 17,
-      "dsv_7d": 18,
+      "dsv_7d": 17,
       "lat": 38.012959,
       "lon": -1.430653,
       "datos_ok": true,
@@ -53661,6 +53661,16 @@
       "lon": -1.422595,
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 9d"
+    },
+    "IGUILA25": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 46,
+      "dsv_7d": 19,
+      "lat": 37.478913,
+      "lon": -1.632191,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 3d + WU vecinos 11d"
     },
     "IFUENT165": {
       "oidio": 2,
@@ -53839,16 +53849,6 @@
       "dsv_7d": 19,
       "lat": 36.839695,
       "lon": -2.403375,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 3d + WU vecinos 9d"
-    },
-    "IORCE4": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 29,
-      "dsv_7d": 15,
-      "lat": 37.728014,
-      "lon": -2.454096,
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 9d"
     },
