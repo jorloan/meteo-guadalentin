@@ -53056,7 +53056,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 202,
-      "dsv_7d": 19,
+      "dsv_7d": 18,
       "lat": 37.788956,
       "lon": -1.523104,
       "datos_ok": true,
@@ -53869,6 +53869,16 @@
       "dsv_7d": 22,
       "lat": 36.839695,
       "lon": -2.403375,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 3d + WU vecinos 9d"
+    },
+    "IORCE4": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 29,
+      "dsv_7d": 17,
+      "lat": 37.728014,
+      "lon": -2.454096,
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 9d"
     },
