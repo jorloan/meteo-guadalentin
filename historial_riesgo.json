@@ -52752,16 +52752,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ILORCA50": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 142,
-      "dsv_7d": 17,
-      "lat": 37.857225,
-      "lon": -1.829139,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ILORCA56": {
       "oidio": 3,
       "mildiu": 1,
@@ -53681,6 +53671,16 @@
       "lon": -1.342168,
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 11d"
+    },
+    "ICIEZA1": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 34,
+      "dsv_7d": 20,
+      "lat": 38.275864,
+      "lon": -1.422595,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 3d + WU vecinos 9d"
     },
     "IFUENT165": {
       "oidio": 2,
