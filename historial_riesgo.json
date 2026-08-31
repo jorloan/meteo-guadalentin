@@ -53862,26 +53862,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 9d"
     },
-    "IORCE4": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 29,
-      "dsv_7d": 17,
-      "lat": 37.728014,
-      "lon": -2.454096,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 3d + WU vecinos 9d"
-    },
-    "ICARAV78": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 24,
-      "dsv_7d": 15,
-      "lat": 37.995684,
-      "lon": -2.259257,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 3d + WU vecinos 9d"
-    },
     "IORIA26": {
       "oidio": 1,
       "mildiu": 1,
