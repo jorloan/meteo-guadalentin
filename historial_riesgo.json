@@ -53922,6 +53922,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 11d"
     },
+    "IREGINDE53": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 37,
+      "dsv_7d": 17,
+      "lat": 38.694279,
+      "lon": -1.16892,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 3d + WU vecinos 11d"
+    },
     "IALMAN15": {
       "oidio": 1,
       "mildiu": 1,
