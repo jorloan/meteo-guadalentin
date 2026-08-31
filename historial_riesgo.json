@@ -52732,16 +52732,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ILORCA50": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 142,
-      "dsv_7d": 15,
-      "lat": 37.857225,
-      "lon": -1.829139,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ILORCA56": {
       "oidio": 3,
       "mildiu": 1,
@@ -53646,7 +53636,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 17,
-      "dsv_7d": 17,
+      "dsv_7d": 18,
       "lat": 38.012959,
       "lon": -1.430653,
       "datos_ok": true,
@@ -53846,7 +53836,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 30,
-      "dsv_7d": 19,
+      "dsv_7d": 21,
       "lat": 36.839695,
       "lon": -2.403375,
       "datos_ok": true,
