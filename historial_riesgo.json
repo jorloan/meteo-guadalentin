@@ -52616,7 +52616,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 51,
-      "dsv_7d": 20,
+      "dsv_7d": 23,
       "lat": 37.698662,
       "lon": -1.923552,
       "datos_ok": true,
@@ -53466,7 +53466,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 55,
-      "dsv_7d": 16,
+      "dsv_7d": 18,
       "lat": 37.308,
       "lon": -1.766,
       "datos_ok": true,
@@ -53672,16 +53672,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 9d"
     },
-    "IGUILA25": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 46,
-      "dsv_7d": 19,
-      "lat": 37.478913,
-      "lon": -1.632191,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 3d + WU vecinos 11d"
-    },
     "IFUENT165": {
       "oidio": 2,
       "mildiu": 1,
@@ -53716,7 +53706,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 30,
-      "dsv_7d": 23,
+      "dsv_7d": 25,
       "lat": 37.925304,
       "lon": -0.734509,
       "datos_ok": true,
@@ -53919,6 +53909,16 @@
       "dsv_7d": 17,
       "lat": 38.628883,
       "lon": -1.230179,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 3d + WU vecinos 11d"
+    },
+    "IREGINDE53": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 37,
+      "dsv_7d": 17,
+      "lat": 38.694279,
+      "lon": -1.16892,
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 11d"
     },
