@@ -54488,7 +54488,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 194,
-      "dsv_7d": 29,
+      "dsv_7d": 28,
       "lat": 37.602019,
       "lon": -1.295504,
       "datos_ok": true,
@@ -54881,16 +54881,6 @@
       "dsv_7d": 26,
       "lat": 37.805,
       "lon": -0.836,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 13d"
-    },
-    "ISANPE182": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 29,
-      "dsv_7d": 23,
-      "lat": 37.833,
-      "lon": -0.795,
       "datos_ok": true,
       "fuente_datos": "WU propio 13d"
     },
