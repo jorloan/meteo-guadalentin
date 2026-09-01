@@ -54564,16 +54564,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IMULACOP3": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 157,
-      "dsv_7d": 23,
-      "lat": 38.095196,
-      "lon": -1.674757,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IPUERT124": {
       "oidio": 2,
       "mildiu": 1,
@@ -55118,7 +55108,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 27,
-      "dsv_7d": 22,
+      "dsv_7d": 21,
       "lat": 37.048823,
       "lon": -2.041163,
       "datos_ok": true,
