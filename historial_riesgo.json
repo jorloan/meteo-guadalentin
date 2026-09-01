@@ -54506,7 +54506,7 @@
     },
     "IMULA10": {
       "oidio": 3,
-      "mildiu": 3,
+      "mildiu": 2,
       "dsv_temporada": 156,
       "dsv_7d": 14,
       "lat": 38.100582,
@@ -55198,7 +55198,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 42,
-      "dsv_7d": 22,
+      "dsv_7d": 23,
       "lat": 37.799712,
       "lon": -1.704669,
       "datos_ok": true,
