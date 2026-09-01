@@ -55484,6 +55484,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 4d + WU vecinos 10d"
     },
+    "IREGINDE53": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 39,
+      "dsv_7d": 22,
+      "lat": 38.694279,
+      "lon": -1.16892,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 4d + WU vecinos 10d"
+    },
     "IALMAN15": {
       "oidio": 1,
       "mildiu": 1,
