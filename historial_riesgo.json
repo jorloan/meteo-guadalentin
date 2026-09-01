@@ -55314,16 +55314,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 4d + WU vecinos 10d"
     },
-    "IMURCI90": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 39,
-      "dsv_7d": 18,
-      "lat": 38.025,
-      "lon": -1.12,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 4d + WU vecinos 10d"
-    },
     "IELCHE140": {
       "oidio": 1,
       "mildiu": 1,
