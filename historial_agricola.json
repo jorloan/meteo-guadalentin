@@ -12891,7 +12891,7 @@
       "lon": -1.43
     },
     "IALHAM88": {
-      "tempMax": 33.0,
+      "tempMax": 33.3,
       "tempMin": 24.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 149,
@@ -12995,7 +12995,7 @@
       "lon": -1.707165
     },
     "ILORCA18": {
-      "tempMax": 29.8,
+      "tempMax": 29.9,
       "tempMin": 19.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1572,
@@ -13006,7 +13006,7 @@
       "tempMax": 29.3,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2145,
+      "humedadAltaMinutos": 2165,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -13462,7 +13462,7 @@
       "tempMax": 29.4,
       "tempMin": 23.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1812,
+      "humedadAltaMinutos": 1832,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -13475,7 +13475,7 @@
       "lon": -1.421486
     },
     "IJUMILLA5": {
-      "tempMax": 29.5,
+      "tempMax": 30.2,
       "tempMin": 18.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 898,
@@ -13550,7 +13550,7 @@
       "tempMax": 27.3,
       "tempMin": 25.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2625,
+      "humedadAltaMinutos": 2645,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -13854,7 +13854,7 @@
       "tempMax": 28.5,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2365,
+      "humedadAltaMinutos": 2385,
       "lat": 37.925304,
       "lon": -0.734509
     },
