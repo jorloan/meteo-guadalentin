@@ -54648,7 +54648,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 192,
-      "dsv_7d": 21,
+      "dsv_7d": 20,
       "lat": 37.702322,
       "lon": -1.495711,
       "datos_ok": true,
@@ -54814,16 +54814,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 12d"
     },
-    "IVILLA1263": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 278,
-      "dsv_7d": 18,
-      "lat": 38.113005,
-      "lon": -1.324433,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ISANTO462": {
       "oidio": 3,
       "mildiu": 1,
@@ -54948,7 +54938,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 26,
-      "dsv_7d": 14,
+      "dsv_7d": 15,
       "lat": 37.594659,
       "lon": -2.267846,
       "datos_ok": true,
