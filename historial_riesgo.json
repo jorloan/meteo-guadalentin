@@ -55234,6 +55234,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 4d + WU vecinos 10d"
     },
+    "ICIEZA1": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 37,
+      "dsv_7d": 24,
+      "lat": 38.275864,
+      "lon": -1.422595,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 4d + WU vecinos 9d"
+    },
     "IFUENT165": {
       "oidio": 2,
       "mildiu": 1,
