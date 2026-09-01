@@ -54924,6 +54924,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 13d"
     },
+    "ISANTA1907": {
+      "oidio": 0,
+      "mildiu": 1,
+      "dsv_temporada": 15,
+      "dsv_7d": 16,
+      "lat": 38.195,
+      "lon": -0.556,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 7d"
+    },
     "IELCHE60": {
       "oidio": 3,
       "mildiu": 1,
@@ -54938,7 +54948,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 31,
-      "dsv_7d": 20,
+      "dsv_7d": 22,
       "lat": 38.35,
       "lon": -0.474,
       "datos_ok": true,
