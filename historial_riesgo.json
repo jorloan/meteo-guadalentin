@@ -54034,16 +54034,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IALHAM23": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 208,
-      "dsv_7d": 15,
-      "lat": 37.844378,
-      "lon": -1.428541,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -55481,6 +55471,16 @@
       "dsv_7d": 21,
       "lat": 38.628883,
       "lon": -1.230179,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 4d + WU vecinos 10d"
+    },
+    "IREGINDE53": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 39,
+      "dsv_7d": 22,
+      "lat": 38.694279,
+      "lon": -1.16892,
       "datos_ok": true,
       "fuente_datos": "WU propio 4d + WU vecinos 10d"
     },
