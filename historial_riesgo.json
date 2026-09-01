@@ -55078,7 +55078,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 30,
-      "dsv_7d": 15,
+      "dsv_7d": 16,
       "lat": 38.541,
       "lon": -0.131,
       "datos_ok": true,
@@ -55441,16 +55441,6 @@
       "dsv_7d": 18,
       "lat": 38.628883,
       "lon": -1.230179,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 4d + WU vecinos 10d"
-    },
-    "IREGINDE53": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 39,
-      "dsv_7d": 21,
-      "lat": 38.694279,
-      "lon": -1.16892,
       "datos_ok": true,
       "fuente_datos": "WU propio 4d + WU vecinos 10d"
     },
