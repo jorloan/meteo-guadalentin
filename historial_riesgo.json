@@ -56240,7 +56240,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 84,
-      "dsv_7d": 24,
+      "dsv_7d": 23,
       "lat": 37.778201,
       "lon": -1.501555,
       "datos_ok": true,
@@ -56978,7 +56978,7 @@
     },
     "IORCE4": {
       "oidio": 1,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 35,
       "dsv_7d": 12,
       "lat": 37.728014,
