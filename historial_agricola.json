@@ -13435,7 +13435,7 @@
       "lon": -1.592444
     },
     "IALHAM13": {
-      "tempMax": 36.5,
+      "tempMax": 37.0,
       "tempMin": 21.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 723,
@@ -13443,7 +13443,7 @@
       "lon": -1.432
     },
     "IALHAM23": {
-      "tempMax": 35.0,
+      "tempMax": 35.4,
       "tempMin": 22.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 140,
@@ -13491,7 +13491,7 @@
       "lon": -1.406302
     },
     "IALHAM81": {
-      "tempMax": 34.3,
+      "tempMax": 34.5,
       "tempMin": 22.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -13606,7 +13606,7 @@
       "tempMax": 29.0,
       "tempMin": 22.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1211,
+      "humedadAltaMinutos": 1221,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -13971,7 +13971,7 @@
       "lon": -1.514744
     },
     "ITOTAN17": {
-      "tempMax": 32.3,
+      "tempMax": 32.5,
       "tempMin": 20.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1287,
@@ -14150,7 +14150,7 @@
       "tempMax": 28.8,
       "tempMin": 24.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2448,
+      "humedadAltaMinutos": 2458,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -14470,7 +14470,7 @@
       "tempMax": 28.6,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2298,
+      "humedadAltaMinutos": 2308,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -14571,7 +14571,7 @@
       "lon": -2.199989
     },
     "IALMER63": {
-      "tempMax": 30.3,
+      "tempMax": 30.4,
       "tempMin": 24.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 524,
@@ -14581,7 +14581,7 @@
     "IORCE4": {
       "tempMax": 37.5,
       "tempMin": 15.8,
-      "precipTotal": 15.75,
+      "precipTotal": 17.02,
       "humedadAltaMinutos": 658,
       "lat": 37.728014,
       "lon": -2.454096
@@ -14683,7 +14683,7 @@
       "lon": -1.696521
     },
     "ICHINC62": {
-      "tempMax": 38.9,
+      "tempMax": 39.5,
       "tempMin": 17.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 369,
