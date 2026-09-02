@@ -55800,7 +55800,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 143,
-      "dsv_7d": 21,
+      "dsv_7d": 20,
       "lat": 37.926816,
       "lon": -1.833752,
       "datos_ok": true,
@@ -56773,16 +56773,6 @@
       "dsv_7d": 14,
       "lat": 38.147147,
       "lon": -1.342168,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 5d"
-    },
-    "ICIEZA1": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 40,
-      "dsv_7d": 19,
-      "lat": 38.275864,
-      "lon": -1.422595,
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
