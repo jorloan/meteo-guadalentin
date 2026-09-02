@@ -57858,6 +57858,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ICARTA267": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 167,
+      "dsv_7d": 16,
+      "lat": 37.695322,
+      "lon": -0.935908,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 6d"
+    },
     "IJUMIL46": {
       "oidio": 3,
       "mildiu": 1,
@@ -57997,6 +58007,16 @@
       "lon": -0.652781,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
+    },
+    "ISANTA1907": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 21,
+      "dsv_7d": 20,
+      "lat": 38.195,
+      "lon": -0.556,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 8d"
     },
     "IELCHE60": {
       "oidio": 3,
@@ -58622,7 +58642,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 17,
-      "dsv_7d": 19,
+      "dsv_7d": 20,
       "lat": 39.035,
       "lon": -1.701,
       "datos_ok": true,
