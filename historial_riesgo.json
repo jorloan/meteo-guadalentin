@@ -56866,6 +56866,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
+    "IMURCI133": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 41,
+      "dsv_7d": 12,
+      "lat": 37.950335,
+      "lon": -1.239743,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 5d"
+    },
     "IELCHE140": {
       "oidio": 1,
       "mildiu": 1,
