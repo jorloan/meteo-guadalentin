@@ -55576,6 +55576,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 211,
+      "dsv_7d": 16,
+      "lat": 37.844378,
+      "lon": -1.428541,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -55900,7 +55910,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 197,
-      "dsv_7d": 26,
+      "dsv_7d": 25,
       "lat": 37.512787,
       "lon": -1.656607,
       "datos_ok": true,
@@ -56136,6 +56146,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IPUERT79": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 55,
+      "dsv_7d": 21,
+      "lat": 37.606012,
+      "lon": -1.79346,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IREGINDE92": {
       "oidio": 2,
       "mildiu": 1,
@@ -56200,7 +56220,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 149,
-      "dsv_7d": 19,
+      "dsv_7d": 20,
       "lat": 37.824391,
       "lon": -1.599507,
       "datos_ok": true,
