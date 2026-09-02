@@ -13606,7 +13606,7 @@
       "tempMax": 29.1,
       "tempMin": 22.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1596,
+      "humedadAltaMinutos": 1616,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -13766,7 +13766,7 @@
       "tempMax": 33.0,
       "tempMin": 24.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 45,
+      "humedadAltaMinutos": 65,
       "lat": 37.564448,
       "lon": -1.264009
     },
@@ -13798,7 +13798,7 @@
       "tempMax": 31.3,
       "tempMin": 23.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1392,
+      "humedadAltaMinutos": 1412,
       "lat": 37.602019,
       "lon": -1.295504
     },
@@ -14062,7 +14062,7 @@
       "tempMax": 29.0,
       "tempMin": 23.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1766,
+      "humedadAltaMinutos": 1786,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -14126,7 +14126,7 @@
       "tempMax": 31.8,
       "tempMin": 22.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1562,
+      "humedadAltaMinutos": 1582,
       "lat": 37.747,
       "lon": -0.852
     },
@@ -14150,7 +14150,7 @@
       "tempMax": 28.8,
       "tempMin": 24.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2833,
+      "humedadAltaMinutos": 2853,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -14158,7 +14158,7 @@
       "tempMax": 29.9,
       "tempMin": 23.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1732,
+      "humedadAltaMinutos": 1752,
       "lat": 37.871845,
       "lon": -0.78009
     },
@@ -14174,7 +14174,7 @@
       "tempMax": 30.6,
       "tempMin": 22.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1437,
+      "humedadAltaMinutos": 1457,
       "lat": 38.089937,
       "lon": -0.652781
     },
@@ -14198,7 +14198,7 @@
       "tempMax": 29.8,
       "tempMin": 24.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 549,
+      "humedadAltaMinutos": 569,
       "lat": 38.35,
       "lon": -0.474
     },
@@ -14355,7 +14355,7 @@
       "lon": -2.041163
     },
     "IALMER512": {
-      "tempMax": 31.1,
+      "tempMax": 31.2,
       "tempMin": 23.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 240,
@@ -14462,7 +14462,7 @@
       "tempMax": 30.7,
       "tempMin": 22.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1757,
+      "humedadAltaMinutos": 1777,
       "lat": 37.744,
       "lon": -0.91
     },
@@ -14470,7 +14470,7 @@
       "tempMax": 28.6,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2683,
+      "humedadAltaMinutos": 2703,
       "lat": 37.925304,
       "lon": -0.734509
     },
