@@ -56806,6 +56806,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
+    "ICIEZA1": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 40,
+      "dsv_7d": 20,
+      "lat": 38.275864,
+      "lon": -1.422595,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 5d"
+    },
     "IFUENT165": {
       "oidio": 2,
       "mildiu": 1,
