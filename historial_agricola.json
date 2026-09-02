@@ -13606,7 +13606,7 @@
       "tempMax": 29.1,
       "tempMin": 22.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1256,
+      "humedadAltaMinutos": 1261,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -13987,7 +13987,7 @@
       "lon": -1.466872
     },
     "ITOTAN25": {
-      "tempMax": 31.6,
+      "tempMax": 31.8,
       "tempMin": 20.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 100,
@@ -14150,7 +14150,7 @@
       "tempMax": 28.8,
       "tempMin": 24.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2493,
+      "humedadAltaMinutos": 2498,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -14355,7 +14355,7 @@
       "lon": -2.041163
     },
     "IALMER512": {
-      "tempMax": 30.8,
+      "tempMax": 30.9,
       "tempMin": 23.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 240,
@@ -14470,7 +14470,7 @@
       "tempMax": 28.6,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2343,
+      "humedadAltaMinutos": 2348,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -14581,7 +14581,7 @@
     "IORCE4": {
       "tempMax": 37.5,
       "tempMin": 15.8,
-      "precipTotal": 20.57,
+      "precipTotal": 23.11,
       "humedadAltaMinutos": 658,
       "lat": 37.728014,
       "lon": -2.454096
