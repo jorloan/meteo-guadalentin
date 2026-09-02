@@ -13499,7 +13499,7 @@
       "lon": -1.43
     },
     "IALHAM88": {
-      "tempMax": 35.3,
+      "tempMax": 35.8,
       "tempMin": 23.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -13606,7 +13606,7 @@
       "tempMax": 29.1,
       "tempMin": 22.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1311,
+      "humedadAltaMinutos": 1321,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -14062,7 +14062,7 @@
       "tempMax": 29.0,
       "tempMin": 23.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1481,
+      "humedadAltaMinutos": 1491,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -14150,7 +14150,7 @@
       "tempMax": 28.8,
       "tempMin": 24.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2548,
+      "humedadAltaMinutos": 2558,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -14470,7 +14470,7 @@
       "tempMax": 28.6,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2398,
+      "humedadAltaMinutos": 2408,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -14589,7 +14589,7 @@
     "ICARAV78": {
       "tempMax": 34.7,
       "tempMin": 16.7,
-      "precipTotal": 0.0,
+      "precipTotal": 0.3,
       "humedadAltaMinutos": 858,
       "lat": 37.995684,
       "lon": -2.259257
