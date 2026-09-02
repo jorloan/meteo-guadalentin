@@ -55576,16 +55576,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IALHAM23": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 211,
-      "dsv_7d": 15,
-      "lat": 37.844378,
-      "lon": -1.428541,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -56293,16 +56283,6 @@
       "dsv_7d": 25,
       "lat": 37.715,
       "lon": -1.41,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "ITOTAN42": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 218,
-      "dsv_7d": 17,
-      "lat": 37.760454,
-      "lon": -1.539632,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
