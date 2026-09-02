@@ -56020,7 +56020,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 187,
-      "dsv_7d": 22,
+      "dsv_7d": 21,
       "lat": 37.5967,
       "lon": -1.31847,
       "datos_ok": true,
@@ -56995,6 +56995,16 @@
       "lon": -2.317244,
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
+    },
+    "IORCE1": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 35,
+      "dsv_7d": 13,
+      "lat": 37.717999,
+      "lon": -2.478,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 4d + WU vecinos 1d"
     },
     "ICASTI105": {
       "oidio": 1,
