@@ -57502,7 +57502,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 163,
-      "dsv_7d": 17,
+      "dsv_7d": 16,
       "lat": 37.668,
       "lon": -1.701,
       "datos_ok": true,
@@ -57775,6 +57775,16 @@
       "dsv_7d": 21,
       "lat": 37.824391,
       "lon": -1.599507,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "ITOTAN16": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 182,
+      "dsv_7d": 19,
+      "lat": 37.783714,
+      "lon": -1.514744,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
