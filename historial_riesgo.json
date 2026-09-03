@@ -57968,6 +57968,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ILOSAL11": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 54,
+      "dsv_7d": 32,
+      "lat": 37.747,
+      "lon": -0.852,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "ISANJA25": {
       "oidio": 2,
       "mildiu": 1,
