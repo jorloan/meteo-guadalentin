@@ -57718,16 +57718,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 203,
-      "dsv_7d": 16,
-      "lat": 37.773,
-      "lon": -1.499,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ITOTAN8": {
       "oidio": 3,
       "mildiu": 1,
@@ -58335,16 +58325,6 @@
       "dsv_7d": 19,
       "lat": 38.147147,
       "lon": -1.342168,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 6d"
-    },
-    "ICIEZA1": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 42,
-      "dsv_7d": 23,
-      "lat": 38.275864,
-      "lon": -1.422595,
       "datos_ok": true,
       "fuente_datos": "WU propio 6d"
     },
