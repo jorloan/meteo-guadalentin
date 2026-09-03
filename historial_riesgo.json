@@ -57532,7 +57532,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 187,
-      "dsv_7d": 24,
+      "dsv_7d": 22,
       "lat": 37.564448,
       "lon": -1.264009,
       "datos_ok": true,
@@ -58215,6 +58215,16 @@
       "dsv_7d": 18,
       "lat": 38.510997,
       "lon": -0.233971,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 6d"
+    },
+    "IELCAM27": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 35,
+      "dsv_7d": 13,
+      "lat": 38.426564,
+      "lon": -0.398083,
       "datos_ok": true,
       "fuente_datos": "WU propio 6d"
     },
