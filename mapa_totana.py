@@ -1279,13 +1279,20 @@ function render(){
     feats.push(turf.point([est.lon,est.lat],{value:v}));
   });
 
-  // Heatmap interpolado
+  // Heatmap interpolado — nos ahorramos el cálculo entero (turf.interpolate
+  // es lo más caro con diferencia, ~200ms con las estaciones actuales) si
+  // la capa ni siquiera está activa, ya que el resultado no se usaría.
   var validFeats = isR ? feats.filter(function(f){return f.properties.value>=0;}) : feats;
-  if(validFeats.length>2){
+  if(heatActive && validFeats.length>2){
     try{
       var c=turf.featureCollection(validFeats);
       var weight=pRender==='temp'?2:pRender==='oidio'||pRender==='mildiu'?6:4;
-      var g=turf.interpolate(c,pRender==='oidio'||pRender==='mildiu'?3:2.5,
+      // Celda de rejilla más grande que el original (2.5-3km): con la
+      // zona cubierta ahora mucho más extensa (Almería-Albacete-Benidorm)
+      // y más estaciones, una rejilla fina dispara el nº de celdas y el
+      // tiempo de cálculo. Con 4-4.5km se ve igual de suave y es ~2.5x
+      // más rápido.
+      var g=turf.interpolate(c,pRender==='oidio'||pRender==='mildiu'?4.5:4,
         {gridType:'square',property:'value',units:'kilometers',weight:weight});
       var cl=turf.featureCollection(g.features.filter(function(f){
         return f.properties.value!=null&&!isNaN(f.properties.value);
@@ -1295,10 +1302,8 @@ function render(){
         if(pRender==='oidio'||pRender==='mildiu') v=Math.min(3,Math.max(0,Math.round(v)));
         return{fillColor:col(v,pRender),fillOpacity:window.HO,stroke:false};
       }});
-      if(heatActive){
-        hLG.clearLayers();
-        hLG.addLayer(HL);
-      }
+      hLG.clearLayers();
+      hLG.addLayer(HL);
     }catch(e){console.error('Heatmap:',e);}
   }
 }
