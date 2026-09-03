@@ -13974,7 +13974,7 @@
       "tempMax": 29.7,
       "tempMin": 22.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1660,
+      "humedadAltaMinutos": 1670,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -14430,7 +14430,7 @@
       "tempMax": 30.1,
       "tempMin": 23.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1646,
+      "humedadAltaMinutos": 1656,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -14518,7 +14518,7 @@
       "tempMax": 28.7,
       "tempMin": 25.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2519,
+      "humedadAltaMinutos": 2529,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -14838,7 +14838,7 @@
       "tempMax": 28.6,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1876,
+      "humedadAltaMinutos": 1886,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -14877,7 +14877,7 @@
     "IELCHE140": {
       "tempMax": 22.0,
       "tempMin": 12.3,
-      "precipTotal": 0.0,
+      "precipTotal": 0.38,
       "humedadAltaMinutos": 0,
       "lat": 38.180948,
       "lon": -0.678458
@@ -15003,7 +15003,7 @@
       "lon": -1.230179
     },
     "IREGINDE53": {
-      "tempMax": 35.7,
+      "tempMax": 35.8,
       "tempMin": 16.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1506,
