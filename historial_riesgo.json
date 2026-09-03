@@ -59190,6 +59190,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IMULA41": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 172,
+      "dsv_7d": 22,
+      "lat": 37.924439,
+      "lon": -1.597045,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IMULA49": {
       "oidio": 3,
       "mildiu": 1,
@@ -59930,16 +59940,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 7d"
     },
-    "IMURCI133": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 45,
-      "dsv_7d": 17,
-      "lat": 37.950335,
-      "lon": -1.239743,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 7d"
-    },
     "IMURCI90": {
       "oidio": 2,
       "mildiu": 1,
@@ -60104,7 +60104,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 47,
-      "dsv_7d": 26,
+      "dsv_7d": 25,
       "lat": 38.628883,
       "lon": -1.230179,
       "datos_ok": true,
