@@ -57322,7 +57322,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 157,
-      "dsv_7d": 23,
+      "dsv_7d": 22,
       "lat": 37.87582,
       "lon": -1.707165,
       "datos_ok": true,
@@ -57898,16 +57898,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ICARTA267": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 167,
-      "dsv_7d": 18,
-      "lat": 37.695322,
-      "lon": -0.935908,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 6d"
-    },
     "IJUMIL46": {
       "oidio": 3,
       "mildiu": 1,
@@ -57975,6 +57965,16 @@
       "dsv_7d": 25,
       "lat": 37.749,
       "lon": -0.967,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "ILOSAL11": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 54,
+      "dsv_7d": 32,
+      "lat": 37.747,
+      "lon": -0.852,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
@@ -58435,6 +58435,16 @@
       "dsv_7d": 26,
       "lat": 38.497562,
       "lon": -1.359164,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 6d"
+    },
+    "IMURCI133": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 43,
+      "dsv_7d": 15,
+      "lat": 37.950335,
+      "lon": -1.239743,
       "datos_ok": true,
       "fuente_datos": "WU propio 6d"
     },
