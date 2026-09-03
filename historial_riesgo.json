@@ -57398,6 +57398,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ILORCA50": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 148,
+      "dsv_7d": 26,
+      "lat": 37.857225,
+      "lon": -1.829139,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "ILORCA56": {
       "oidio": 3,
       "mildiu": 1,
@@ -57445,6 +57455,16 @@
       "dsv_7d": 16,
       "lat": 37.672972,
       "lon": -1.702337,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "ILORCA81": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 200,
+      "dsv_7d": 27,
+      "lat": 37.512787,
+      "lon": -1.656607,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
@@ -57852,7 +57872,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 199,
-      "dsv_7d": 30,
+      "dsv_7d": 29,
       "lat": 37.402118,
       "lon": -1.748503,
       "datos_ok": true,
@@ -58007,16 +58027,6 @@
       "lon": -0.652781,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
-    },
-    "ISANTA1907": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 21,
-      "dsv_7d": 22,
-      "lat": 38.195,
-      "lon": -0.556,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 8d"
     },
     "IELCHE60": {
       "oidio": 3,
@@ -58272,7 +58282,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 47,
-      "dsv_7d": 22,
+      "dsv_7d": 21,
       "lat": 37.591,
       "lon": -1.675,
       "datos_ok": true,
@@ -58642,7 +58652,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 18,
-      "dsv_7d": 21,
+      "dsv_7d": 20,
       "lat": 38.904391,
       "lon": -1.696521,
       "datos_ok": true,
@@ -58652,7 +58662,7 @@
       "oidio": 0,
       "mildiu": 1,
       "dsv_temporada": 17,
-      "dsv_7d": 22,
+      "dsv_7d": 21,
       "lat": 39.035,
       "lon": -1.701,
       "datos_ok": true,
