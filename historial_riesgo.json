@@ -57122,19 +57122,9 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 209,
-      "dsv_7d": 21,
+      "dsv_7d": 24,
       "lat": 37.85,
       "lon": -1.432,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "IALHAM23": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 213,
-      "dsv_7d": 16,
-      "lat": 37.844378,
-      "lon": -1.428541,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
