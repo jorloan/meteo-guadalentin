@@ -13851,7 +13851,7 @@
       "lon": -1.432404
     },
     "IALHAM64": {
-      "tempMax": 38.9,
+      "tempMax": 39.2,
       "tempMin": 22.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 169,
@@ -13875,7 +13875,7 @@
       "lon": -1.425
     },
     "ILIBRI6": {
-      "tempMax": 34.4,
+      "tempMax": 34.5,
       "tempMin": 22.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 810,
@@ -13974,7 +13974,7 @@
       "tempMax": 29.7,
       "tempMin": 22.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1560,
+      "humedadAltaMinutos": 1570,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -14275,7 +14275,7 @@
       "lon": -1.743472
     },
     "ITOTAN2": {
-      "tempMax": 33.9,
+      "tempMax": 34.0,
       "tempMin": 20.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 100,
@@ -14430,7 +14430,7 @@
       "tempMax": 30.1,
       "tempMin": 23.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1546,
+      "humedadAltaMinutos": 1556,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -14451,7 +14451,7 @@
       "lon": -1.239228
     },
     "IABARN30": {
-      "tempMax": 34.0,
+      "tempMax": 34.1,
       "tempMin": 20.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 958,
@@ -14518,7 +14518,7 @@
       "tempMax": 28.7,
       "tempMin": 25.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2419,
+      "humedadAltaMinutos": 2429,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -14795,7 +14795,7 @@
       "lon": -1.430653
     },
     "IOJS1": {
-      "tempMax": 34.7,
+      "tempMax": 34.8,
       "tempMin": 22.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 935,
@@ -14838,7 +14838,7 @@
       "tempMax": 28.6,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1776,
+      "humedadAltaMinutos": 1786,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -14979,7 +14979,7 @@
       "lon": -2.478
     },
     "ICASTI105": {
-      "tempMax": 39.3,
+      "tempMax": 39.5,
       "tempMin": 18.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -14987,7 +14987,7 @@
       "lon": -2.642
     },
     "IBAZA13": {
-      "tempMax": 38.8,
+      "tempMax": 39.2,
       "tempMin": 19.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
