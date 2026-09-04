@@ -59060,16 +59060,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 3d + WU vecinos 11d"
     },
-    "ILORCA99": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 160,
-      "dsv_7d": 24,
-      "lat": 37.876571,
-      "lon": -1.836982,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IMAZAR112": {
       "oidio": 3,
       "mildiu": 1,
@@ -60014,7 +60004,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 45,
-      "dsv_7d": 24,
+      "dsv_7d": 23,
       "lat": 38.025,
       "lon": -1.12,
       "datos_ok": true,
@@ -60114,7 +60104,7 @@
       "oidio": 2,
       "mildiu": 2,
       "dsv_temporada": 40,
-      "dsv_7d": 21,
+      "dsv_7d": 22,
       "lat": 37.728014,
       "lon": -2.454096,
       "datos_ok": true,
@@ -60124,7 +60114,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 32,
-      "dsv_7d": 26,
+      "dsv_7d": 25,
       "lat": 37.995684,
       "lon": -2.259257,
       "datos_ok": true,
