@@ -1037,14 +1037,186 @@ function legToggle(){
 
 // ── Panel lateral fijo ─────────────────────────────────────
 var PS=null;
-function showPanel(sid,html){
+function showPanel(sid,html,titulo){
   document.getElementById('dc').innerHTML=html;
+  document.getElementById('dh-title').textContent=titulo||'Detalle de estación';
   document.getElementById('dp').style.display='flex';
   PS=sid;
 }
 function hidePanel(){
   document.getElementById('dp').style.display='none';
   PS=null;
+}
+
+// ── Buscador de población + comparativa de modelos de pronóstico ───
+// Open-Meteo (open-meteo.com): API pública sin clave, con CORS habilitado
+// para uso directo desde el navegador. Se usa el geocoder para localizar
+// cualquier población del mundo y la API de pronóstico pidiendo varios
+// modelos a la vez (parámetro "models"), que devuelve un campo por
+// modelo (ej. temperature_2m_max_ecmwf_ifs025) para poder compararlos.
+var MODELOS_PRON=[
+  {id:'ecmwf_ifs025',        nombre:'ECMWF',        estrella:true},
+  {id:'icon_seamless',       nombre:'ICON',         estrella:false},
+  {id:'gfs_seamless',        nombre:'GFS',          estrella:false},
+  {id:'meteofrance_seamless',nombre:'AROME/ARPEGE', estrella:false}
+];
+var searchMarker=null,pronData=null;
+
+function wxInfo(code){
+  if(code==null) return {ic:'❓'};
+  if(code===0) return {ic:'☀️'};
+  if(code<=2) return {ic:'🌤'};
+  if(code===3) return {ic:'☁️'};
+  if(code===45||code===48) return {ic:'🌫'};
+  if(code>=51&&code<=57) return {ic:'🌦'};
+  if(code>=61&&code<=67) return {ic:'🌧'};
+  if(code>=71&&code<=77) return {ic:'🌨'};
+  if(code>=80&&code<=82) return {ic:'🌦'};
+  if(code===85||code===86) return {ic:'🌨'};
+  if(code>=95) return {ic:'⛈'};
+  return {ic:'☁️'};
+}
+
+var DIAS_SEM=['dom','lun','mar','mié','jue','vie','sáb'];
+function fmtDiaCorto(iso){
+  var d=new Date(iso+'T00:00:00');
+  return DIAS_SEM[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1);
+}
+
+function debounce(fn,ms){
+  var t=null;
+  return function(){
+    var args=arguments,ctx=this;
+    clearTimeout(t);
+    t=setTimeout(function(){fn.apply(ctx,args);},ms);
+  };
+}
+
+var buscadorInput=document.getElementById('buscador-input');
+var buscadorRes=document.getElementById('buscador-resultados');
+
+var ejecutarBusqueda=debounce(function(q){
+  if(!q||q.trim().length<2){buscadorRes.classList.remove('open');buscadorRes.innerHTML='';return;}
+  fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q.trim())+'&count=6&language=es&format=json')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var res=(d&&d.results)||[];
+      if(!res.length){
+        buscadorRes.innerHTML='<div class="br-empty">Sin resultados</div>';
+        buscadorRes.classList.add('open');
+        return;
+      }
+      buscadorRes.innerHTML=res.map(function(r,i){
+        var sub=[r.admin2,r.admin1,r.country].filter(Boolean).join(', ');
+        return '<div class="br-item" data-i="'+i+'"><b>'+r.name+'</b><small>'+sub+'</small></div>';
+      }).join('');
+      buscadorRes.classList.add('open');
+      buscadorRes.querySelectorAll('.br-item').forEach(function(el){
+        el.addEventListener('click',function(){
+          seleccionarPoblacion(res[+el.getAttribute('data-i')]);
+        });
+      });
+    })
+    .catch(function(){
+      buscadorRes.innerHTML='<div class="br-empty">Error al buscar</div>';
+      buscadorRes.classList.add('open');
+    });
+},350);
+
+if(buscadorInput){
+  buscadorInput.addEventListener('input',function(){ejecutarBusqueda(buscadorInput.value);});
+  document.addEventListener('click',function(e){
+    if(!buscadorInput.contains(e.target)&&!buscadorRes.contains(e.target)) buscadorRes.classList.remove('open');
+  });
+}
+
+function seleccionarPoblacion(loc){
+  buscadorRes.classList.remove('open');
+  buscadorInput.value=loc.name;
+  if(searchMarker) map.removeLayer(searchMarker);
+  searchMarker=L.marker([loc.latitude,loc.longitude],{icon:L.divIcon({
+    className:'',
+    html:'<div style="background:#e6474c;border:2px solid #fff;border-radius:50% 50% 50% 0;width:22px;height:22px;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>',
+    iconSize:[22,22],iconAnchor:[11,22]
+  })}).addTo(map);
+  map.flyTo([loc.latitude,loc.longitude],11);
+  var sub=[loc.admin2,loc.admin1,loc.country].filter(Boolean).join(', ');
+  showPanel('pron:'+loc.id,
+    '<div style="text-align:center;padding:30px 10px;color:#6b7280;font-size:12px;">⏳ Cargando pronóstico…</div>',
+    '🔮 '+loc.name);
+  cargarPronostico(loc,sub);
+}
+
+function cargarPronostico(loc,sub){
+  var vars='weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max';
+  var models=MODELOS_PRON.map(function(m){return m.id;}).join(',');
+  var url='https://api.open-meteo.com/v1/forecast?latitude='+loc.latitude+'&longitude='+loc.longitude
+    +'&daily='+vars+'&models='+models+'&forecast_days=16&timezone=auto';
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.daily) throw new Error('sin datos');
+    pronData={loc:loc,sub:sub,daily:d.daily};
+    renderPronostico(5);
+  }).catch(function(){
+    showPanel('pron:'+loc.id,
+      '<div style="color:#999;font-size:13px;line-height:1.7;">⚠ No se pudo obtener el pronóstico para esta ubicación.</div>',
+      '🔮 '+loc.name);
+  });
+}
+
+function valModelo(daily,campo,modelo,i){
+  var arr=daily[campo+'_'+modelo];
+  if(!arr) return null;
+  var v=arr[i];
+  return (v===undefined)?null:v;
+}
+
+function renderPronostico(numDias){
+  if(!pronData) return;
+  var loc=pronData.loc,sub=pronData.sub,daily=pronData.daily;
+  var tiempos=daily.time||[];
+  var n=Math.min(numDias,tiempos.length);
+
+  var filas='';
+  for(var i=0;i<n;i++){
+    var wx=wxInfo(valModelo(daily,'weather_code',MODELOS_PRON[0].id,i));
+    filas+='<div style="background:#f8f8f8;border-radius:8px;padding:8px 10px;margin-bottom:6px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+      +'<span style="font-weight:700;font-size:12px;color:#2c3e50;text-transform:capitalize;">'+fmtDiaCorto(tiempos[i])+'</span>'
+      +'<span style="font-size:17px;">'+wx.ic+'</span>'
+      +'</div>'
+      +'<table style="width:100%;font-size:10.5px;border-collapse:collapse;">'
+      +'<tr style="background:#dce8f5;"><td style="padding:2px 4px;font-weight:bold;">Modelo</td>'
+      +'<td style="padding:2px 4px;text-align:center;font-weight:bold;">Máx/Mín</td>'
+      +'<td style="padding:2px 4px;text-align:center;font-weight:bold;">Lluvia</td></tr>'
+      +MODELOS_PRON.map(function(m,mi){
+        var tmax=valModelo(daily,'temperature_2m_max',m.id,i);
+        var tmin=valModelo(daily,'temperature_2m_min',m.id,i);
+        var pr=valModelo(daily,'precipitation_sum',m.id,i);
+        var pp=valModelo(daily,'precipitation_probability_max',m.id,i);
+        var tTxt=(tmax!=null&&tmin!=null)?(Math.round(tmax)+'°/'+Math.round(tmin)+'°'):'—';
+        var lTxt=(pr!=null)?((pp!=null?pp+'% · ':'')+pr.toFixed(1)+'mm'):'—';
+        return '<tr'+(mi%2?' style="background:#f5f5f5;"':'')+'>'
+          +'<td style="padding:2px 4px;">'+(m.estrella?'⭐ ':'')+m.nombre+'</td>'
+          +'<td style="text-align:center;padding:2px 4px;font-weight:700;">'+tTxt+'</td>'
+          +'<td style="text-align:center;padding:2px 4px;">'+lTxt+'</td></tr>';
+      }).join('')
+      +'</table></div>';
+  }
+
+  var html='<div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:2px;">📍 '+loc.name+'</div>'
+    +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+(sub||'')+'</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:10px;">'
+    +'<button type="button" class="fc-tab'+(numDias===5?' active':'')+'" onclick="renderPronostico(5)">📅 4-5 días</button>'
+    +'<button type="button" class="fc-tab'+(numDias===16?' active':'')+'" onclick="renderPronostico(16)">📆 16 días</button>'
+    +'</div>'
+    +'<div style="background:#f0f7ff;border-left:3px solid #3498db;border-radius:4px;padding:8px 10px;font-size:10.5px;color:#444;margin-bottom:10px;line-height:1.5;">'
+    +'⭐ <b style="color:#2c3e50;">ECMWF (IFS-HRES)</b> se toma como referencia — el de mayor precisión global según verificaciones independientes — comparado con ICON (DWD), GFS (NOAA) y AROME/ARPEGE (Météo-France). '
+    +(numDias>7?'Más allá de 4-7 días solo ECMWF y GFS ofrecen datos; ICON y AROME tienen alcance corto.':'')
+    +'</div>'
+    +filas
+    +'<div style="font-size:10px;color:#6b7280;margin-top:6px;">Fuente: Open-Meteo (datos abiertos ECMWF/DWD/NOAA/Météo-France)</div>';
+
+  showPanel('pron:'+loc.id,html,'🔮 '+loc.name);
 }
 
 // Mostrar aviso de días si procede
@@ -1760,6 +1932,34 @@ HTML_BASE = """<!DOCTYPE html>
     .ps-sub{display:none;padding-left:4px}
     .ps-sub.open{display:block}
 
+    /* Buscador de población (pronóstico) */
+    #buscador-wrap{position:relative;flex:1;min-width:130px;max-width:230px}
+    #buscador-input{
+      width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
+      border-radius:8px;color:#e6edf3;font-size:.8rem;padding:7px 10px;outline:none;
+      font-family:inherit;
+    }
+    #buscador-input::placeholder{color:#6e7f9a}
+    #buscador-input:focus{border-color:rgba(59,130,246,.55)}
+    #buscador-resultados{
+      display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;min-width:240px;
+      background:#1c2433;border:1px solid rgba(255,255,255,0.13);border-radius:10px;
+      box-shadow:0 8px 28px rgba(0,0,0,.5);padding:4px;z-index:2000;max-height:260px;overflow-y:auto;
+    }
+    #buscador-resultados.open{display:block}
+    .br-item{padding:8px 10px;border-radius:6px;font-size:.78rem;color:#e6edf3;cursor:pointer}
+    .br-item:hover{background:rgba(255,255,255,0.08)}
+    .br-item small{display:block;color:#6e7f9a;font-size:.68rem;margin-top:1px}
+    .br-empty{padding:8px 10px;font-size:.76rem;color:#6e7f9a}
+
+    /* Pestañas de plazo en el panel de pronóstico */
+    .fc-tab{
+      background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+      border-radius:7px;color:#9aa7bd;font-size:.72rem;font-weight:700;padding:6px 10px;
+      cursor:pointer;font-family:inherit;
+    }
+    .fc-tab.active{background:rgba(59,130,246,.85);border-color:transparent;color:#fff}
+
     /* ── Máquina del tiempo (formato tipo radarspain.es) ───────── */
     #tm-bar{
       position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:999;
@@ -1960,6 +2160,7 @@ HTML_BASE = """<!DOCTYPE html>
     @media(max-width:600px){
       #topbar{top:6px;left:6px;right:6px;border-radius:12px;gap:7px;padding:8px 12px}
       .sep{display:none}
+      #buscador-wrap{max-width:none;width:100%;order:5}
       #dp{top:auto;right:6px;left:6px;bottom:150px;width:auto;max-height:44vh;border-radius:12px}
       #aviso-dias{top:70px}
       .legend{max-width:130px!important;font-size:.68rem!important}
@@ -2007,6 +2208,11 @@ HTML_BASE = """<!DOCTYPE html>
       <option value="oidio">🍇 Riesgo Oídio</option>
       <option value="mildiu">🍃 Riesgo Mildiu</option>
     </select>
+  </div>
+  <div class="sep"></div>
+  <div id="buscador-wrap">
+    <input type="text" id="buscador-input" placeholder="🔍 Buscar población…" autocomplete="off">
+    <div id="buscador-resultados"></div>
   </div>
   <div class="sep"></div>
   <div id="ctrl-radar">
@@ -2059,7 +2265,7 @@ HTML_BASE = """<!DOCTYPE html>
 <!-- Panel lateral de estación -->
 <div id="dp">
   <div id="dh">
-    <span>Detalle de estación</span>
+    <span id="dh-title">Detalle de estación</span>
     <button id="cp" onclick="hidePanel()">✕</button>
   </div>
   <div id="dc">
