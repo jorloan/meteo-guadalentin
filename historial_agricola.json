@@ -14310,7 +14310,7 @@
       "tempMax": 25.5,
       "tempMin": 19.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1820,
+      "humedadAltaMinutos": 1840,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -14366,7 +14366,7 @@
       "tempMax": 29.3,
       "tempMin": 23.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2110,
+      "humedadAltaMinutos": 2130,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -14619,7 +14619,7 @@
       "lon": -1.600633
     },
     "IMULA41": {
-      "tempMax": 38.2,
+      "tempMax": 38.4,
       "tempMin": 18.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -14822,7 +14822,7 @@
       "tempMax": 32.3,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1955,
+      "humedadAltaMinutos": 1975,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -14883,7 +14883,7 @@
       "lon": -0.967
     },
     "ILOSAL11": {
-      "tempMax": 32.0,
+      "tempMax": 32.2,
       "tempMin": 23.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1445,
@@ -15222,7 +15222,7 @@
       "tempMax": 28.8,
       "tempMin": 23.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1940,
+      "humedadAltaMinutos": 1960,
       "lat": 37.925304,
       "lon": -0.734509
     },
