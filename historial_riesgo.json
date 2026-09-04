@@ -59584,7 +59584,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 36,
-      "dsv_7d": 34,
+      "dsv_7d": 35,
       "lat": 37.979,
       "lon": -0.683,
       "datos_ok": true,
@@ -59990,6 +59990,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 7d"
     },
+    "IMURCI133": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 45,
+      "dsv_7d": 18,
+      "lat": 37.950335,
+      "lon": -1.239743,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 7d"
+    },
     "IMURCI90": {
       "oidio": 2,
       "mildiu": 1,
@@ -60134,7 +60144,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 40,
-      "dsv_7d": 20,
+      "dsv_7d": 19,
       "lat": 37.717,
       "lon": -2.642,
       "datos_ok": true,
