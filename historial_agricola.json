@@ -14310,7 +14310,7 @@
       "tempMax": 25.5,
       "tempMin": 19.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1904,
+      "humedadAltaMinutos": 1919,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -14366,7 +14366,7 @@
       "tempMax": 29.3,
       "tempMin": 23.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2194,
+      "humedadAltaMinutos": 2209,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -14822,7 +14822,7 @@
       "tempMax": 32.3,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2039,
+      "humedadAltaMinutos": 2054,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -14987,7 +14987,7 @@
       "lon": -2.429414
     },
     "IBAZA18": {
-      "tempMax": 39.2,
+      "tempMax": 39.5,
       "tempMin": 20.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15222,7 +15222,7 @@
       "tempMax": 28.8,
       "tempMin": 23.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2024,
+      "humedadAltaMinutos": 2039,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -15411,7 +15411,7 @@
       "lon": -1.067067
     },
     "IALMAN23": {
-      "tempMax": 40.1,
+      "tempMax": 40.5,
       "tempMin": 16.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1220,
