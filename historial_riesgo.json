@@ -58664,7 +58664,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 214,
-      "dsv_7d": 27,
+      "dsv_7d": 30,
       "lat": 37.771905,
       "lon": -1.575828,
       "datos_ok": true,
@@ -58677,6 +58677,16 @@
       "dsv_7d": 24,
       "lat": 37.798803,
       "lon": -1.592444,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 216,
+      "dsv_7d": 21,
+      "lat": 37.844378,
+      "lon": -1.428541,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
