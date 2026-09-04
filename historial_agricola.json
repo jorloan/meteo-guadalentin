@@ -14310,7 +14310,7 @@
       "tempMax": 25.5,
       "tempMin": 19.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1855,
+      "humedadAltaMinutos": 1870,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -14366,7 +14366,7 @@
       "tempMax": 29.3,
       "tempMin": 23.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2145,
+      "humedadAltaMinutos": 2160,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -14822,7 +14822,7 @@
       "tempMax": 32.3,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1990,
+      "humedadAltaMinutos": 2005,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -15083,7 +15083,7 @@
       "lon": -1.096675
     },
     "IBENID10": {
-      "tempMax": 28.9,
+      "tempMax": 29.1,
       "tempMin": 24.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 829,
@@ -15222,7 +15222,7 @@
       "tempMax": 28.8,
       "tempMin": 23.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1975,
+      "humedadAltaMinutos": 1990,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -15451,7 +15451,7 @@
       "lon": -1.696521
     },
     "ICHINC62": {
-      "tempMax": 40.5,
+      "tempMax": 41.1,
       "tempMin": 16.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 834,
