@@ -60030,16 +60030,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 7d"
     },
-    "IELCAM22": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 38,
-      "dsv_7d": 17,
-      "lat": 38.458438,
-      "lon": -0.343408,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 7d"
-    },
     "ITURRE10": {
       "oidio": 2,
       "mildiu": 1,
