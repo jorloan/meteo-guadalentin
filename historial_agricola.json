@@ -14310,7 +14310,7 @@
       "tempMax": 25.5,
       "tempMin": 19.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1954,
+      "humedadAltaMinutos": 1969,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -14366,7 +14366,7 @@
       "tempMax": 29.3,
       "tempMin": 23.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2244,
+      "humedadAltaMinutos": 2259,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -14822,7 +14822,7 @@
       "tempMax": 32.3,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2089,
+      "humedadAltaMinutos": 2104,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -14995,7 +14995,7 @@
       "lon": -2.772
     },
     "IANDALUC159": {
-      "tempMax": 28.5,
+      "tempMax": 28.6,
       "tempMin": 25.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1630,
@@ -15222,7 +15222,7 @@
       "tempMax": 28.8,
       "tempMin": 23.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2074,
+      "humedadAltaMinutos": 2089,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -15235,7 +15235,7 @@
       "lon": -1.411124
     },
     "ICARTA137": {
-      "tempMax": 31.7,
+      "tempMax": 31.9,
       "tempMin": 23.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1279,
