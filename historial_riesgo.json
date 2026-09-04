@@ -58680,16 +58680,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "IALHAM23": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 216,
-      "dsv_7d": 21,
-      "lat": 37.844378,
-      "lon": -1.428541,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -59960,6 +59950,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 7d"
     },
+    "IJUMIL9": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 48,
+      "dsv_7d": 27,
+      "lat": 38.497562,
+      "lon": -1.359164,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 7d"
+    },
     "IMURCI90": {
       "oidio": 2,
       "mildiu": 1,
@@ -60062,7 +60062,7 @@
     },
     "IORCE4": {
       "oidio": 2,
-      "mildiu": 2,
+      "mildiu": 3,
       "dsv_temporada": 40,
       "dsv_7d": 20,
       "lat": 37.728014,
@@ -60154,7 +60154,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 25,
-      "dsv_7d": 31,
+      "dsv_7d": 30,
       "lat": 38.867105,
       "lon": -1.199184,
       "datos_ok": true,
