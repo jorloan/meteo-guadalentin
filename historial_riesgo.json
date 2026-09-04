@@ -58814,7 +58814,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 198,
-      "dsv_7d": 27,
+      "dsv_7d": 25,
       "lat": 37.663808,
       "lon": -1.666574,
       "datos_ok": true,
@@ -58864,7 +58864,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 163,
-      "dsv_7d": 27,
+      "dsv_7d": 26,
       "lat": 37.664547,
       "lon": -1.884168,
       "datos_ok": true,
@@ -59760,6 +59760,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 7d"
     },
+    "IELCAM27": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 38,
+      "dsv_7d": 16,
+      "lat": 38.426564,
+      "lon": -0.398083,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 7d"
+    },
     "ISORBA26": {
       "oidio": 1,
       "mildiu": 1,
@@ -59824,7 +59834,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 50,
-      "dsv_7d": 26,
+      "dsv_7d": 25,
       "lat": 37.799712,
       "lon": -1.704669,
       "datos_ok": true,
