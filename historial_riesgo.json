@@ -59992,7 +59992,7 @@
     },
     "IELCHE140": {
       "oidio": 1,
-      "mildiu": 2,
+      "mildiu": 3,
       "dsv_temporada": 24,
       "dsv_7d": 14,
       "lat": 38.180948,
@@ -60024,7 +60024,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 38,
-      "dsv_7d": 30,
+      "dsv_7d": 31,
       "lat": 38.384,
       "lon": -0.426,
       "datos_ok": true,
