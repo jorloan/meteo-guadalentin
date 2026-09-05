@@ -15139,7 +15139,7 @@
       "lon": -1.501555
     },
     "ITOTAN28": {
-      "tempMax": 33.9,
+      "tempMax": 34.1,
       "tempMin": 17.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15299,10 +15299,10 @@
       "lon": -0.795
     },
     "ICARTA80": {
-      "tempMax": 29.3,
+      "tempMax": 29.5,
       "tempMin": 25.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2482,
+      "humedadAltaMinutos": 2497,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15459,7 +15459,7 @@
       "lon": -1.091008
     },
     "IALBAC26": {
-      "tempMax": 35.6,
+      "tempMax": 35.7,
       "tempMin": 20.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15622,7 +15622,7 @@
       "tempMax": 32.3,
       "tempMin": 24.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1740,
+      "humedadAltaMinutos": 1755,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -15763,7 +15763,7 @@
       "lon": -2.478
     },
     "ICASTI105": {
-      "tempMax": 34.9,
+      "tempMax": 35.2,
       "tempMin": 17.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
