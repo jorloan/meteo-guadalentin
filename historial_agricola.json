@@ -14963,7 +14963,7 @@
       "lon": -1.335361
     },
     "IMULA10": {
-      "tempMax": 35.1,
+      "tempMax": 35.2,
       "tempMin": 16.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1155,
@@ -15299,10 +15299,10 @@
       "lon": -0.795
     },
     "ICARTA80": {
-      "tempMax": 29.5,
+      "tempMax": 29.6,
       "tempMin": 25.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2497,
+      "humedadAltaMinutos": 2517,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15459,7 +15459,7 @@
       "lon": -1.091008
     },
     "IALBAC26": {
-      "tempMax": 35.7,
+      "tempMax": 35.9,
       "tempMin": 20.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15523,7 +15523,7 @@
       "lon": -2.699
     },
     "IPLIEG1": {
-      "tempMax": 39.1,
+      "tempMax": 39.3,
       "tempMin": 20.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1139,
@@ -15539,7 +15539,7 @@
       "lon": -1.796271
     },
     "ILORCA65": {
-      "tempMax": 38.8,
+      "tempMax": 39.3,
       "tempMin": 20.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 69,
@@ -15622,7 +15622,7 @@
       "tempMax": 32.3,
       "tempMin": 24.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1755,
+      "humedadAltaMinutos": 1775,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -15827,7 +15827,7 @@
       "lon": -1.461022
     },
     "ICHINC55": {
-      "tempMax": 35.3,
+      "tempMax": 35.5,
       "tempMin": 21.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
