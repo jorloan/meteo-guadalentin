@@ -14702,7 +14702,7 @@
       "tempMax": 25.2,
       "tempMin": 12.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1440,
+      "humedadAltaMinutos": 1455,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -15302,7 +15302,7 @@
       "tempMax": 29.7,
       "tempMin": 25.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 3083,
+      "humedadAltaMinutos": 3098,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15334,7 +15334,7 @@
       "tempMax": 31.7,
       "tempMin": 23.3,
       "precipTotal": 1.52,
-      "humedadAltaMinutos": 1440,
+      "humedadAltaMinutos": 1455,
       "lat": 38.195,
       "lon": -0.556
     },
@@ -15398,7 +15398,7 @@
       "tempMax": 34.2,
       "tempMin": 19.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1549,
+      "humedadAltaMinutos": 1564,
       "lat": 37.136125,
       "lon": -1.991059
     },
@@ -15694,7 +15694,7 @@
       "tempMax": 34.2,
       "tempMin": 21.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1521,
+      "humedadAltaMinutos": 1536,
       "lat": 38.384,
       "lon": -0.426
     },
@@ -15702,7 +15702,7 @@
       "tempMax": 34.0,
       "tempMin": 21.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1841,
+      "humedadAltaMinutos": 1856,
       "lat": 37.161,
       "lon": -1.887
     },
@@ -15844,7 +15844,7 @@
     },
     "ILORCA43": {
       "tempMax": 33.5,
-      "tempMin": 21.4,
+      "tempMin": 21.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.926816,
