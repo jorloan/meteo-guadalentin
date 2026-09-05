@@ -60382,6 +60382,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ILORCA12": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 101,
+      "dsv_7d": 24,
+      "lat": 37.663757,
+      "lon": -1.66655,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 1d + WU vecinos 13d"
+    },
     "ILORCA123": {
       "oidio": 3,
       "mildiu": 1,
