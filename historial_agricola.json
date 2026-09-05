@@ -14979,7 +14979,7 @@
       "lon": -1.450125
     },
     "IMULA25": {
-      "tempMax": 36.0,
+      "tempMax": 36.1,
       "tempMin": 18.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -14987,7 +14987,7 @@
       "lon": -1.533938
     },
     "IMULA34": {
-      "tempMax": 35.4,
+      "tempMax": 35.6,
       "tempMin": 19.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 847,
@@ -14995,7 +14995,7 @@
       "lon": -1.592649
     },
     "IMULA40": {
-      "tempMax": 36.0,
+      "tempMax": 36.5,
       "tempMin": 18.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 965,
@@ -15011,7 +15011,7 @@
       "lon": -1.597045
     },
     "IMULA49": {
-      "tempMax": 34.7,
+      "tempMax": 34.8,
       "tempMin": 19.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 446,
@@ -15035,7 +15035,7 @@
       "lon": -1.802364
     },
     "IPUERT79": {
-      "tempMax": 37.0,
+      "tempMax": 37.2,
       "tempMin": 20.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15219,7 +15219,7 @@
       "lon": -0.935908
     },
     "IJUMIL46": {
-      "tempMax": 35.6,
+      "tempMax": 35.9,
       "tempMin": 17.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 764,
@@ -15302,7 +15302,7 @@
       "tempMax": 28.3,
       "tempMin": 25.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2417,
+      "humedadAltaMinutos": 2437,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15523,7 +15523,7 @@
       "lon": -2.699
     },
     "IPLIEG1": {
-      "tempMax": 38.5,
+      "tempMax": 38.8,
       "tempMin": 20.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1139,
@@ -15622,7 +15622,7 @@
       "tempMax": 32.3,
       "tempMin": 24.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1675,
+      "humedadAltaMinutos": 1695,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -15803,7 +15803,7 @@
       "lon": -1.067067
     },
     "IALMAN23": {
-      "tempMax": 36.3,
+      "tempMax": 36.6,
       "tempMin": 14.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1092,
