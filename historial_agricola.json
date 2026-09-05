@@ -14691,7 +14691,7 @@
       "lon": -1.591535
     },
     "ILORCA104": {
-      "tempMax": 35.1,
+      "tempMax": 35.3,
       "tempMin": 19.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -14827,7 +14827,7 @@
       "lon": -1.658853
     },
     "ILORCA69": {
-      "tempMax": 34.0,
+      "tempMax": 34.4,
       "tempMin": 18.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -14867,7 +14867,7 @@
       "lon": -1.952237
     },
     "ILORCA89": {
-      "tempMax": 35.1,
+      "tempMax": 35.8,
       "tempMin": 18.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15035,7 +15035,7 @@
       "lon": -1.802364
     },
     "IPUERT79": {
-      "tempMax": 36.1,
+      "tempMax": 36.6,
       "tempMin": 20.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15043,7 +15043,7 @@
       "lon": -1.79346
     },
     "IREGINDE92": {
-      "tempMax": 35.2,
+      "tempMax": 35.3,
       "tempMin": 19.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15075,7 +15075,7 @@
       "lon": -1.533232
     },
     "ITOTAN9": {
-      "tempMax": 35.7,
+      "tempMax": 35.8,
       "tempMin": 20.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1109,
@@ -15302,7 +15302,7 @@
       "tempMax": 28.3,
       "tempMin": 25.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2352,
+      "humedadAltaMinutos": 2367,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15427,7 +15427,7 @@
       "lon": -1.766
     },
     "IORIA20": {
-      "tempMax": 29.1,
+      "tempMax": 29.5,
       "tempMin": 20.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15622,7 +15622,7 @@
       "tempMax": 32.3,
       "tempMin": 24.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1610,
+      "humedadAltaMinutos": 1625,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -15779,7 +15779,7 @@
       "lon": -2.767517
     },
     "IYECLA87": {
-      "tempMax": 35.4,
+      "tempMax": 36.2,
       "tempMin": 16.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 594,
