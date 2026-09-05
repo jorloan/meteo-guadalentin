@@ -61768,7 +61768,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 220,
-      "dsv_7d": 21,
+      "dsv_7d": 22,
       "lat": 37.844378,
       "lon": -1.428541,
       "datos_ok": true,
@@ -62748,7 +62748,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 73,
-      "dsv_7d": 33,
+      "dsv_7d": 34,
       "lat": 37.136125,
       "lon": -1.991059,
       "datos_ok": true,
@@ -63174,6 +63174,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 9d"
     },
+    "IORIA26": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 36,
+      "dsv_7d": 20,
+      "lat": 37.537293,
+      "lon": -2.317244,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 9d"
+    },
     "IORCE1": {
       "oidio": 2,
       "mildiu": 1,
@@ -63228,7 +63238,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 49,
-      "dsv_7d": 25,
+      "dsv_7d": 24,
       "lat": 38.767154,
       "lon": -1.067067,
       "datos_ok": true,
