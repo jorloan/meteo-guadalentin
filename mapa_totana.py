@@ -1064,7 +1064,7 @@ var COL_MODELO={
   ecmwf_ifs025:'#3b82f6', icon_seamless:'#f59e0b',
   gfs_seamless:'#10b981', meteofrance_seamless:'#ef4444'
 };
-var searchMarker=null,pronData=null;
+var pronData=null;
 
 function wxInfo(code){
   if(code==null) return {ic:'❓'};
@@ -1096,8 +1096,24 @@ function debounce(fn,ms){
   };
 }
 
-var buscadorInput=document.getElementById('buscador-input');
-var buscadorRes=document.getElementById('buscador-resultados');
+// ── Pantalla completa de pronóstico ─────────────────────────
+// Separada del mapa de datos climáticos: aquí vive el buscador de
+// población y toda la comparativa de modelos, a pantalla completa
+// para poder seguir añadiendo información sin pelear por espacio
+// con el panel lateral de 300px.
+function mostrarVistaPronostico(){
+  document.getElementById('vp').classList.add('open');
+  setTimeout(function(){
+    var i=document.getElementById('vp-buscador-input');
+    if(i) i.focus();
+  },50);
+}
+function mostrarVistaMapa(){
+  document.getElementById('vp').classList.remove('open');
+}
+
+var buscadorInput=document.getElementById('vp-buscador-input');
+var buscadorRes=document.getElementById('vp-buscador-resultados');
 
 var ejecutarBusqueda=debounce(function(q){
   if(!q||q.trim().length<2){buscadorRes.classList.remove('open');buscadorRes.innerHTML='';return;}
@@ -1134,20 +1150,15 @@ if(buscadorInput){
   });
 }
 
+function pintarVistaPronostico(html){
+  document.getElementById('vp-contenido').innerHTML='<div id="vp-inner">'+html+'</div>';
+}
+
 function seleccionarPoblacion(loc){
   buscadorRes.classList.remove('open');
   buscadorInput.value=loc.name;
-  if(searchMarker) map.removeLayer(searchMarker);
-  searchMarker=L.marker([loc.latitude,loc.longitude],{icon:L.divIcon({
-    className:'',
-    html:'<div style="background:#e6474c;border:2px solid #fff;border-radius:50% 50% 50% 0;width:22px;height:22px;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>',
-    iconSize:[22,22],iconAnchor:[11,22]
-  })}).addTo(map);
-  map.flyTo([loc.latitude,loc.longitude],11);
   var sub=[loc.admin2,loc.admin1,loc.country].filter(Boolean).join(', ');
-  showPanel('pron:'+loc.id,
-    '<div style="text-align:center;padding:30px 10px;color:#6b7280;font-size:12px;">⏳ Cargando pronóstico…</div>',
-    '🔮 '+loc.name);
+  pintarVistaPronostico('<div style="text-align:center;padding:60px 10px;color:#6b7280;font-size:13px;">⏳ Cargando pronóstico…</div>');
   cargarPronostico(loc,sub);
 }
 
@@ -1161,9 +1172,7 @@ function cargarPronostico(loc,sub){
     pronData={loc:loc,sub:sub,daily:d.daily};
     renderPronostico(5);
   }).catch(function(){
-    showPanel('pron:'+loc.id,
-      '<div style="color:#999;font-size:13px;line-height:1.7;">⚠ No se pudo obtener el pronóstico para esta ubicación.</div>',
-      '🔮 '+loc.name);
+    pintarVistaPronostico('<div style="text-align:center;color:#999;font-size:13px;line-height:1.7;padding:60px 10px;">⚠ No se pudo obtener el pronóstico para esta ubicación.</div>');
   });
 }
 
@@ -1279,15 +1288,15 @@ function renderPronostico(numDias){
   var filas='';
   for(var i=0;i<n;i++){
     var wx=wxInfo(valModelo(daily,'weather_code',MODELOS_PRON[0].id,i));
-    filas+='<div style="background:#f8f8f8;border-radius:8px;padding:8px 10px;margin-bottom:6px;">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
-      +'<span style="font-weight:700;font-size:12px;color:#2c3e50;text-transform:capitalize;">'+fmtDiaCorto(tiempos[i])+'</span>'
-      +'<span style="font-size:17px;">'+wx.ic+'</span>'
+    filas+='<div style="background:#f8f8f8;border-radius:10px;padding:12px 14px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+      +'<span style="font-weight:700;font-size:14px;color:#2c3e50;text-transform:capitalize;">'+fmtDiaCorto(tiempos[i])+'</span>'
+      +'<span style="font-size:22px;">'+wx.ic+'</span>'
       +'</div>'
-      +'<table style="width:100%;font-size:10.5px;border-collapse:collapse;">'
-      +'<tr style="background:#dce8f5;"><td style="padding:2px 4px;font-weight:bold;">Modelo</td>'
-      +'<td style="padding:2px 4px;text-align:center;font-weight:bold;">Máx/Mín</td>'
-      +'<td style="padding:2px 4px;text-align:center;font-weight:bold;">Lluvia</td></tr>'
+      +'<table style="width:100%;font-size:12px;border-collapse:collapse;">'
+      +'<tr style="background:#dce8f5;"><td style="padding:3px 5px;font-weight:bold;">Modelo</td>'
+      +'<td style="padding:3px 5px;text-align:center;font-weight:bold;">Máx/Mín</td>'
+      +'<td style="padding:3px 5px;text-align:center;font-weight:bold;">Lluvia</td></tr>'
       +MODELOS_PRON.map(function(m,mi){
         var tmax=valModelo(daily,'temperature_2m_max',m.id,i);
         var tmin=valModelo(daily,'temperature_2m_min',m.id,i);
@@ -1296,29 +1305,33 @@ function renderPronostico(numDias){
         var tTxt=(tmax!=null&&tmin!=null)?(Math.round(tmax)+'°/'+Math.round(tmin)+'°'):'—';
         var lTxt=(pr!=null)?((pp!=null?pp+'% · ':'')+pr.toFixed(1)+'mm'):'—';
         return '<tr'+(mi%2?' style="background:#f5f5f5;"':'')+'>'
-          +'<td style="padding:2px 4px;">'+(m.estrella?'⭐ ':'')+m.nombre+'</td>'
-          +'<td style="text-align:center;padding:2px 4px;font-weight:700;">'+tTxt+'</td>'
-          +'<td style="text-align:center;padding:2px 4px;">'+lTxt+'</td></tr>';
+          +'<td style="padding:3px 5px;">'+(m.estrella?'⭐ ':'')+m.nombre+'</td>'
+          +'<td style="text-align:center;padding:3px 5px;font-weight:700;">'+tTxt+'</td>'
+          +'<td style="text-align:center;padding:3px 5px;">'+lTxt+'</td></tr>';
       }).join('')
       +'</table></div>';
   }
 
-  var html='<div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:2px;">📍 '+loc.name+'</div>'
-    +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+(sub||'')+'</div>'
-    +'<div style="display:flex;gap:6px;margin-bottom:10px;">'
+  var html='<div style="font-size:24px;font-weight:700;color:#f1f5f9;margin-bottom:2px;">📍 '+loc.name+'</div>'
+    +'<div style="font-size:13px;color:#6b7280;margin-bottom:16px;">'+(sub||'')+'</div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:14px;">'
     +'<button type="button" class="fc-tab'+(numDias===5?' active':'')+'" onclick="renderPronostico(5)">📅 4-5 días</button>'
     +'<button type="button" class="fc-tab'+(numDias===16?' active':'')+'" onclick="renderPronostico(16)">📆 16 días</button>'
     +'</div>'
-    +'<div style="background:#f0f7ff;border-left:3px solid #3498db;border-radius:4px;padding:8px 10px;font-size:10.5px;color:#444;margin-bottom:10px;line-height:1.5;">'
+    +'<div style="background:#f0f7ff;border-left:3px solid #3498db;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#444;margin-bottom:16px;line-height:1.6;">'
     +'⭐ <b style="color:#2c3e50;">ECMWF (IFS-HRES)</b> se toma como referencia — el de mayor precisión global según verificaciones independientes — comparado con ICON (DWD), GFS (NOAA) y AROME/ARPEGE (Météo-France). '
     +(numDias>7?'Más allá de 4-7 días solo ECMWF y GFS ofrecen datos; ICON y AROME tienen alcance corto.':'')
     +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:16px;">'
     +construirGraficoTemp(daily,tiempos,n)
     +construirGraficoLluvia(daily,tiempos,n)
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">'
     +filas
-    +'<div style="font-size:10px;color:#6b7280;margin-top:6px;">Fuente: Open-Meteo (datos abiertos ECMWF/DWD/NOAA/Météo-France)</div>';
+    +'</div>'
+    +'<div style="font-size:11px;color:#6b7280;margin-top:16px;">Fuente: Open-Meteo (datos abiertos ECMWF/DWD/NOAA/Météo-France)</div>';
 
-  showPanel('pron:'+loc.id,html,'🔮 '+loc.name);
+  pintarVistaPronostico(html);
 }
 
 // Mostrar aviso de días si procede
@@ -2034,33 +2047,74 @@ HTML_BASE = """<!DOCTYPE html>
     .ps-sub{display:none;padding-left:4px}
     .ps-sub.open{display:block}
 
-    /* Buscador de población (pronóstico) */
-    #buscador-wrap{position:relative;flex:1;min-width:130px;max-width:230px}
-    #buscador-input{
-      width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
-      border-radius:8px;color:#e6edf3;font-size:.8rem;padding:7px 10px;outline:none;
-      font-family:inherit;
+    /* Botón de acceso a la pantalla de pronóstico */
+    #btn-pronostico{
+      background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.4);
+      border-radius:8px;color:#93c5fd;font-size:.8rem;font-weight:700;padding:7px 12px;
+      cursor:pointer;font-family:inherit;flex-shrink:0;
     }
-    #buscador-input::placeholder{color:#6e7f9a}
-    #buscador-input:focus{border-color:rgba(59,130,246,.55)}
-    #buscador-resultados{
-      display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;min-width:240px;
-      background:#1c2433;border:1px solid rgba(255,255,255,0.13);border-radius:10px;
-      box-shadow:0 8px 28px rgba(0,0,0,.5);padding:4px;z-index:2000;max-height:260px;overflow-y:auto;
-    }
-    #buscador-resultados.open{display:block}
+    #btn-pronostico:hover{background:rgba(59,130,246,.3)}
+
+    /* Resultados del buscador de población (clases genéricas, reutilizadas en #vp) */
     .br-item{padding:8px 10px;border-radius:6px;font-size:.78rem;color:#e6edf3;cursor:pointer}
     .br-item:hover{background:rgba(255,255,255,0.08)}
     .br-item small{display:block;color:#6e7f9a;font-size:.68rem;margin-top:1px}
     .br-empty{padding:8px 10px;font-size:.76rem;color:#6e7f9a}
 
-    /* Pestañas de plazo en el panel de pronóstico */
+    /* Pestañas de plazo en el pronóstico */
     .fc-tab{
       background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
       border-radius:7px;color:#9aa7bd;font-size:.72rem;font-weight:700;padding:6px 10px;
       cursor:pointer;font-family:inherit;
     }
     .fc-tab.active{background:rgba(59,130,246,.85);border-color:transparent;color:#fff}
+
+    /* ── Pantalla completa de pronóstico ─────────────────────── */
+    #vp{
+      display:none;position:fixed;inset:0;z-index:3000;background:#0d1117;
+      flex-direction:column;
+    }
+    #vp.open{display:flex}
+    #vp-topbar{
+      display:flex;align-items:center;gap:14px;padding:12px 20px;flex-wrap:wrap;flex-shrink:0;
+      background:rgba(13,17,23,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-bottom:1px solid rgba(255,255,255,0.09);
+    }
+    #vp-logo{display:flex;flex-direction:column;line-height:1.15;flex-shrink:0;user-select:none}
+    #vp-logo .lm{font-size:.92rem;font-weight:800;letter-spacing:.5px;color:#fff}
+    #vp-logo .ls{font-size:.58rem;color:#6e7f9a;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+    #vp-buscador-wrap{position:relative;flex:1;max-width:420px;min-width:180px}
+    #vp-buscador-input{
+      width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
+      border-radius:9px;color:#e6edf3;font-size:.88rem;padding:9px 14px;outline:none;font-family:inherit;
+    }
+    #vp-buscador-input::placeholder{color:#6e7f9a}
+    #vp-buscador-input:focus{border-color:rgba(59,130,246,.55)}
+    #vp-buscador-resultados{
+      display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;
+      background:#1c2433;border:1px solid rgba(255,255,255,0.13);border-radius:10px;
+      box-shadow:0 8px 28px rgba(0,0,0,.5);padding:4px;z-index:3100;max-height:300px;overflow-y:auto;
+    }
+    #vp-buscador-resultados.open{display:block}
+    #vp-volver{
+      background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
+      border-radius:8px;color:#e6edf3;font-size:.8rem;font-weight:600;padding:8px 14px;
+      cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:auto;
+    }
+    #vp-volver:hover{background:rgba(255,255,255,0.15)}
+    #vp-contenido{flex:1;overflow-y:auto;padding:26px 20px 60px;}
+    #vp-contenido::-webkit-scrollbar{width:6px}
+    #vp-contenido::-webkit-scrollbar-track{background:transparent}
+    #vp-contenido::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:3px}
+    #vp-inner{max-width:980px;margin:0 auto}
+    #vp-vacio{
+      max-width:420px;margin:60px auto 0;text-align:center;color:#9aa7bd;font-size:.92rem;line-height:1.6;
+    }
+    @media(max-width:700px){
+      #vp-topbar{padding:10px 12px;gap:8px}
+      #vp-contenido{padding:16px 12px 50px}
+      #vp-volver{margin-left:0;order:3;width:100%}
+    }
 
     /* ── Máquina del tiempo (formato tipo radarspain.es) ───────── */
     #tm-bar{
@@ -2262,7 +2316,6 @@ HTML_BASE = """<!DOCTYPE html>
     @media(max-width:600px){
       #topbar{top:6px;left:6px;right:6px;border-radius:12px;gap:7px;padding:8px 12px}
       .sep{display:none}
-      #buscador-wrap{max-width:none;width:100%;order:5}
       #dp{top:auto;right:6px;left:6px;bottom:150px;width:auto;max-height:44vh;border-radius:12px}
       #aviso-dias{top:70px}
       .legend{max-width:130px!important;font-size:.68rem!important}
@@ -2312,10 +2365,7 @@ HTML_BASE = """<!DOCTYPE html>
     </select>
   </div>
   <div class="sep"></div>
-  <div id="buscador-wrap">
-    <input type="text" id="buscador-input" placeholder="🔍 Buscar población…" autocomplete="off">
-    <div id="buscador-resultados"></div>
-  </div>
+  <button type="button" id="btn-pronostico" onclick="mostrarVistaPronostico()">🔮 Pronóstico</button>
   <div class="sep"></div>
   <div id="ctrl-radar">
     <label><input type="checkbox" id="radar-chk"> 📡 Radar</label>
@@ -2374,6 +2424,27 @@ HTML_BASE = """<!DOCTYPE html>
     <p style="color:#475569;font-size:.8rem;line-height:1.7">
       Haz clic en una estación del mapa para ver sus datos aquí.
     </p>
+  </div>
+</div>
+
+<!-- Pantalla completa de pronóstico (independiente del mapa de datos climáticos) -->
+<div id="vp">
+  <div id="vp-topbar">
+    <div id="vp-logo">
+      <span class="lm">🔮 PRONÓSTICO</span>
+      <span class="ls">Guadalentín</span>
+    </div>
+    <div id="vp-buscador-wrap">
+      <input type="text" id="vp-buscador-input" placeholder="🔍 Buscar población…" autocomplete="off">
+      <div id="vp-buscador-resultados"></div>
+    </div>
+    <button type="button" id="vp-volver" onclick="mostrarVistaMapa()">← Mapa</button>
+  </div>
+  <div id="vp-contenido">
+    <div id="vp-vacio">
+      <div style="font-size:42px;margin-bottom:10px;">🔮</div>
+      <div>Busca una población para ver su pronóstico y comparar modelos.</div>
+    </div>
   </div>
 </div>
 
