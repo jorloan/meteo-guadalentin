@@ -2251,30 +2251,30 @@ HTML_BASE = """<!DOCTYPE html>
     #dc::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
 
     /* Overrides de contenido dinámico del panel para tema oscuro */
-    #dc [style*="color:#2c3e50"]{color:#f1f5f9!important}
-    #dc [style*="color:#555"]{color:#9ca3af!important}
-    #dc [style*="color:#666"]{color:#9ca3af!important}
-    #dc [style*="color:#888"]{color:#6b7280!important}
-    #dc [style*="color:#444"]{color:#cbd5e1!important}
-    #dc [style*="color:#aaa"]{color:#374151!important}
-    #dc [style*="color:#999"]{color:#4b5563!important}
-    #dc [style*="color:#1a5276"]{color:#93c5fd!important}
-    #dc [style*="color:#856404"]{color:#fbbf24!important}
-    #dc [style*="background:#f8f8f8"]{background:rgba(255,255,255,0.04)!important}
-    #dc [style*="background:#e0e0e0"]{background:rgba(255,255,255,0.13)!important}
-    #dc [style*="background:#e8f4fd"]{background:rgba(30,58,95,0.55)!important;border-color:rgba(59,130,246,.3)!important}
-    #dc [style*="background:#fef9e7"]{background:rgba(92,53,15,0.45)!important;border-color:rgba(251,191,36,.3)!important}
-    #dc [style*="background:#fff3cd"]{background:rgba(92,53,15,0.45)!important;border-color:rgba(251,191,36,.3)!important}
-    #dc [style*="background:#f0f7ff"]{background:rgba(30,58,95,0.38)!important;border-color:rgba(59,130,246,.22)!important}
-    #dc [style*="background:#f0fff4"]{background:rgba(5,46,22,0.45)!important;border-color:rgba(34,197,94,.22)!important}
-    #dc tr[style*="background:#dce8f5"]{background:rgba(59,130,246,0.11)!important}
-    #dc tr[style*="background:#c8f0d8"]{background:rgba(34,197,94,0.11)!important}
-    #dc tr[style*="background:#f5f5f5"]{background:rgba(255,255,255,0.03)!important}
-    #dc td[style*="background:#dce8f5"]{background:rgba(59,130,246,0.11)!important}
-    #dc hr{border-top-color:rgba(255,255,255,0.07)!important}
-    #dc a[href*="wunderground"]{background:#2563eb!important;border-radius:8px!important}
-    #dc [style*="border-left:3px solid #3498db"]{border-left-color:#3b82f6!important}
-    #dc [style*="border-left:3px solid #27ae60"]{border-left-color:#22c55e!important}
+    #dc [style*="color:#2c3e50"],#vp-inner [style*="color:#2c3e50"]{color:#f1f5f9!important}
+    #dc [style*="color:#555"],#vp-inner [style*="color:#555"]{color:#9ca3af!important}
+    #dc [style*="color:#666"],#vp-inner [style*="color:#666"]{color:#9ca3af!important}
+    #dc [style*="color:#888"],#vp-inner [style*="color:#888"]{color:#6b7280!important}
+    #dc [style*="color:#444"],#vp-inner [style*="color:#444"]{color:#cbd5e1!important}
+    #dc [style*="color:#aaa"],#vp-inner [style*="color:#aaa"]{color:#374151!important}
+    #dc [style*="color:#999"],#vp-inner [style*="color:#999"]{color:#4b5563!important}
+    #dc [style*="color:#1a5276"],#vp-inner [style*="color:#1a5276"]{color:#93c5fd!important}
+    #dc [style*="color:#856404"],#vp-inner [style*="color:#856404"]{color:#fbbf24!important}
+    #dc [style*="background:#f8f8f8"],#vp-inner [style*="background:#f8f8f8"]{background:rgba(255,255,255,0.04)!important}
+    #dc [style*="background:#e0e0e0"],#vp-inner [style*="background:#e0e0e0"]{background:rgba(255,255,255,0.13)!important}
+    #dc [style*="background:#e8f4fd"],#vp-inner [style*="background:#e8f4fd"]{background:rgba(30,58,95,0.55)!important;border-color:rgba(59,130,246,.3)!important}
+    #dc [style*="background:#fef9e7"],#vp-inner [style*="background:#fef9e7"]{background:rgba(92,53,15,0.45)!important;border-color:rgba(251,191,36,.3)!important}
+    #dc [style*="background:#fff3cd"],#vp-inner [style*="background:#fff3cd"]{background:rgba(92,53,15,0.45)!important;border-color:rgba(251,191,36,.3)!important}
+    #dc [style*="background:#f0f7ff"],#vp-inner [style*="background:#f0f7ff"]{background:rgba(30,58,95,0.38)!important;border-color:rgba(59,130,246,.22)!important}
+    #dc [style*="background:#f0fff4"],#vp-inner [style*="background:#f0fff4"]{background:rgba(5,46,22,0.45)!important;border-color:rgba(34,197,94,.22)!important}
+    #dc tr[style*="background:#dce8f5"],#vp-inner tr[style*="background:#dce8f5"]{background:rgba(59,130,246,0.11)!important}
+    #dc tr[style*="background:#c8f0d8"],#vp-inner tr[style*="background:#c8f0d8"]{background:rgba(34,197,94,0.11)!important}
+    #dc tr[style*="background:#f5f5f5"],#vp-inner tr[style*="background:#f5f5f5"]{background:rgba(255,255,255,0.03)!important}
+    #dc td[style*="background:#dce8f5"],#vp-inner td[style*="background:#dce8f5"]{background:rgba(59,130,246,0.11)!important}
+    #dc hr,#vp-inner hr{border-top-color:rgba(255,255,255,0.07)!important}
+    #dc a[href*="wunderground"],#vp-inner a[href*="wunderground"]{background:#2563eb!important;border-radius:8px!important}
+    #dc [style*="border-left:3px solid #3498db"],#vp-inner [style*="border-left:3px solid #3498db"]{border-left-color:#3b82f6!important}
+    #dc [style*="border-left:3px solid #27ae60"],#vp-inner [style*="border-left:3px solid #27ae60"]{border-left-color:#22c55e!important}
 
     /* Overrides de controles Leaflet para tema oscuro */
     .leaflet-control-layers{
