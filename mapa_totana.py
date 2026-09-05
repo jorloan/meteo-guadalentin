@@ -1060,6 +1060,10 @@ var MODELOS_PRON=[
   {id:'gfs_seamless',        nombre:'GFS',          estrella:false},
   {id:'meteofrance_seamless',nombre:'AROME/ARPEGE', estrella:false}
 ];
+var COL_MODELO={
+  ecmwf_ifs025:'#3b82f6', icon_seamless:'#f59e0b',
+  gfs_seamless:'#10b981', meteofrance_seamless:'#ef4444'
+};
 var searchMarker=null,pronData=null;
 
 function wxInfo(code){
@@ -1170,6 +1174,102 @@ function valModelo(daily,campo,modelo,i){
   return (v===undefined)?null:v;
 }
 
+// Etiqueta corta "5/9" a partir de la fecha, para el eje X de los gráficos
+function fmtEjeX(iso){ return fmtDiaCorto(iso).split(' ')[1]; }
+
+// Construye el <path> de una serie, cortando el trazo cuando faltan datos
+// (para que un modelo de corto alcance -p.ej. AROME- no dibuje una línea
+// recta hasta cero al acabarse sus días).
+function trazarSerie(daily,campo,modeloId,n,xAt,yAt){
+  var d='',enCurso=false;
+  for(var i=0;i<n;i++){
+    var v=valModelo(daily,campo,modeloId,i);
+    if(v==null){enCurso=false;continue;}
+    d+=(enCurso?'L':'M')+xAt(i).toFixed(1)+','+yAt(v).toFixed(1)+' ';
+    enCurso=true;
+  }
+  return d;
+}
+
+function construirGraficoTemp(daily,tiempos,n){
+  var W=272,H=140,mL=24,mR=6,mT=10,mB=16;
+  var pw=W-mL-mR,ph=H-mT-mB;
+
+  var vals=[];
+  MODELOS_PRON.forEach(function(m){
+    for(var i=0;i<n;i++){
+      var vx=valModelo(daily,'temperature_2m_max',m.id,i); if(vx!=null) vals.push(vx);
+      var vn=valModelo(daily,'temperature_2m_min',m.id,i); if(vn!=null) vals.push(vn);
+    }
+  });
+  if(!vals.length) return '';
+  var vMin=Math.min.apply(null,vals)-2,vMax=Math.max.apply(null,vals)+2;
+  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
+  function yAt(v){ return mT+ph-((v-vMin)/(vMax-vMin))*ph; }
+
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
+  [vMin,(vMin+vMax)/2,vMax].forEach(function(v){
+    var y=yAt(v);
+    svg+='<line x1="'+mL+'" y1="'+y.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(255,255,255,0.08)"/>';
+    svg+='<text x="1" y="'+(y+3).toFixed(1)+'" font-size="8" fill="#6e7f9a">'+Math.round(v)+'°</text>';
+  });
+  MODELOS_PRON.forEach(function(m){
+    var col=COL_MODELO[m.id];
+    var dMax=trazarSerie(daily,'temperature_2m_max',m.id,n,xAt,yAt);
+    if(dMax) svg+='<path d="'+dMax+'" fill="none" stroke="'+col+'" stroke-width="2"/>';
+    var dMin=trazarSerie(daily,'temperature_2m_min',m.id,n,xAt,yAt);
+    if(dMin) svg+='<path d="'+dMin+'" fill="none" stroke="'+col+'" stroke-width="1.2" stroke-dasharray="3,2" opacity="0.55"/>';
+  });
+  for(var i=0;i<n;i++){
+    var vRef=valModelo(daily,'temperature_2m_max',MODELOS_PRON[0].id,i);
+    if(vRef==null) continue;
+    svg+='<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(vRef).toFixed(1)+'" r="2.2" fill="'+COL_MODELO[MODELOS_PRON[0].id]+'"/>';
+  }
+  var paso=n>8?3:1;
+  for(var i=0;i<n;i+=paso){
+    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#6e7f9a" text-anchor="middle">'+fmtEjeX(tiempos[i])+'</text>';
+  }
+  svg+='</svg>';
+
+  var leyenda='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:2px;">'
+    +MODELOS_PRON.map(function(m){
+      return '<span style="font-size:9px;color:#9aa7bd;display:inline-flex;align-items:center;gap:3px;">'
+        +'<span style="width:8px;height:8px;border-radius:2px;background:'+COL_MODELO[m.id]+';display:inline-block;"></span>'+m.nombre+'</span>';
+    }).join('')
+    +'</div>';
+
+  return '<div style="background:#f8f8f8;border-radius:8px;padding:8px 6px 4px;margin-bottom:10px;">'
+    +'<div style="font-size:10px;color:#888;margin-bottom:2px;padding-left:4px;">🌡 Máx/mín por modelo (línea continua=máx, discontinua=mín)</div>'
+    +svg+leyenda+'</div>';
+}
+
+function construirGraficoLluvia(daily,tiempos,n){
+  var refId=MODELOS_PRON[0].id;
+  var vals=[];
+  for(var i=0;i<n;i++){ var v=valModelo(daily,'precipitation_sum',refId,i); vals.push(v==null?0:v); }
+  var vMax=Math.max(2,Math.max.apply(null,vals));
+  var W=272,H=64,mL=24,mR=6,mT=6,mB=16;
+  var pw=W-mL-mR,ph=H-mT-mB;
+  var bw=Math.max(3,(pw/n)*0.6);
+  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
+
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
+  svg+='<line x1="'+mL+'" y1="'+(mT+ph)+'" x2="'+(W-mR)+'" y2="'+(mT+ph)+'" stroke="rgba(255,255,255,0.12)"/>';
+  for(var i=0;i<n;i++){
+    var h=(vals[i]/vMax)*ph,x=xAt(i)-bw/2,y=mT+ph-h;
+    svg+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="1.5" fill="#3b82f6" opacity="'+(vals[i]>0?0.85:0.22)+'"/>';
+  }
+  var paso=n>8?3:1;
+  for(var i=0;i<n;i+=paso){
+    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#6e7f9a" text-anchor="middle">'+fmtEjeX(tiempos[i])+'</text>';
+  }
+  svg+='</svg>';
+
+  return '<div style="background:#f8f8f8;border-radius:8px;padding:8px 6px 4px;margin-bottom:10px;">'
+    +'<div style="font-size:10px;color:#888;margin-bottom:2px;padding-left:4px;">🌧 Lluvia prevista — ⭐ ECMWF (mm/día)</div>'
+    +svg+'</div>';
+}
+
 function renderPronostico(numDias){
   if(!pronData) return;
   var loc=pronData.loc,sub=pronData.sub,daily=pronData.daily;
@@ -1213,6 +1313,8 @@ function renderPronostico(numDias){
     +'⭐ <b style="color:#2c3e50;">ECMWF (IFS-HRES)</b> se toma como referencia — el de mayor precisión global según verificaciones independientes — comparado con ICON (DWD), GFS (NOAA) y AROME/ARPEGE (Météo-France). '
     +(numDias>7?'Más allá de 4-7 días solo ECMWF y GFS ofrecen datos; ICON y AROME tienen alcance corto.':'')
     +'</div>'
+    +construirGraficoTemp(daily,tiempos,n)
+    +construirGraficoLluvia(daily,tiempos,n)
     +filas
     +'<div style="font-size:10px;color:#6b7280;margin-top:6px;">Fuente: Open-Meteo (datos abiertos ECMWF/DWD/NOAA/Météo-France)</div>';
 
