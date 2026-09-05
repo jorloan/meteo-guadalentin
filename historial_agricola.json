@@ -14859,7 +14859,7 @@
       "lon": -1.94572
     },
     "ILORCA86": {
-      "tempMax": 31.7,
+      "tempMax": 32.1,
       "tempMin": 18.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15011,7 +15011,7 @@
       "lon": -1.597045
     },
     "IMULA49": {
-      "tempMax": 35.1,
+      "tempMax": 35.2,
       "tempMin": 19.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 446,
@@ -15475,7 +15475,7 @@
       "lon": -1.096675
     },
     "IBENID10": {
-      "tempMax": 30.1,
+      "tempMax": 30.8,
       "tempMin": 23.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1240,
@@ -15539,7 +15539,7 @@
       "lon": -1.796271
     },
     "ILORCA65": {
-      "tempMax": 39.3,
+      "tempMax": 39.7,
       "tempMin": 20.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 69,
@@ -15622,7 +15622,7 @@
       "tempMax": 32.3,
       "tempMin": 24.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1781,
+      "humedadAltaMinutos": 1791,
       "lat": 37.925304,
       "lon": -0.734509
     },
