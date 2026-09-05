@@ -14579,7 +14579,7 @@
       "lon": -1.575828
     },
     "IALEDO9": {
-      "tempMax": 32.3,
+      "tempMax": 32.4,
       "tempMin": 17.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -14683,7 +14683,7 @@
       "lon": -1.725
     },
     "ILORCA103": {
-      "tempMax": 36.1,
+      "tempMax": 36.2,
       "tempMin": 20.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 99,
@@ -14707,7 +14707,7 @@
       "lon": -1.923552
     },
     "ILORCA108": {
-      "tempMax": 35.7,
+      "tempMax": 36.0,
       "tempMin": 20.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -14987,7 +14987,7 @@
       "lon": -1.533938
     },
     "IMULA34": {
-      "tempMax": 35.2,
+      "tempMax": 35.4,
       "tempMin": 19.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 847,
@@ -15051,7 +15051,7 @@
       "lon": -1.743472
     },
     "ITOTAN2": {
-      "tempMax": 35.3,
+      "tempMax": 35.4,
       "tempMin": 20.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15059,7 +15059,7 @@
       "lon": -1.523104
     },
     "ITOTAN5": {
-      "tempMax": 36.3,
+      "tempMax": 36.4,
       "tempMin": 21.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15091,7 +15091,7 @@
       "lon": -1.424707
     },
     "ITOTAN13": {
-      "tempMax": 34.4,
+      "tempMax": 34.5,
       "tempMin": 18.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15131,7 +15131,7 @@
       "lon": -1.466872
     },
     "ITOTAN25": {
-      "tempMax": 34.0,
+      "tempMax": 34.1,
       "tempMin": 20.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15147,7 +15147,7 @@
       "lon": -1.585495
     },
     "ITOTAN31": {
-      "tempMax": 38.5,
+      "tempMax": 38.7,
       "tempMin": 19.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1310,
@@ -15302,7 +15302,7 @@
       "tempMax": 28.3,
       "tempMin": 25.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2192,
+      "humedadAltaMinutos": 2202,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15659,7 +15659,7 @@
       "lon": -1.239743
     },
     "IMURCI90": {
-      "tempMax": 38.3,
+      "tempMax": 38.5,
       "tempMin": 22.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1410,
