@@ -15302,7 +15302,7 @@
       "tempMax": 29.7,
       "tempMin": 25.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2802,
+      "humedadAltaMinutos": 2812,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15326,7 +15326,7 @@
       "tempMax": 37.0,
       "tempMin": 22.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1375,
+      "humedadAltaMinutos": 1385,
       "lat": 38.089937,
       "lon": -0.652781
     },
@@ -15694,7 +15694,7 @@
       "tempMax": 34.2,
       "tempMin": 21.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1240,
+      "humedadAltaMinutos": 1250,
       "lat": 38.384,
       "lon": -0.426
     },
@@ -15702,7 +15702,7 @@
       "tempMax": 34.0,
       "tempMin": 21.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1595,
+      "humedadAltaMinutos": 1605,
       "lat": 37.161,
       "lon": -1.887
     },
@@ -15836,7 +15836,7 @@
     },
     "IELCAM22": {
       "tempMax": 30.9,
-      "tempMin": 26.7,
+      "tempMin": 26.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.458438,
