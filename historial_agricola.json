@@ -14995,7 +14995,7 @@
       "lon": -1.592649
     },
     "IMULA40": {
-      "tempMax": 35.9,
+      "tempMax": 36.0,
       "tempMin": 18.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 965,
@@ -15011,7 +15011,7 @@
       "lon": -1.597045
     },
     "IMULA49": {
-      "tempMax": 34.4,
+      "tempMax": 34.5,
       "tempMin": 19.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 446,
@@ -15019,7 +15019,7 @@
       "lon": -1.565616
     },
     "IPUERT124": {
-      "tempMax": 32.8,
+      "tempMax": 33.1,
       "tempMin": 22.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15035,7 +15035,7 @@
       "lon": -1.802364
     },
     "IPUERT79": {
-      "tempMax": 36.6,
+      "tempMax": 37.0,
       "tempMin": 20.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15302,7 +15302,7 @@
       "tempMax": 28.3,
       "tempMin": 25.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 2392,
+      "humedadAltaMinutos": 2402,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15547,7 +15547,7 @@
       "lon": -1.675
     },
     "ILORCA68": {
-      "tempMax": 34.1,
+      "tempMax": 34.5,
       "tempMin": 19.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15622,7 +15622,7 @@
       "tempMax": 32.3,
       "tempMin": 24.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1650,
+      "humedadAltaMinutos": 1660,
       "lat": 37.925304,
       "lon": -0.734509
     },
