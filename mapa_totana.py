@@ -1103,6 +1103,10 @@ function debounce(fn,ms){
 // con el panel lateral de 300px.
 function mostrarVistaPronostico(){
   document.getElementById('vp').classList.add('open');
+  if(!pronData){
+    var ultima=cargarUltimaPoblacion();
+    if(ultima){ seleccionarPoblacion(ultima); return; }
+  }
   setTimeout(function(){
     var i=document.getElementById('vp-buscador-input');
     if(i) i.focus();
@@ -1110,6 +1114,18 @@ function mostrarVistaPronostico(){
 }
 function mostrarVistaMapa(){
   document.getElementById('vp').classList.remove('open');
+}
+
+// Recuerda la última población consultada (localStorage, por navegador)
+// para que al volver a abrir el pronóstico no haga falta buscarla de nuevo.
+function guardarUltimaPoblacion(loc){
+  try{ localStorage.setItem('meteo_ultima_poblacion',JSON.stringify(loc)); }catch(e){}
+}
+function cargarUltimaPoblacion(){
+  try{
+    var raw=localStorage.getItem('meteo_ultima_poblacion');
+    return raw?JSON.parse(raw):null;
+  }catch(e){ return null; }
 }
 
 var buscadorInput=document.getElementById('vp-buscador-input');
@@ -1157,6 +1173,7 @@ function pintarVistaPronostico(html){
 function seleccionarPoblacion(loc){
   buscadorRes.classList.remove('open');
   buscadorInput.value=loc.name;
+  guardarUltimaPoblacion(loc);
   var sub=[loc.admin2,loc.admin1,loc.country].filter(Boolean).join(', ');
   pintarVistaPronostico('<div style="text-align:center;padding:60px 10px;color:#6b7280;font-size:13px;">⏳ Cargando pronóstico…</div>');
   cargarPronostico(loc,sub);
