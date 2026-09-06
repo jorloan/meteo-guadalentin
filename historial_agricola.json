@@ -15590,7 +15590,7 @@
       "tempMax": 31.0,
       "tempMin": 22.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 165,
+      "humedadAltaMinutos": 180,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -15686,7 +15686,7 @@
       "tempMax": 29.1,
       "tempMin": 23.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 731,
+      "humedadAltaMinutos": 746,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15843,7 +15843,7 @@
       "lon": -1.091008
     },
     "IALBAC26": {
-      "tempMax": 35.2,
+      "tempMax": 36.2,
       "tempMin": 18.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16099,7 +16099,7 @@
       "lon": -1.887
     },
     "INJAR80": {
-      "tempMax": 32.8,
+      "tempMax": 33.8,
       "tempMin": 22.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
