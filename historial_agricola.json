@@ -14963,7 +14963,7 @@
   },
   "2026-09-06": {
     "IALEDO7": {
-      "tempMax": 34.3,
+      "tempMax": 35.0,
       "tempMin": 17.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15043,7 +15043,7 @@
       "lon": -1.425
     },
     "ILIBRI6": {
-      "tempMax": 35.3,
+      "tempMax": 36.1,
       "tempMin": 20.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15235,7 +15235,7 @@
       "lon": -1.702337
     },
     "ILORCA81": {
-      "tempMax": 33.4,
+      "tempMax": 33.5,
       "tempMin": 21.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15590,7 +15590,7 @@
       "tempMax": 31.0,
       "tempMin": 22.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 30,
+      "humedadAltaMinutos": 50,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -15763,7 +15763,7 @@
       "lon": -2.429414
     },
     "IBAZA18": {
-      "tempMax": 36.7,
+      "tempMax": 37.4,
       "tempMin": 18.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16006,7 +16006,7 @@
       "tempMax": 30.3,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 167,
+      "humedadAltaMinutos": 187,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -16155,7 +16155,7 @@
       "lon": -2.478
     },
     "ICASTI105": {
-      "tempMax": 35.6,
+      "tempMax": 35.7,
       "tempMin": 16.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16163,7 +16163,7 @@
       "lon": -2.642
     },
     "IBAZA13": {
-      "tempMax": 38.1,
+      "tempMax": 38.7,
       "tempMin": 17.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
