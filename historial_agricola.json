@@ -15590,7 +15590,7 @@
       "tempMax": 31.0,
       "tempMin": 22.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 100,
+      "humedadAltaMinutos": 105,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -15686,7 +15686,7 @@
       "tempMax": 29.1,
       "tempMin": 23.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 726,
+      "humedadAltaMinutos": 731,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15867,7 +15867,7 @@
       "lon": -0.131
     },
     "ILAVIL16": {
-      "tempMax": 32.8,
+      "tempMax": 33.0,
       "tempMin": 23.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
