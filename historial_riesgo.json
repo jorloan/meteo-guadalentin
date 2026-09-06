@@ -62154,16 +62154,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
-    "IMAZAR112": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 191,
-      "dsv_7d": 28,
-      "lat": 37.566389,
-      "lon": -1.305008,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IMAZAR114": {
       "oidio": 3,
       "mildiu": 1,
@@ -62648,7 +62638,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 61,
-      "dsv_7d": 35,
+      "dsv_7d": 36,
       "lat": 37.642285,
       "lon": -0.715088,
       "datos_ok": true,
@@ -62993,6 +62983,16 @@
       "lon": -1.342168,
       "datos_ok": true,
       "fuente_datos": "WU propio 9d"
+    },
+    "IGUILA25": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 69,
+      "dsv_7d": 25,
+      "lat": 37.478913,
+      "lon": -1.632191,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 4d + WU vecinos 10d"
     },
     "IFUENT165": {
       "oidio": 3,
