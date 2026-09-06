@@ -15012,7 +15012,7 @@
     },
     "IALHAM54": {
       "tempMax": 25.1,
-      "tempMin": 19.5,
+      "tempMin": 19.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.843964,
@@ -15060,7 +15060,7 @@
     },
     "ILORCA100": {
       "tempMax": 20.3,
-      "tempMin": 15.4,
+      "tempMin": 15.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.627,
@@ -15068,7 +15068,7 @@
     },
     "ILORCA103": {
       "tempMax": 25.2,
-      "tempMin": 21.2,
+      "tempMin": 21.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.681107,
@@ -15086,7 +15086,7 @@
       "tempMax": 14.4,
       "tempMin": 12.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 961,
+      "humedadAltaMinutos": 966,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -15100,7 +15100,7 @@
     },
     "ILORCA109": {
       "tempMax": 26.6,
-      "tempMin": 21.0,
+      "tempMin": 20.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.669552,
@@ -15196,7 +15196,7 @@
     },
     "ILORCA56": {
       "tempMax": 24.3,
-      "tempMin": 19.2,
+      "tempMin": 19.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.678503,
@@ -15324,7 +15324,7 @@
     },
     "IMAZAR7": {
       "tempMax": 24.5,
-      "tempMin": 21.8,
+      "tempMin": 21.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.674696,
@@ -15348,7 +15348,7 @@
     },
     "IMAZAR97": {
       "tempMax": 25.2,
-      "tempMin": 23.4,
+      "tempMin": 22.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.638751,
@@ -15380,7 +15380,7 @@
     },
     "IMULA34": {
       "tempMax": 23.5,
-      "tempMin": 19.4,
+      "tempMin": 18.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.141779,
@@ -15404,7 +15404,7 @@
     },
     "IMULA49": {
       "tempMax": 24.2,
-      "tempMin": 17.5,
+      "tempMin": 17.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.138751,
@@ -15436,7 +15436,7 @@
     },
     "IREGINDE92": {
       "tempMax": 23.6,
-      "tempMin": 18.2,
+      "tempMin": 18.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.576363,
@@ -15444,7 +15444,7 @@
     },
     "ITOTAN2": {
       "tempMax": 24.4,
-      "tempMin": 21.7,
+      "tempMin": 21.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.788956,
@@ -15548,7 +15548,7 @@
     },
     "ITOTAN41": {
       "tempMax": 25.2,
-      "tempMin": 20.6,
+      "tempMin": 20.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.715,
@@ -15556,7 +15556,7 @@
     },
     "ITOTAN42": {
       "tempMax": 23.4,
-      "tempMin": 20.7,
+      "tempMin": 20.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.760454,
@@ -15588,7 +15588,7 @@
     },
     "IVERA31": {
       "tempMax": 26.4,
-      "tempMin": 23.8,
+      "tempMin": 23.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.230999,
@@ -15612,7 +15612,7 @@
     },
     "IJUMILLA5": {
       "tempMax": 22.1,
-      "tempMin": 16.6,
+      "tempMin": 16.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.541588,
@@ -15660,7 +15660,7 @@
     },
     "ILOSAL11": {
       "tempMax": 25.7,
-      "tempMin": 21.5,
+      "tempMin": 21.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.747,
@@ -15692,7 +15692,7 @@
     },
     "IPILARDE8": {
       "tempMax": 24.2,
-      "tempMin": 21.9,
+      "tempMin": 21.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 247,
       "lat": 37.871845,
@@ -15740,7 +15740,7 @@
     },
     "ICHIRI9": {
       "tempMax": 17.3,
-      "tempMin": 12.3,
+      "tempMin": 12.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.594659,
@@ -15796,7 +15796,7 @@
     },
     "INJAR45": {
       "tempMax": 29.2,
-      "tempMin": 26.7,
+      "tempMin": 26.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 36.961539,
@@ -15852,7 +15852,7 @@
     },
     "IALMAN17": {
       "tempMax": 24.4,
-      "tempMin": 18.1,
+      "tempMin": 17.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.867861,
@@ -15892,7 +15892,7 @@
     },
     "IALMER512": {
       "tempMax": 27.0,
-      "tempMin": 23.6,
+      "tempMin": 23.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 36.854477,
@@ -15964,7 +15964,7 @@
     },
     "IOJS1": {
       "tempMax": 25.9,
-      "tempMin": 22.6,
+      "tempMin": 22.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.147147,
@@ -15972,7 +15972,7 @@
     },
     "ICIEZA1": {
       "tempMax": 25.1,
-      "tempMin": 17.2,
+      "tempMin": 17.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.275864,
@@ -15996,7 +15996,7 @@
     },
     "ITORRE87": {
       "tempMax": 24.6,
-      "tempMin": 21.8,
+      "tempMin": 21.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.744,
@@ -16054,7 +16054,7 @@
       "tempMax": 13.6,
       "tempMin": 8.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 490,
+      "humedadAltaMinutos": 495,
       "lat": 38.180948,
       "lon": -0.678458
     },
@@ -16092,7 +16092,7 @@
     },
     "ITURRE10": {
       "tempMax": 23.8,
-      "tempMin": 20.9,
+      "tempMin": 20.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.161,
@@ -16108,7 +16108,7 @@
     },
     "INJAR58": {
       "tempMax": 28.9,
-      "tempMin": 25.8,
+      "tempMin": 25.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 36.960729,
@@ -16116,7 +16116,7 @@
     },
     "IALMER63": {
       "tempMax": 29.0,
-      "tempMin": 26.0,
+      "tempMin": 25.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 36.839695,
@@ -16204,7 +16204,7 @@
     },
     "ICORRA13": {
       "tempMax": 21.3,
-      "tempMin": 14.3,
+      "tempMin": 14.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.835816,
@@ -16220,7 +16220,7 @@
     },
     "ICHINC55": {
       "tempMax": 23.1,
-      "tempMin": 18.6,
+      "tempMin": 18.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.904391,
