@@ -15142,7 +15142,7 @@
       "tempMax": 31.7,
       "tempMin": 23.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 20,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -15276,7 +15276,7 @@
     },
     "IMAZAR112": {
       "tempMax": 30.1,
-      "tempMin": 27.7,
+      "tempMin": 27.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.566389,
@@ -15590,7 +15590,7 @@
       "tempMax": 31.0,
       "tempMin": 22.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 267,
+      "humedadAltaMinutos": 287,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -15686,7 +15686,7 @@
       "tempMax": 29.1,
       "tempMin": 23.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 853,
+      "humedadAltaMinutos": 873,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -16006,7 +16006,7 @@
       "tempMax": 30.3,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 259,
+      "humedadAltaMinutos": 279,
       "lat": 37.925304,
       "lon": -0.734509
     },
