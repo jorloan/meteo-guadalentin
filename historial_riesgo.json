@@ -61764,6 +61764,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 220,
+      "dsv_7d": 22,
+      "lat": 37.844378,
+      "lon": -1.428541,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -62644,6 +62654,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ISANTA1907": {
+      "oidio": 1,
+      "mildiu": 1,
+      "dsv_temporada": 28,
+      "dsv_7d": 29,
+      "lat": 38.195,
+      "lon": -0.556,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 8d"
+    },
     "IELCHE60": {
       "oidio": 3,
       "mildiu": 1,
@@ -62798,7 +62818,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 58,
-      "dsv_7d": 29,
+      "dsv_7d": 28,
       "lat": 38.867861,
       "lon": -1.096675,
       "datos_ok": true,
