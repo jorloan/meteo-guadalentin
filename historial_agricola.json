@@ -15483,7 +15483,7 @@
       "lon": -1.424707
     },
     "ITOTAN13": {
-      "tempMax": 34.9,
+      "tempMax": 35.1,
       "tempMin": 16.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15590,7 +15590,7 @@
       "tempMax": 31.0,
       "tempMin": 22.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 80,
+      "humedadAltaMinutos": 100,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -15899,7 +15899,7 @@
       "lon": -2.30637
     },
     "IBENAM5": {
-      "tempMax": 36.5,
+      "tempMax": 37.2,
       "tempMin": 16.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16131,7 +16131,7 @@
       "lon": -2.454096
     },
     "ICARAV78": {
-      "tempMax": 31.2,
+      "tempMax": 31.3,
       "tempMin": 16.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
