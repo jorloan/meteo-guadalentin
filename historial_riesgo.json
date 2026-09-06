@@ -62974,6 +62974,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 9d"
     },
+    "ICIEZA1": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 50,
+      "dsv_7d": 27,
+      "lat": 38.275864,
+      "lon": -1.422595,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 9d"
+    },
     "IGUILA25": {
       "oidio": 3,
       "mildiu": 1,
