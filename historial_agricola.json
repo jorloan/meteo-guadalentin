@@ -15590,7 +15590,7 @@
       "tempMax": 31.0,
       "tempMin": 22.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 155,
+      "humedadAltaMinutos": 165,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -15843,7 +15843,7 @@
       "lon": -1.091008
     },
     "IALBAC26": {
-      "tempMax": 34.8,
+      "tempMax": 35.2,
       "tempMin": 18.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
