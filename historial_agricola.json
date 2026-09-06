@@ -15142,7 +15142,7 @@
       "tempMax": 31.7,
       "tempMin": 23.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 194,
+      "humedadAltaMinutos": 203,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -15310,7 +15310,7 @@
       "tempMax": 30.7,
       "tempMin": 22.1,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 4,
+      "humedadAltaMinutos": 13,
       "lat": 37.567,
       "lon": -1.3
     },
@@ -15342,7 +15342,7 @@
       "tempMax": 31.7,
       "tempMin": 23.4,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 4,
+      "humedadAltaMinutos": 13,
       "lat": 37.602019,
       "lon": -1.295504
     },
@@ -15590,7 +15590,7 @@
       "tempMax": 31.0,
       "tempMin": 22.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 501,
+      "humedadAltaMinutos": 510,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -15686,7 +15686,7 @@
       "tempMax": 29.1,
       "tempMin": 23.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1087,
+      "humedadAltaMinutos": 1096,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -15694,7 +15694,7 @@
       "tempMax": 30.4,
       "tempMin": 21.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 297,
+      "humedadAltaMinutos": 306,
       "lat": 37.871845,
       "lon": -0.78009
     },
@@ -16006,7 +16006,7 @@
       "tempMax": 30.3,
       "tempMin": 24.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 493,
+      "humedadAltaMinutos": 502,
       "lat": 37.925304,
       "lon": -0.734509
     },
@@ -16078,7 +16078,7 @@
       "tempMax": 32.4,
       "tempMin": 20.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 4,
+      "humedadAltaMinutos": 13,
       "lat": 38.384,
       "lon": -0.426
     },
@@ -16244,7 +16244,7 @@
     },
     "IGUILA25": {
       "tempMax": 27.4,
-      "tempMin": 27.2,
+      "tempMin": 27.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.478913,
