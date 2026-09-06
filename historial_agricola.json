@@ -15395,7 +15395,7 @@
       "lon": -1.600633
     },
     "IMULA41": {
-      "tempMax": 33.6,
+      "tempMax": 33.7,
       "tempMin": 17.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15590,7 +15590,7 @@
       "tempMax": 31.0,
       "tempMin": 22.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 130,
+      "humedadAltaMinutos": 150,
       "lat": 37.230999,
       "lon": -1.822
     },
@@ -16123,7 +16123,7 @@
       "lon": -2.403375
     },
     "IORCE4": {
-      "tempMax": 35.8,
+      "tempMax": 36.1,
       "tempMin": 13.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
