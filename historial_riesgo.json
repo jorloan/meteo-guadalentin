@@ -62154,16 +62154,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
-    "IMAZAR112": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 191,
-      "dsv_7d": 28,
-      "lat": 37.566389,
-      "lon": -1.305008,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IMAZAR114": {
       "oidio": 3,
       "mildiu": 1,
@@ -63308,7 +63298,7 @@
       "oidio": 1,
       "mildiu": 1,
       "dsv_temporada": 27,
-      "dsv_7d": 22,
+      "dsv_7d": 21,
       "lat": 38.904391,
       "lon": -1.696521,
       "datos_ok": true,
