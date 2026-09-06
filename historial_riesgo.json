@@ -62144,6 +62144,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 5d"
     },
+    "IMAZAR112": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 191,
+      "dsv_7d": 28,
+      "lat": 37.566389,
+      "lon": -1.305008,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IMAZAR114": {
       "oidio": 3,
       "mildiu": 1,
@@ -62351,16 +62361,6 @@
       "dsv_7d": 20,
       "lat": 37.788956,
       "lon": -1.523104,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "ITOTAN5": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 210,
-      "dsv_7d": 14,
-      "lat": 37.773,
-      "lon": -1.499,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
