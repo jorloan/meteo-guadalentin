@@ -65542,7 +65542,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 210,
-      "dsv_7d": 23,
+      "dsv_7d": 24,
       "lat": 37.746563,
       "lon": -1.533232,
       "datos_ok": true,
@@ -66275,16 +66275,6 @@
       "dsv_7d": 26,
       "lat": 38.327455,
       "lon": -0.54112,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 11d"
-    },
-    "IALICA95": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 49,
-      "dsv_7d": 26,
-      "lat": 38.384,
-      "lon": -0.426,
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
     },
