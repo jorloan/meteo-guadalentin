@@ -63710,7 +63710,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 162,
-      "dsv_7d": 24,
+      "dsv_7d": 23,
       "lat": 37.876571,
       "lon": -1.836982,
       "datos_ok": true,
@@ -63903,6 +63903,16 @@
       "dsv_7d": 19,
       "lat": 37.564941,
       "lon": -1.802364,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "IPUERT79": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 70,
+      "dsv_7d": 20,
+      "lat": 37.606012,
+      "lon": -1.79346,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
