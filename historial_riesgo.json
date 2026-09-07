@@ -64756,16 +64756,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 10d"
     },
-    "IALMER63": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 46,
-      "dsv_7d": 24,
-      "lat": 36.839695,
-      "lon": -2.403375,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 10d"
-    },
     "IORCE4": {
       "oidio": 2,
       "mildiu": 2,
