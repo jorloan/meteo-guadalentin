@@ -63330,7 +63330,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 222,
-      "dsv_7d": 21,
+      "dsv_7d": 22,
       "lat": 37.844378,
       "lon": -1.428541,
       "datos_ok": true,
@@ -63986,6 +63986,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ITOTAN16": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 194,
+      "dsv_7d": 17,
+      "lat": 37.783714,
+      "lon": -1.514744,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "ITOTAN17": {
       "oidio": 3,
       "mildiu": 1,
@@ -64330,7 +64340,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 76,
-      "dsv_7d": 32,
+      "dsv_7d": 35,
       "lat": 37.136125,
       "lon": -1.991059,
       "datos_ok": true,
