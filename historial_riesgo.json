@@ -63716,6 +63716,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 6d"
     },
+    "ILORCA99": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 162,
+      "dsv_7d": 23,
+      "lat": 37.876571,
+      "lon": -1.836982,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 12d"
+    },
     "IMAZAR112": {
       "oidio": 3,
       "mildiu": 1,
@@ -63880,7 +63890,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 176,
-      "dsv_7d": 27,
+      "dsv_7d": 26,
       "lat": 38.138751,
       "lon": -1.565616,
       "datos_ok": true,
@@ -63973,6 +63983,16 @@
       "dsv_7d": 19,
       "lat": 37.824391,
       "lon": -1.599507,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "ITOTAN16": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 194,
+      "dsv_7d": 18,
+      "lat": 37.783714,
+      "lon": -1.514744,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
