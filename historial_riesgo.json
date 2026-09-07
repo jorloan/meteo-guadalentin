@@ -63986,16 +63986,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ITOTAN16": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 194,
-      "dsv_7d": 17,
-      "lat": 37.783714,
-      "lon": -1.514744,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ITOTAN17": {
       "oidio": 3,
       "mildiu": 1,
@@ -64030,7 +64020,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 237,
-      "dsv_7d": 30,
+      "dsv_7d": 29,
       "lat": 37.747905,
       "lon": -1.510252,
       "datos_ok": true,
@@ -64258,9 +64248,9 @@
     },
     "ISANTA1907": {
       "oidio": 1,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 30,
-      "dsv_7d": 29,
+      "dsv_7d": 26,
       "lat": 38.195,
       "lon": -0.556,
       "datos_ok": true,
