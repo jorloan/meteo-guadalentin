@@ -63876,6 +63876,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IMULA41": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 180,
+      "dsv_7d": 20,
+      "lat": 37.924439,
+      "lon": -1.597045,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IMULA49": {
       "oidio": 3,
       "mildiu": 1,
@@ -64290,7 +64300,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 45,
-      "dsv_7d": 21,
+      "dsv_7d": 20,
       "lat": 37.686755,
       "lon": -2.07633,
       "datos_ok": true,
@@ -64620,7 +64630,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 58,
-      "dsv_7d": 24,
+      "dsv_7d": 23,
       "lat": 38.479119,
       "lon": -1.411124,
       "datos_ok": true,
