@@ -15884,9 +15884,9 @@
     },
     "ILORCA106": {
       "tempMax": 20.3,
-      "tempMin": 14.3,
+      "tempMin": 14.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1866,
+      "humedadAltaMinutos": 1882,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -15950,7 +15950,7 @@
       "tempMax": 30.0,
       "tempMin": 21.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 542,
+      "humedadAltaMinutos": 558,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -16534,7 +16534,7 @@
       "tempMax": 31.0,
       "tempMin": 22.0,
       "precipTotal": 12.95,
-      "humedadAltaMinutos": 50,
+      "humedadAltaMinutos": 66,
       "lat": 38.195,
       "lon": -0.556
     },
@@ -16710,7 +16710,7 @@
       "tempMax": 29.2,
       "tempMin": 21.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 166,
+      "humedadAltaMinutos": 182,
       "lat": 36.854477,
       "lon": -2.30637
     },
@@ -16926,7 +16926,7 @@
       "tempMax": 33.6,
       "tempMin": 20.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 166,
+      "humedadAltaMinutos": 182,
       "lat": 36.961412,
       "lon": -2.122682
     },
@@ -17022,7 +17022,7 @@
       "tempMax": 37.1,
       "tempMin": 14.3,
       "precipTotal": 2.01,
-      "humedadAltaMinutos": 528,
+      "humedadAltaMinutos": 544,
       "lat": 38.867105,
       "lon": -1.199184
     },
