@@ -15884,7 +15884,7 @@
     },
     "ILORCA106": {
       "tempMax": 20.3,
-      "tempMin": 16.5,
+      "tempMin": 16.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1866,
       "lat": 37.698662,
@@ -15950,7 +15950,7 @@
       "tempMax": 30.0,
       "tempMin": 21.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 148,
+      "humedadAltaMinutos": 163,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -17022,7 +17022,7 @@
       "tempMax": 37.1,
       "tempMin": 14.3,
       "precipTotal": 2.01,
-      "humedadAltaMinutos": 134,
+      "humedadAltaMinutos": 149,
       "lat": 38.867105,
       "lon": -1.199184
     },
