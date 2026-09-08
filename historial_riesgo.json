@@ -64952,7 +64952,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 220,
-      "dsv_7d": 27,
+      "dsv_7d": 26,
       "lat": 37.72993,
       "lon": -1.351801,
       "datos_ok": true,
@@ -65655,6 +65655,16 @@
       "dsv_7d": 17,
       "lat": 37.760454,
       "lon": -1.539632,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
+    "ITOTAN43": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 239,
+      "dsv_7d": 18,
+      "lat": 37.775914,
+      "lon": -1.52123,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
