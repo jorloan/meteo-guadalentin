@@ -15886,7 +15886,7 @@
       "tempMax": 20.3,
       "tempMin": 16.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1785,
+      "humedadAltaMinutos": 1800,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -16875,7 +16875,7 @@
       "lon": -1.12
     },
     "IELCHE140": {
-      "tempMax": 27.5,
+      "tempMax": 27.6,
       "tempMin": 16.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 486,
@@ -17043,7 +17043,7 @@
       "lon": -1.461022
     },
     "ICHINC55": {
-      "tempMax": 35.8,
+      "tempMax": 36.1,
       "tempMin": 20.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
