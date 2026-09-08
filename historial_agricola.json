@@ -15755,7 +15755,7 @@
   },
   "2026-09-08": {
     "IALEDO7": {
-      "tempMax": 23.2,
+      "tempMax": 23.6,
       "tempMin": 18.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15795,7 +15795,7 @@
       "lon": -1.351801
     },
     "IALHAM4": {
-      "tempMax": 26.2,
+      "tempMax": 26.3,
       "tempMin": 20.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -15886,7 +15886,7 @@
       "tempMax": 18.8,
       "tempMin": 17.5,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 932,
+      "humedadAltaMinutos": 942,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -15931,7 +15931,7 @@
       "lon": -1.776
     },
     "ILORCA15": {
-      "tempMax": 23.3,
+      "tempMax": 23.7,
       "tempMin": 20.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16267,7 +16267,7 @@
       "lon": -1.523104
     },
     "ITOTAN5": {
-      "tempMax": 23.1,
+      "tempMax": 23.3,
       "tempMin": 22.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16299,7 +16299,7 @@
       "lon": -1.424707
     },
     "ITOTAN13": {
-      "tempMax": 21.0,
+      "tempMax": 21.3,
       "tempMin": 18.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16339,7 +16339,7 @@
       "lon": -1.501555
     },
     "ITOTAN28": {
-      "tempMax": 20.1,
+      "tempMax": 20.5,
       "tempMin": 18.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16379,7 +16379,7 @@
       "lon": -1.539632
     },
     "ITOTAN43": {
-      "tempMax": 23.9,
+      "tempMax": 24.2,
       "tempMin": 20.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16563,7 +16563,7 @@
       "lon": -2.267846
     },
     "IVLEZB9": {
-      "tempMax": 23.1,
+      "tempMax": 23.5,
       "tempMin": 20.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16963,7 +16963,7 @@
       "lon": -2.259257
     },
     "IORIA26": {
-      "tempMax": 21.7,
+      "tempMax": 21.8,
       "tempMin": 17.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -17011,7 +17011,7 @@
       "lon": -1.16892
     },
     "IALMAN15": {
-      "tempMax": 23.8,
+      "tempMax": 24.0,
       "tempMin": 18.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
