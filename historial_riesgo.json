@@ -65522,7 +65522,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 73,
-      "dsv_7d": 17,
+      "dsv_7d": 16,
       "lat": 37.606012,
       "lon": -1.79346,
       "datos_ok": true,
@@ -66255,6 +66255,16 @@
       "dsv_7d": 23,
       "lat": 38.497562,
       "lon": -1.359164,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 11d"
+    },
+    "IMURCI133": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 56,
+      "dsv_7d": 17,
+      "lat": 37.950335,
+      "lon": -1.239743,
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
     },
