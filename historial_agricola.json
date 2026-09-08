@@ -15886,7 +15886,7 @@
       "tempMax": 20.3,
       "tempMin": 16.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1775,
+      "humedadAltaMinutos": 1785,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -16707,7 +16707,7 @@
       "lon": -2.041163
     },
     "IALMER512": {
-      "tempMax": 29.0,
+      "tempMax": 29.1,
       "tempMin": 21.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
