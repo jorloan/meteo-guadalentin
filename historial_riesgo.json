@@ -65608,6 +65608,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ITOTAN17": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 243,
+      "dsv_7d": 26,
+      "lat": 37.729423,
+      "lon": -1.490496,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "ITOTAN25": {
       "oidio": 3,
       "mildiu": 1,
