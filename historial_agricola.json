@@ -15886,7 +15886,7 @@
       "tempMax": 20.3,
       "tempMin": 16.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1826,
+      "humedadAltaMinutos": 1836,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -16587,7 +16587,7 @@
       "lon": -2.772
     },
     "IANDALUC159": {
-      "tempMax": 30.6,
+      "tempMax": 31.0,
       "tempMin": 24.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16707,7 +16707,7 @@
       "lon": -2.041163
     },
     "IALMER512": {
-      "tempMax": 29.1,
+      "tempMax": 29.2,
       "tempMin": 21.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16875,7 +16875,7 @@
       "lon": -1.12
     },
     "IELCHE140": {
-      "tempMax": 28.0,
+      "tempMax": 28.4,
       "tempMin": 16.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 486,
