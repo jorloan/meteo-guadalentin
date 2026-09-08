@@ -194,6 +194,12 @@
     }
     .ll-chip:hover{background:#f1f5f9}
     .ll-chip.active{background:#1d4ed8;border-color:transparent;color:#fff}
+    #vl-fila-fondo{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+    #vl-op-wrap{
+      display:flex;align-items:center;gap:7px;font-size:.66rem;font-weight:700;
+      color:#64748b;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;
+    }
+    #vl-op-wrap input[type=range]{width:110px;accent-color:#1d4ed8;cursor:pointer}
     #vl-rango{font-size:.76rem;color:#334155;margin:10px 0 8px}
     #vl-mapa-wrap{position:relative;border-radius:12px;overflow:hidden;box-shadow:0 6px 22px rgba(15,23,42,.15)}
     #vl-mapa{height:52vh;min-height:300px;background:#e2e8f0}
@@ -598,6 +604,14 @@
       <div class="ll-chips" id="vl-modelos"></div>
       <div class="ll-chips-tit">Plazo acumulado</div>
       <div class="ll-chips" id="vl-plazos"></div>
+      <div class="ll-chips-tit">Fondo del mapa</div>
+      <div id="vl-fila-fondo">
+        <div class="ll-chips" id="vl-fondos"></div>
+        <label id="vl-op-wrap">Opacidad de la lluvia
+          <input type="range" id="vl-opacidad" min="0.2" max="1" step="0.05" value="0.75"
+                 oninput="llSetOpacidad(this.value)">
+        </label>
+      </div>
       <div id="vl-rango"></div>
       <div id="vl-mapa-wrap">
         <div id="vl-mapa"></div>
@@ -632,14 +646,28 @@ var terreno=L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
 var ESRI_GRIS='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 var ESRI_GRIS_ETIQ='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}';
 
-function vigilarFondo(mapa,capas){
+// Capas de Google servidas por https (las de más abajo siguen en http por
+// compatibilidad histórica; aquí no, para no mezclar contenido inseguro).
+// lyrs=s satélite, lyrs=t relieve sin rótulos, lyrs=h solo carreteras y
+// rótulos sobre fondo transparente — esta última es la que se superpone
+// por encima del sombreado de lluvia.
+var GOOGLE_SUB=['mt0','mt1','mt2','mt3'];
+var GOOGLE_SAT='https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
+var GOOGLE_RELIEVE='https://{s}.google.com/vt/lyrs=t&x={x}&y={y}&z={z}';
+var GOOGLE_CALLES='https://{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}';
+
+// Si el fondo elegido deja de responder, se cae a OSM en vez de quedarse
+// el mapa en blanco. alCaer() permite al llamante seguir la pista de la
+// capa nueva, para poder retirarla si luego se cambia de fondo.
+function vigilarFondo(mapa,capas,alCaer){
   var fallos=0,cambiado=false;
   capas[0].on('tileerror',function(){
     if(cambiado||++fallos<4) return;   // un tile suelto no basta para descartar la capa
     cambiado=true;
-    capas.forEach(function(c){ if(mapa.hasLayer(c)) mapa.removeLayer(c); });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    capas.forEach(function(c){ if(c&&mapa.hasLayer(c)) mapa.removeLayer(c); });
+    var osmR=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {attribution:'© OSM',className:'mapa-atenuado'}).addTo(mapa);
+    if(alCaer) alCaer(osmR);
   });
 }
 
@@ -1382,6 +1410,15 @@ var LL_PLAZOS=[
   {h:120,txt:'5 días'},{h:168,txt:'7 días'}
 ];
 
+// Fondos del mapa. Cada uno tiene una capa base (debajo del sombreado) y
+// otra de rótulos/carreteras que va en el panel de encima, para que la
+// información del mapa se siga leyendo sobre la mancha de precipitación.
+var LL_FONDOS=[
+  {id:'claro',   txt:'🗺 Claro',   base:ESRI_GRIS,      etiq:ESRI_GRIS_ETIQ, attr:'© Esri',   maxNat:16},
+  {id:'relieve', txt:'⛰ Relieve', base:GOOGLE_RELIEVE, etiq:GOOGLE_CALLES,  attr:'© Google', maxNat:20, sub:GOOGLE_SUB},
+  {id:'hibrido', txt:'🛰 Híbrido', base:GOOGLE_SAT,     etiq:GOOGLE_CALLES,  attr:'© Google', maxNat:20, sub:GOOGLE_SUB}
+];
+
 // Poblaciones de referencia del valle del Guadalentín (+ Murcia capital)
 var LL_POBLACIONES=[
   {n:'Totana',           lat:37.771,lon:-1.502,pri:1},
@@ -1415,6 +1452,16 @@ function llColorTexto(v){ return (v!=null&&v>=5)?'#fff':'#1e293b'; }
 
 var llModelo='ecmwf_ifs025';
 var llHoras=48;
+var llFondo=llRecordado('meteo_ll_fondo','claro');
+var llOpacidad=parseFloat(llRecordado('meteo_ll_opacidad','0.75'))||0.75;
+var llCapaBase=null, llCapaEtiq=null;
+
+function llRecordado(clave,porDefecto){
+  try{ return localStorage.getItem(clave)||porDefecto; }catch(e){ return porDefecto; }
+}
+function llRecordar(clave,valor){
+  try{ localStorage.setItem(clave,valor); }catch(e){}
+}
 var llMapa=null, llCapaCampo=null, llCapaPtos=null;
 var llRejillaPts=null;
 var llCache={};        // 'modelo|ambito|dias' -> [{lat,lon,t,p}]
@@ -1538,22 +1585,48 @@ function llInitMapa(){
   if(llMapa) return;
   llMapa=L.map('vl-mapa',{scrollWheelZoom:false});
   llMapa.fitBounds(LL_LIMITES);
-  var base=L.tileLayer(ESRI_GRIS,{attribution:'© Esri',maxNativeZoom:16,maxZoom:18}).addTo(llMapa);
   llMapa.createPane('llcampo');
   llMapa.getPane('llcampo').style.zIndex=390;
   llMapa.getPane('llcampo').style.filter='blur(9px)';
+  // Rótulos y carreteras en un panel por encima del campo de lluvia: si
+  // fueran parte del fondo quedarían tapados por la mancha de color.
   llMapa.createPane('lletiq');
   llMapa.getPane('lletiq').style.zIndex=450;
   llMapa.getPane('lletiq').style.pointerEvents='none';
   llCapaCampo=L.layerGroup().addTo(llMapa);
-  // Etiquetas en un panel por encima del campo de lluvia: si fueran parte
-  // del fondo quedarían tapadas por la mancha de color.
-  var etiq=L.tileLayer(ESRI_GRIS_ETIQ,{pane:'lletiq',maxNativeZoom:16,maxZoom:18}).addTo(llMapa);
-  vigilarFondo(llMapa,[base,etiq]);
+  llAplicarFondo();
   llCapaPtos=L.layerGroup().addTo(llMapa);
   llMapa.on('click',llClickMapa);
   llMapa.on('zoomend',llDibujarPoblaciones);
   llPintarLeyenda();
+}
+
+function llAplicarFondo(){
+  if(!llMapa) return;
+  var f=LL_FONDOS[0];
+  LL_FONDOS.forEach(function(x){ if(x.id===llFondo) f=x; });
+  [llCapaBase,llCapaEtiq].forEach(function(c){ if(c&&llMapa.hasLayer(c)) llMapa.removeLayer(c); });
+  var comun={maxNativeZoom:f.maxNat,maxZoom:18};
+  if(f.sub) comun.subdomains=f.sub;
+  llCapaBase=L.tileLayer(f.base,Object.assign({attribution:f.attr},comun)).addTo(llMapa);
+  llCapaEtiq=L.tileLayer(f.etiq,Object.assign({pane:'lletiq'},comun)).addTo(llMapa);
+  vigilarFondo(llMapa,[llCapaBase,llCapaEtiq],function(nueva){ llCapaBase=nueva; llCapaEtiq=null; });
+}
+
+function llSetFondo(id){
+  if(id===llFondo) return;
+  llFondo=id; llRecordar('meteo_ll_fondo',id);
+  llAplicarFondo(); llPintarChips();
+}
+
+// La opacidad se aplica sobre las celdas ya pintadas: no hace falta
+// recalcular la interpolación, que es lo caro.
+function llSetOpacidad(v){
+  llOpacidad=parseFloat(v)||0.75;
+  llRecordar('meteo_ll_opacidad',String(llOpacidad));
+  if(llCapaCampo) llCapaCampo.eachLayer(function(c){
+    if(c.setStyle) c.setStyle({fillOpacity:llOpacidad});
+  });
 }
 
 function llPintarChips(){
@@ -1568,6 +1641,13 @@ function llPintarChips(){
     return '<button type="button" class="ll-chip'+(p.h===llHoras?' active':'')+'"'
       +' onclick="llSetPlazo('+p.h+')">'+p.txt+'</button>';
   }).join('');
+  var cf=document.getElementById('vl-fondos');
+  if(cf) cf.innerHTML=LL_FONDOS.map(function(f){
+    return '<button type="button" class="ll-chip'+(f.id===llFondo?' active':'')+'"'
+      +' onclick="llSetFondo(\''+f.id+'\')">'+f.txt+'</button>';
+  }).join('');
+  var so=document.getElementById('vl-opacidad');
+  if(so && so.value!=llOpacidad) so.value=llOpacidad;
 }
 
 function llSetModelo(id){ if(id===llModelo) return; llModelo=id; llRender(); }
@@ -1628,7 +1708,7 @@ function llPintarCampo(datos,ven){
       return v!=null&&!isNaN(v)&&v>=0.1;
     }));
     llCapaCampo.addLayer(L.geoJSON(cl,{pane:'llcampo',style:function(f){
-      return {fillColor:llColor(f.properties.value),fillOpacity:0.8,stroke:false};
+      return {fillColor:llColor(f.properties.value),fillOpacity:llOpacidad,stroke:false};
     }}));
   }catch(e){ console.error('Campo lluvia:',e); }
 }
