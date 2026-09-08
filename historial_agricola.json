@@ -15796,7 +15796,7 @@
     },
     "IALHAM4": {
       "tempMax": 25.0,
-      "tempMin": 23.0,
+      "tempMin": 22.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.883939,
@@ -15886,7 +15886,7 @@
       "tempMax": 18.8,
       "tempMin": 17.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 204,
+      "humedadAltaMinutos": 220,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -16132,7 +16132,7 @@
     },
     "IMAZAR64": {
       "tempMax": 26.1,
-      "tempMin": 23.5,
+      "tempMin": 23.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.599141,
@@ -16252,7 +16252,7 @@
     },
     "IREGINDE92": {
       "tempMax": 24.7,
-      "tempMin": 21.1,
+      "tempMin": 21.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.576363,
@@ -16276,7 +16276,7 @@
     },
     "ITOTAN8": {
       "tempMax": 26.4,
-      "tempMin": 23.4,
+      "tempMin": 23.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.746563,
@@ -16364,7 +16364,7 @@
     },
     "ITOTAN41": {
       "tempMax": 26.5,
-      "tempMin": 22.4,
+      "tempMin": 22.3,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.715,
@@ -16502,7 +16502,7 @@
       "tempMax": 26.6,
       "tempMin": 24.8,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 499,
+      "humedadAltaMinutos": 515,
       "lat": 37.642285,
       "lon": -0.715088
     },
@@ -16524,7 +16524,7 @@
     },
     "IGUARD3": {
       "tempMax": 26.2,
-      "tempMin": 23.7,
+      "tempMin": 23.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.089937,
@@ -16532,7 +16532,7 @@
     },
     "ISANTA1907": {
       "tempMax": 26.5,
-      "tempMin": 24.8,
+      "tempMin": 24.7,
       "precipTotal": 12.95,
       "humedadAltaMinutos": 0,
       "lat": 38.195,
@@ -16812,7 +16812,7 @@
     },
     "ICARTA50": {
       "tempMax": 25.6,
-      "tempMin": 22.8,
+      "tempMin": 22.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.705477,
@@ -16878,7 +16878,7 @@
       "tempMax": 21.2,
       "tempMin": 16.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 130,
+      "humedadAltaMinutos": 146,
       "lat": 38.180948,
       "lon": -0.678458
     },
@@ -17004,7 +17004,7 @@
     },
     "IREGINDE53": {
       "tempMax": 21.4,
-      "tempMin": 17.9,
+      "tempMin": 17.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.694279,
