@@ -15950,7 +15950,7 @@
       "tempMax": 30.0,
       "tempMin": 21.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 477,
+      "humedadAltaMinutos": 482,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -16518,7 +16518,7 @@
       "tempMax": 33.9,
       "tempMin": 25.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 20,
+      "humedadAltaMinutos": 25,
       "lat": 37.979,
       "lon": -0.683
     },
@@ -16684,7 +16684,7 @@
     },
     "ILAVIL16": {
       "tempMax": 33.0,
-      "tempMin": 27.2,
+      "tempMin": 27.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.510997,
@@ -16710,7 +16710,7 @@
       "tempMax": 29.2,
       "tempMin": 21.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 101,
+      "humedadAltaMinutos": 106,
       "lat": 36.854477,
       "lon": -2.30637
     },
@@ -16926,7 +16926,7 @@
       "tempMax": 33.6,
       "tempMin": 20.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 101,
+      "humedadAltaMinutos": 106,
       "lat": 36.961412,
       "lon": -2.122682
     },
@@ -17022,7 +17022,7 @@
       "tempMax": 37.1,
       "tempMin": 14.3,
       "precipTotal": 2.01,
-      "humedadAltaMinutos": 463,
+      "humedadAltaMinutos": 468,
       "lat": 38.867105,
       "lon": -1.199184
     },
