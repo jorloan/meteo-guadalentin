@@ -433,6 +433,8 @@
     .leaflet-control-attribution a{color:#6b7280!important}
 
     .gmap{filter:grayscale(100%) contrast(1.1) brightness(1.05)}
+    /* Fondo de reserva (OSM) cuando el gris claro de Esri no responde */
+    .mapa-atenuado{filter:grayscale(72%) brightness(1.08)}
 
     @media(max-width:600px){
       #topbar{top:6px;left:6px;right:6px;border-radius:12px;gap:7px;padding:8px 12px}
@@ -623,7 +625,28 @@ window.HO=0.35;
 // ── Mapa base ──────────────────────────────────────────────
 var terreno=L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
   {maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google',className:'gmap'});
-var claro=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO'});
+// Fondo claro: CARTO pasó a exigir clave de API y estampa "API KEY
+// REQUIRED" sobre sus tiles, así que el gris claro sale de Esri (World
+// Light Gray, sin clave). vigilarFondo() cambia a OSM si Esri fallara,
+// para no quedarnos nunca con el mapa en blanco.
+var ESRI_GRIS='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+var ESRI_GRIS_ETIQ='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}';
+
+function vigilarFondo(mapa,capas){
+  var fallos=0,cambiado=false;
+  capas[0].on('tileerror',function(){
+    if(cambiado||++fallos<4) return;   // un tile suelto no basta para descartar la capa
+    cambiado=true;
+    capas.forEach(function(c){ if(mapa.hasLayer(c)) mapa.removeLayer(c); });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {attribution:'© OSM',className:'mapa-atenuado'}).addTo(mapa);
+  });
+}
+
+var claro=L.layerGroup([
+  L.tileLayer(ESRI_GRIS,{attribution:'© Esri',maxNativeZoom:16,maxZoom:20}),
+  L.tileLayer(ESRI_GRIS_ETIQ,{maxNativeZoom:16,maxZoom:20})
+]);
 var osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'});
 var sat=L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
   {maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google'});
@@ -1515,8 +1538,7 @@ function llInitMapa(){
   if(llMapa) return;
   llMapa=L.map('vl-mapa',{scrollWheelZoom:false});
   llMapa.fitBounds(LL_LIMITES);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
-    {attribution:'© CARTO © OSM'}).addTo(llMapa);
+  var base=L.tileLayer(ESRI_GRIS,{attribution:'© Esri',maxNativeZoom:16,maxZoom:18}).addTo(llMapa);
   llMapa.createPane('llcampo');
   llMapa.getPane('llcampo').style.zIndex=390;
   llMapa.getPane('llcampo').style.filter='blur(9px)';
@@ -1524,8 +1546,10 @@ function llInitMapa(){
   llMapa.getPane('lletiq').style.zIndex=450;
   llMapa.getPane('lletiq').style.pointerEvents='none';
   llCapaCampo=L.layerGroup().addTo(llMapa);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',
-    {pane:'lletiq'}).addTo(llMapa);
+  // Etiquetas en un panel por encima del campo de lluvia: si fueran parte
+  // del fondo quedarían tapadas por la mancha de color.
+  var etiq=L.tileLayer(ESRI_GRIS_ETIQ,{pane:'lletiq',maxNativeZoom:16,maxZoom:18}).addTo(llMapa);
+  vigilarFondo(llMapa,[base,etiq]);
   llCapaPtos=L.layerGroup().addTo(llMapa);
   llMapa.on('click',llClickMapa);
   llMapa.on('zoomend',llDibujarPoblaciones);
