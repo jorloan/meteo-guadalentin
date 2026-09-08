@@ -1236,8 +1236,8 @@ function construirGraficoTemp(daily,tiempos,n){
   var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
   [vMin,(vMin+vMax)/2,vMax].forEach(function(v){
     var y=yAt(v);
-    svg+='<line x1="'+mL+'" y1="'+y.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(255,255,255,0.08)"/>';
-    svg+='<text x="1" y="'+(y+3).toFixed(1)+'" font-size="8" fill="#6e7f9a">'+Math.round(v)+'°</text>';
+    svg+='<line x1="'+mL+'" y1="'+y.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(15,23,42,0.08)"/>';
+    svg+='<text x="1" y="'+(y+3).toFixed(1)+'" font-size="8" fill="#64748b">'+Math.round(v)+'°</text>';
   });
   MODELOS_PRON.forEach(function(m){
     var col=COL_MODELO[m.id];
@@ -1249,17 +1249,17 @@ function construirGraficoTemp(daily,tiempos,n){
   for(var i=0;i<n;i++){
     var vRef=valModelo(daily,'temperature_2m_max',MODELOS_PRON[0].id,i);
     if(vRef==null) continue;
-    svg+='<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(vRef).toFixed(1)+'" r="2.2" fill="'+COL_MODELO[MODELOS_PRON[0].id]+'"/>';
+    svg+='<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(vRef).toFixed(1)+'" r="3.5" fill="'+COL_MODELO[MODELOS_PRON[0].id]+'" stroke="#fff" stroke-width="1" style="cursor:pointer" onclick="abrirDetalleDia(\''+tiempos[i]+'\')"><title>Ver detalle del '+fmtEjeX(tiempos[i])+'</title></circle>';
   }
   var paso=n>8?3:1;
   for(var i=0;i<n;i+=paso){
-    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#6e7f9a" text-anchor="middle">'+fmtEjeX(tiempos[i])+'</text>';
+    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#64748b" text-anchor="middle">'+fmtEjeX(tiempos[i])+'</text>';
   }
   svg+='</svg>';
 
   var leyenda='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:2px;">'
     +MODELOS_PRON.map(function(m){
-      return '<span style="font-size:9px;color:#9aa7bd;display:inline-flex;align-items:center;gap:3px;">'
+      return '<span style="font-size:9px;color:#64748b;display:inline-flex;align-items:center;gap:3px;">'
         +'<span style="width:8px;height:8px;border-radius:2px;background:'+COL_MODELO[m.id]+';display:inline-block;"></span>'+m.nombre+'</span>';
     }).join('')
     +'</div>';
@@ -1280,14 +1280,14 @@ function construirGraficoLluvia(daily,tiempos,n){
   function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
 
   var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
-  svg+='<line x1="'+mL+'" y1="'+(mT+ph)+'" x2="'+(W-mR)+'" y2="'+(mT+ph)+'" stroke="rgba(255,255,255,0.12)"/>';
+  svg+='<line x1="'+mL+'" y1="'+(mT+ph)+'" x2="'+(W-mR)+'" y2="'+(mT+ph)+'" stroke="rgba(15,23,42,0.14)"/>';
   for(var i=0;i<n;i++){
     var h=(vals[i]/vMax)*ph,x=xAt(i)-bw/2,y=mT+ph-h;
-    svg+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="1.5" fill="#3b82f6" opacity="'+(vals[i]>0?0.85:0.22)+'"/>';
+    svg+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="1.5" fill="#3b82f6" opacity="'+(vals[i]>0?0.85:0.22)+'" style="cursor:pointer" onclick="abrirDetalleDia(\''+tiempos[i]+'\')"><title>Ver detalle del '+fmtEjeX(tiempos[i])+'</title></rect>';
   }
   var paso=n>8?3:1;
   for(var i=0;i<n;i+=paso){
-    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#6e7f9a" text-anchor="middle">'+fmtEjeX(tiempos[i])+'</text>';
+    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#64748b" text-anchor="middle">'+fmtEjeX(tiempos[i])+'</text>';
   }
   svg+='</svg>';
 
@@ -1305,7 +1305,7 @@ function renderPronostico(numDias){
   var filas='';
   for(var i=0;i<n;i++){
     var wx=wxInfo(valModelo(daily,'weather_code',MODELOS_PRON[0].id,i));
-    filas+='<div style="background:#f8f8f8;border-radius:10px;padding:12px 14px;">'
+    filas+='<div class="vp-day-card" style="background:#f8f8f8;border-radius:10px;padding:12px 14px;" onclick="abrirDetalleDia(\''+tiempos[i]+'\')">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
       +'<span style="font-weight:700;font-size:14px;color:#2c3e50;text-transform:capitalize;">'+fmtDiaCorto(tiempos[i])+'</span>'
       +'<span style="font-size:22px;">'+wx.ic+'</span>'
@@ -1329,8 +1329,8 @@ function renderPronostico(numDias){
       +'</table></div>';
   }
 
-  var html='<div style="font-size:24px;font-weight:700;color:#f1f5f9;margin-bottom:2px;">📍 '+loc.name+'</div>'
-    +'<div style="font-size:13px;color:#6b7280;margin-bottom:16px;">'+(sub||'')+'</div>'
+  var html='<div style="font-size:24px;font-weight:700;color:#0f172a;margin-bottom:2px;">📍 '+loc.name+'</div>'
+    +'<div style="font-size:13px;color:#64748b;margin-bottom:16px;">'+(sub||'')+'</div>'
     +'<div style="display:flex;gap:8px;margin-bottom:14px;">'
     +'<button type="button" class="fc-tab'+(numDias===5?' active':'')+'" onclick="renderPronostico(5)">📅 4-5 días</button>'
     +'<button type="button" class="fc-tab'+(numDias===16?' active':'')+'" onclick="renderPronostico(16)">📆 16 días</button>'
@@ -1338,8 +1338,10 @@ function renderPronostico(numDias){
     +'<div style="background:#f0f7ff;border-left:3px solid #3498db;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#444;margin-bottom:16px;line-height:1.6;">'
     +'⭐ <b style="color:#2c3e50;">ECMWF (IFS-HRES)</b> se toma como referencia — el de mayor precisión global según verificaciones independientes — comparado con ICON (DWD), GFS (NOAA) y AROME/ARPEGE (Météo-France). '
     +(numDias>7?'Más allá de 4-7 días solo ECMWF y GFS ofrecen datos; ICON y AROME tienen alcance corto.':'')
+    +' Toca un día (tarjeta o punto del gráfico) para ver su detalle horario.'
     +'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:16px;">'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:16px;">'
+    +'<div id="vp-mapa"></div>'
     +construirGraficoTemp(daily,tiempos,n)
     +construirGraficoLluvia(daily,tiempos,n)
     +'</div>'
@@ -1349,6 +1351,116 @@ function renderPronostico(numDias){
     +'<div style="font-size:11px;color:#6b7280;margin-top:16px;">Fuente: Open-Meteo (datos abiertos ECMWF/DWD/NOAA/Météo-France)</div>';
 
   pintarVistaPronostico(html);
+  inicializarMapaPronostico(loc);
+}
+
+// Mapa de localización de la pantalla de pronóstico. Se (re)crea en cada
+// renderPronostico() porque pintarVistaPronostico() sustituye el HTML de
+// #vp-contenido (incluido el <div id="vp-mapa">), lo que deja huérfana
+// cualquier instancia de Leaflet anterior atada a ese nodo.
+var mapaPron=null;
+function inicializarMapaPronostico(loc){
+  if(mapaPron){ try{ mapaPron.remove(); }catch(e){} mapaPron=null; }
+  if(!document.getElementById('vp-mapa')) return;
+  mapaPron=L.map('vp-mapa',{zoomControl:false,scrollWheelZoom:false}).setView([loc.latitude,loc.longitude],11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(mapaPron);
+  L.marker([loc.latitude,loc.longitude],{icon:L.divIcon({
+    className:'',
+    html:'<div style="background:#e6474c;border:2px solid #fff;border-radius:50% 50% 50% 0;width:22px;height:22px;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,.35);"></div>',
+    iconSize:[22,22],iconAnchor:[11,22]
+  })}).addTo(mapaPron);
+}
+
+// ── Detalle horario de un día concreto ──────────────────────
+var MESES_LARGO=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+var DIAS_LARGO=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+function fmtDiaLargo(iso){
+  var d=new Date(iso+'T00:00:00');
+  var s=DIAS_LARGO[d.getDay()]+' '+d.getDate()+' de '+MESES_LARGO[d.getMonth()];
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+function construirGraficoTempHoraria(hourly){
+  var horas=hourly.time||[],temps=hourly.temperature_2m||[];
+  var n=horas.length;
+  var vals=temps.filter(function(v){return v!=null;});
+  if(!n||!vals.length) return '';
+  var W=560,H=150,mL=28,mR=10,mT=12,mB=20;
+  var pw=W-mL-mR,ph=H-mT-mB;
+  var vMin=Math.min.apply(null,vals)-1,vMax=Math.max.apply(null,vals)+1;
+  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
+  function yAt(v){ return mT+ph-((v-vMin)/(vMax-vMin))*ph; }
+
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
+  [vMin,(vMin+vMax)/2,vMax].forEach(function(v){
+    var y=yAt(v);
+    svg+='<line x1="'+mL+'" y1="'+y.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(15,23,42,0.08)"/>';
+    svg+='<text x="1" y="'+(y+3).toFixed(1)+'" font-size="10" fill="#64748b">'+Math.round(v)+'°</text>';
+  });
+  var d='',en=false;
+  for(var i=0;i<n;i++){
+    var v=temps[i]; if(v==null){en=false;continue;}
+    d+=(en?'L':'M')+xAt(i).toFixed(1)+','+yAt(v).toFixed(1)+' '; en=true;
+  }
+  if(d) svg+='<path d="'+d+'" fill="none" stroke="#3b82f6" stroke-width="2.2"/>';
+  var paso=n>12?3:(n>6?2:1);
+  for(var i=0;i<n;i+=paso){
+    if(temps[i]!=null) svg+='<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(temps[i]).toFixed(1)+'" r="2" fill="#3b82f6"/>';
+    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="9" fill="#64748b" text-anchor="middle">'+horas[i].slice(11,16)+'</text>';
+  }
+  svg+='</svg>';
+  return svg;
+}
+
+function construirGraficoLluviaHoraria(hourly){
+  var horas=hourly.time||[],precs=hourly.precipitation||[];
+  var n=horas.length;
+  if(!n) return '';
+  var vMax=Math.max(1,Math.max.apply(null,precs.map(function(v){return v==null?0:v;})));
+  var W=560,H=90,mL=28,mR=10,mT=6,mB=20;
+  var pw=W-mL-mR,ph=H-mT-mB;
+  var bw=Math.max(2,(pw/n)*0.6);
+  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
+
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
+  svg+='<line x1="'+mL+'" y1="'+(mT+ph)+'" x2="'+(W-mR)+'" y2="'+(mT+ph)+'" stroke="rgba(15,23,42,0.14)"/>';
+  var paso=n>12?3:(n>6?2:1);
+  for(var i=0;i<n;i++){
+    var v=precs[i]==null?0:precs[i];
+    var h=(v/vMax)*ph,x=xAt(i)-bw/2,y=mT+ph-h;
+    svg+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="1.5" fill="#3b82f6" opacity="'+(v>0?0.85:0.18)+'"/>';
+    if(i%paso===0) svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="9" fill="#64748b" text-anchor="middle">'+horas[i].slice(11,16)+'</text>';
+  }
+  svg+='</svg>';
+  return svg;
+}
+
+function abrirDetalleDia(fechaISO){
+  if(!pronData) return;
+  var modal=document.getElementById('vp-detalle-dia');
+  var body=document.getElementById('vpd-body');
+  document.getElementById('vpd-titulo').textContent=fmtDiaLargo(fechaISO);
+  body.innerHTML='<div style="text-align:center;padding:40px 10px;color:#64748b;font-size:13px;">⏳ Cargando detalle horario…</div>';
+  modal.classList.add('open');
+
+  var loc=pronData.loc;
+  var url='https://api.open-meteo.com/v1/forecast?latitude='+loc.latitude+'&longitude='+loc.longitude
+    +'&hourly=temperature_2m,precipitation&models=ecmwf_ifs025'
+    +'&start_date='+fechaISO+'&end_date='+fechaISO+'&timezone=auto';
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.hourly) throw new Error('sin datos');
+    body.innerHTML=
+      '<div style="font-size:11px;color:#64748b;margin-bottom:12px;">⭐ Detalle horario — ECMWF (IFS-HRES)</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#2c3e50;margin-bottom:4px;">🌡 Temperatura por hora</div>'
+      +construirGraficoTempHoraria(d.hourly)
+      +'<div style="font-size:11px;font-weight:700;color:#2c3e50;margin:16px 0 4px;">🌧 Precipitación por hora (mm)</div>'
+      +construirGraficoLluviaHoraria(d.hourly);
+  }).catch(function(){
+    body.innerHTML='<div style="text-align:center;color:#999;font-size:13px;padding:40px 10px;">⚠ No se pudo cargar el detalle horario.</div>';
+  });
+}
+function cerrarDetalleDia(){
+  document.getElementById('vp-detalle-dia').classList.remove('open');
 }
 
 // Mostrar aviso de días si procede
@@ -2072,61 +2184,90 @@ HTML_BASE = """<!DOCTYPE html>
     }
     #btn-pronostico:hover{background:rgba(59,130,246,.3)}
 
-    /* Resultados del buscador de población (clases genéricas, reutilizadas en #vp) */
-    .br-item{padding:8px 10px;border-radius:6px;font-size:.78rem;color:#e6edf3;cursor:pointer}
-    .br-item:hover{background:rgba(255,255,255,0.08)}
-    .br-item small{display:block;color:#6e7f9a;font-size:.68rem;margin-top:1px}
-    .br-empty{padding:8px 10px;font-size:.76rem;color:#6e7f9a}
+    /* Resultados del buscador de población (tema claro, solo se usa en #vp) */
+    .br-item{padding:8px 10px;border-radius:6px;font-size:.78rem;color:#1e293b;cursor:pointer}
+    .br-item:hover{background:rgba(15,23,42,0.05)}
+    .br-item small{display:block;color:#64748b;font-size:.68rem;margin-top:1px}
+    .br-empty{padding:8px 10px;font-size:.76rem;color:#64748b}
 
     /* Pestañas de plazo en el pronóstico */
     .fc-tab{
-      background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
-      border-radius:7px;color:#9aa7bd;font-size:.72rem;font-weight:700;padding:6px 10px;
+      background:#fff;border:1px solid rgba(15,23,42,0.13);
+      border-radius:7px;color:#475569;font-size:.72rem;font-weight:700;padding:6px 10px;
       cursor:pointer;font-family:inherit;
     }
-    .fc-tab.active{background:rgba(59,130,246,.85);border-color:transparent;color:#fff}
+    .fc-tab.active{background:#3b82f6;border-color:transparent;color:#fff}
 
-    /* ── Pantalla completa de pronóstico ─────────────────────── */
+    /* ── Pantalla completa de pronóstico (tema claro, estilo web del tiempo) ── */
     #vp{
-      display:none;position:fixed;inset:0;z-index:3000;background:#0d1117;
+      display:none;position:fixed;inset:0;z-index:3000;color:#1e293b;
+      background:linear-gradient(160deg,#eaf4fb 0%,#dbe9f6 45%,#eef6fb 100%);
       flex-direction:column;
     }
     #vp.open{display:flex}
     #vp-topbar{
       display:flex;align-items:center;gap:14px;padding:12px 20px;flex-wrap:wrap;flex-shrink:0;
-      background:rgba(13,17,23,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-      border-bottom:1px solid rgba(255,255,255,0.09);
+      background:rgba(255,255,255,0.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-bottom:1px solid rgba(15,23,42,0.08);
     }
     #vp-logo{display:flex;flex-direction:column;line-height:1.15;flex-shrink:0;user-select:none}
-    #vp-logo .lm{font-size:.92rem;font-weight:800;letter-spacing:.5px;color:#fff}
-    #vp-logo .ls{font-size:.58rem;color:#6e7f9a;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+    #vp-logo .lm{font-size:.92rem;font-weight:800;letter-spacing:.5px;color:#0f172a}
+    #vp-logo .ls{font-size:.58rem;color:#64748b;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
     #vp-buscador-wrap{position:relative;flex:1;max-width:420px;min-width:180px}
     #vp-buscador-input{
-      width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
-      border-radius:9px;color:#e6edf3;font-size:.88rem;padding:9px 14px;outline:none;font-family:inherit;
+      width:100%;background:#fff;border:1px solid rgba(15,23,42,0.13);
+      border-radius:9px;color:#0f172a;font-size:.88rem;padding:9px 14px;outline:none;font-family:inherit;
     }
-    #vp-buscador-input::placeholder{color:#6e7f9a}
+    #vp-buscador-input::placeholder{color:#94a3b8}
     #vp-buscador-input:focus{border-color:rgba(59,130,246,.55)}
     #vp-buscador-resultados{
       display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;
-      background:#1c2433;border:1px solid rgba(255,255,255,0.13);border-radius:10px;
-      box-shadow:0 8px 28px rgba(0,0,0,.5);padding:4px;z-index:3100;max-height:300px;overflow-y:auto;
+      background:#fff;border:1px solid rgba(15,23,42,0.1);border-radius:10px;
+      box-shadow:0 8px 28px rgba(15,23,42,.18);padding:4px;z-index:3100;max-height:300px;overflow-y:auto;
     }
     #vp-buscador-resultados.open{display:block}
     #vp-volver{
-      background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
-      border-radius:8px;color:#e6edf3;font-size:.8rem;font-weight:600;padding:8px 14px;
+      background:#fff;border:1px solid rgba(15,23,42,0.13);
+      border-radius:8px;color:#1e293b;font-size:.8rem;font-weight:600;padding:8px 14px;
       cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:auto;
     }
-    #vp-volver:hover{background:rgba(255,255,255,0.15)}
+    #vp-volver:hover{background:#f1f5f9}
     #vp-contenido{flex:1;overflow-y:auto;padding:26px 20px 60px;}
     #vp-contenido::-webkit-scrollbar{width:6px}
     #vp-contenido::-webkit-scrollbar-track{background:transparent}
-    #vp-contenido::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:3px}
+    #vp-contenido::-webkit-scrollbar-thumb{background:rgba(15,23,42,.15);border-radius:3px}
     #vp-inner{max-width:980px;margin:0 auto}
     #vp-vacio{
-      max-width:420px;margin:60px auto 0;text-align:center;color:#9aa7bd;font-size:.92rem;line-height:1.6;
+      max-width:420px;margin:60px auto 0;text-align:center;color:#64748b;font-size:.92rem;line-height:1.6;
     }
+    #vp-mapa{border-radius:10px;overflow:hidden;height:220px;background:#e2e8f0;}
+
+    /* Tarjetas de día clicables (abren el detalle horario) */
+    .vp-day-card{cursor:pointer;transition:transform .15s,box-shadow .15s}
+    .vp-day-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(15,23,42,.14)}
+
+    /* Modal de detalle horario de un día */
+    #vp-detalle-dia{
+      display:none;position:fixed;inset:0;z-index:3200;background:rgba(15,23,42,.45);
+      align-items:center;justify-content:center;padding:20px;
+    }
+    #vp-detalle-dia.open{display:flex}
+    #vpd-card{
+      background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:85vh;
+      overflow-y:auto;box-shadow:0 20px 60px rgba(15,23,42,.35);
+    }
+    #vpd-header{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:16px 20px;border-bottom:1px solid rgba(15,23,42,.08);position:sticky;top:0;
+      background:#fff;border-radius:14px 14px 0 0;
+    }
+    #vpd-titulo{font-size:1rem;font-weight:700;color:#0f172a}
+    #vpd-cerrar{
+      background:rgba(15,23,42,.06);border:none;border-radius:6px;color:#475569;font-size:.8rem;
+      width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+    }
+    #vpd-cerrar:hover{background:rgba(15,23,42,.12)}
+    #vpd-body{padding:18px 20px 22px}
     @media(max-width:700px){
       #vp-topbar{padding:10px 12px;gap:8px}
       #vp-contenido{padding:16px 12px 50px}
@@ -2268,30 +2409,30 @@ HTML_BASE = """<!DOCTYPE html>
     #dc::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
 
     /* Overrides de contenido dinámico del panel para tema oscuro */
-    #dc [style*="color:#2c3e50"],#vp-inner [style*="color:#2c3e50"]{color:#f1f5f9!important}
-    #dc [style*="color:#555"],#vp-inner [style*="color:#555"]{color:#9ca3af!important}
-    #dc [style*="color:#666"],#vp-inner [style*="color:#666"]{color:#9ca3af!important}
-    #dc [style*="color:#888"],#vp-inner [style*="color:#888"]{color:#6b7280!important}
-    #dc [style*="color:#444"],#vp-inner [style*="color:#444"]{color:#cbd5e1!important}
-    #dc [style*="color:#aaa"],#vp-inner [style*="color:#aaa"]{color:#374151!important}
-    #dc [style*="color:#999"],#vp-inner [style*="color:#999"]{color:#4b5563!important}
-    #dc [style*="color:#1a5276"],#vp-inner [style*="color:#1a5276"]{color:#93c5fd!important}
-    #dc [style*="color:#856404"],#vp-inner [style*="color:#856404"]{color:#fbbf24!important}
-    #dc [style*="background:#f8f8f8"],#vp-inner [style*="background:#f8f8f8"]{background:rgba(255,255,255,0.04)!important}
-    #dc [style*="background:#e0e0e0"],#vp-inner [style*="background:#e0e0e0"]{background:rgba(255,255,255,0.13)!important}
-    #dc [style*="background:#e8f4fd"],#vp-inner [style*="background:#e8f4fd"]{background:rgba(30,58,95,0.55)!important;border-color:rgba(59,130,246,.3)!important}
-    #dc [style*="background:#fef9e7"],#vp-inner [style*="background:#fef9e7"]{background:rgba(92,53,15,0.45)!important;border-color:rgba(251,191,36,.3)!important}
-    #dc [style*="background:#fff3cd"],#vp-inner [style*="background:#fff3cd"]{background:rgba(92,53,15,0.45)!important;border-color:rgba(251,191,36,.3)!important}
-    #dc [style*="background:#f0f7ff"],#vp-inner [style*="background:#f0f7ff"]{background:rgba(30,58,95,0.38)!important;border-color:rgba(59,130,246,.22)!important}
-    #dc [style*="background:#f0fff4"],#vp-inner [style*="background:#f0fff4"]{background:rgba(5,46,22,0.45)!important;border-color:rgba(34,197,94,.22)!important}
-    #dc tr[style*="background:#dce8f5"],#vp-inner tr[style*="background:#dce8f5"]{background:rgba(59,130,246,0.11)!important}
-    #dc tr[style*="background:#c8f0d8"],#vp-inner tr[style*="background:#c8f0d8"]{background:rgba(34,197,94,0.11)!important}
-    #dc tr[style*="background:#f5f5f5"],#vp-inner tr[style*="background:#f5f5f5"]{background:rgba(255,255,255,0.03)!important}
-    #dc td[style*="background:#dce8f5"],#vp-inner td[style*="background:#dce8f5"]{background:rgba(59,130,246,0.11)!important}
-    #dc hr,#vp-inner hr{border-top-color:rgba(255,255,255,0.07)!important}
-    #dc a[href*="wunderground"],#vp-inner a[href*="wunderground"]{background:#2563eb!important;border-radius:8px!important}
-    #dc [style*="border-left:3px solid #3498db"],#vp-inner [style*="border-left:3px solid #3498db"]{border-left-color:#3b82f6!important}
-    #dc [style*="border-left:3px solid #27ae60"],#vp-inner [style*="border-left:3px solid #27ae60"]{border-left-color:#22c55e!important}
+    #dc [style*="color:#2c3e50"]{color:#f1f5f9!important}
+    #dc [style*="color:#555"]{color:#9ca3af!important}
+    #dc [style*="color:#666"]{color:#9ca3af!important}
+    #dc [style*="color:#888"]{color:#6b7280!important}
+    #dc [style*="color:#444"]{color:#cbd5e1!important}
+    #dc [style*="color:#aaa"]{color:#374151!important}
+    #dc [style*="color:#999"]{color:#4b5563!important}
+    #dc [style*="color:#1a5276"]{color:#93c5fd!important}
+    #dc [style*="color:#856404"]{color:#fbbf24!important}
+    #dc [style*="background:#f8f8f8"]{background:rgba(255,255,255,0.04)!important}
+    #dc [style*="background:#e0e0e0"]{background:rgba(255,255,255,0.13)!important}
+    #dc [style*="background:#e8f4fd"]{background:rgba(30,58,95,0.55)!important;border-color:rgba(59,130,246,.3)!important}
+    #dc [style*="background:#fef9e7"]{background:rgba(92,53,15,0.45)!important;border-color:rgba(251,191,36,.3)!important}
+    #dc [style*="background:#fff3cd"]{background:rgba(92,53,15,0.45)!important;border-color:rgba(251,191,36,.3)!important}
+    #dc [style*="background:#f0f7ff"]{background:rgba(30,58,95,0.38)!important;border-color:rgba(59,130,246,.22)!important}
+    #dc [style*="background:#f0fff4"]{background:rgba(5,46,22,0.45)!important;border-color:rgba(34,197,94,.22)!important}
+    #dc tr[style*="background:#dce8f5"]{background:rgba(59,130,246,0.11)!important}
+    #dc tr[style*="background:#c8f0d8"]{background:rgba(34,197,94,0.11)!important}
+    #dc tr[style*="background:#f5f5f5"]{background:rgba(255,255,255,0.03)!important}
+    #dc td[style*="background:#dce8f5"]{background:rgba(59,130,246,0.11)!important}
+    #dc hr{border-top-color:rgba(255,255,255,0.07)!important}
+    #dc a[href*="wunderground"]{background:#2563eb!important;border-radius:8px!important}
+    #dc [style*="border-left:3px solid #3498db"]{border-left-color:#3b82f6!important}
+    #dc [style*="border-left:3px solid #27ae60"]{border-left-color:#22c55e!important}
 
     /* Overrides de controles Leaflet para tema oscuro */
     .leaflet-control-layers{
@@ -2461,6 +2602,17 @@ HTML_BASE = """<!DOCTYPE html>
     <div id="vp-vacio">
       <div style="font-size:42px;margin-bottom:10px;">🔮</div>
       <div>Busca una población para ver su pronóstico y comparar modelos.</div>
+    </div>
+  </div>
+
+  <!-- Detalle horario de un día concreto (se abre al pinchar una tarjeta o un punto del gráfico) -->
+  <div id="vp-detalle-dia" onclick="if(event.target===this) cerrarDetalleDia()">
+    <div id="vpd-card">
+      <div id="vpd-header">
+        <span id="vpd-titulo">Detalle del día</span>
+        <button type="button" id="vpd-cerrar" onclick="cerrarDetalleDia()">✕</button>
+      </div>
+      <div id="vpd-body"></div>
     </div>
   </div>
 </div>
