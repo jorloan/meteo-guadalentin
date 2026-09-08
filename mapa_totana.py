@@ -1463,6 +1463,434 @@ function cerrarDetalleDia(){
   document.getElementById('vp-detalle-dia').classList.remove('open');
 }
 
+// ── Mapa de precipitación acumulada prevista (multi-modelo) ──
+// Rejilla de puntos sobre la Región de Murcia y alrededores. Para cada
+// punto se pide a Open-Meteo la precipitación horaria del modelo elegido
+// y se acumula desde la hora en curso hasta el plazo seleccionado
+// (24h/48h/72h/5d/7d). El campo resultante se interpola con turf (IDW,
+// igual que el heatmap de estaciones) y se pinta con la escala de color
+// habitual de las webs meteorológicas (mm acumulados).
+//
+// Para no castigar la cuota gratuita de Open-Meteo se piden dos cosas
+// distintas y separadas:
+//   · la rejilla (~100 puntos) solo del modelo activo, bajo demanda;
+//   · la comparativa de modelos solo en las poblaciones del valle
+//     (8 puntos), que es barata y es lo que de verdad interesa aquí.
+// Todo queda cacheado en memoria por (modelo, ámbito, días).
+
+// Ventana geográfica: toda la Región de Murcia más un margen (Almería,
+// Granada, Albacete, Alicante) para que el campo interpolado no se corte
+// justo en el borde de la zona de interés. Paso de 0,25° (~22 km): es la
+// resolución nativa de ECMWF-IFS y deja la rejilla en ~100 puntos, que es
+// lo que la cuota gratuita de Open-Meteo admite con holgura.
+var LL_BBOX={la0:37.00,la1:38.90,lo0:-3.00,lo1:0.00};
+var LL_PASO=0.25;
+var LL_LIMITES=[[LL_BBOX.la0,LL_BBOX.lo0],[LL_BBOX.la1,LL_BBOX.lo1]];
+
+// Modelos disponibles en Open-Meteo que cubren el sureste peninsular.
+// Los marcados con "top" son los de mejor comportamiento verificado en
+// esta zona: ECMWF (referencia global) e ICON-EU (el de más resolución
+// que llega a Murcia). AROME/HARMONIE de alta resolución no tienen
+// dominio abierto sobre España, por eso no aparecen.
+// "alt" es un identificador de reserva: si Open-Meteo retira o renombra
+// una variante concreta, se reintenta con el alias equivalente en vez de
+// dejar el modelo sin datos.
+var LL_MODELOS=[
+  {id:'ecmwf_ifs025',              alt:null,                             nombre:'ECMWF',    top:true,  det:'IFS 0,25° · referencia mundial (2-7 días)'},
+  {id:'icon_eu',                   alt:'icon_seamless',                  nombre:'ICON-EU',  top:true,  det:'DWD 7 km · máxima resolución que cubre Murcia'},
+  {id:'meteofrance_arpege_europe', alt:'meteofrance_seamless',           nombre:'ARPEGE',   top:false, det:'Météo-France 11 km · buen comportamiento en el Mediterráneo'},
+  {id:'ukmo_seamless',             alt:'ukmo_global_deterministic_10km', nombre:'UKMO',     top:false, det:'Met Office ~10 km'},
+  {id:'gfs_seamless',              alt:'gfs_global',                     nombre:'GFS',      top:false, det:'NOAA 13-25 km'},
+  {id:'ecmwf_aifs025_single',      alt:'ecmwf_aifs025',                  nombre:'ECMWF AI', top:false, det:'AIFS 0,25° · modelo de IA de ECMWF'}
+];
+
+var LL_PLAZOS=[
+  {h:24, txt:'24 h'},{h:48, txt:'48 h'},{h:72, txt:'72 h'},
+  {h:120,txt:'5 días'},{h:168,txt:'7 días'}
+];
+
+// Poblaciones de referencia del valle del Guadalentín (+ Murcia capital)
+var LL_POBLACIONES=[
+  {n:'Totana',           lat:37.771,lon:-1.502,pri:1},
+  {n:'Aledo',            lat:37.798,lon:-1.573,pri:8},
+  {n:'Lorca',            lat:37.676,lon:-1.700,pri:2},
+  {n:'Alhama de Murcia', lat:37.851,lon:-1.425,pri:3},
+  {n:'Librilla',         lat:37.891,lon:-1.352,pri:7},
+  {n:'Puerto Lumbreras', lat:37.564,lon:-1.812,pri:6},
+  {n:'Mazarrón',         lat:37.599,lon:-1.315,pri:5},
+  {n:'Murcia',           lat:37.983,lon:-1.130,pri:4}
+];
+
+// Escala de color por mm acumulados (estilo Meteologix/AEMET)
+var LL_ESCALA=[
+  {v:0.1,c:'#eef3fc'},{v:1,c:'#d5e3f8'},{v:2,c:'#b5d1f3'},{v:3,c:'#90bbeb'},
+  {v:5,c:'#67a1e1'},{v:7,c:'#3f84d5'},{v:10,c:'#2065c0'},{v:15,c:'#17489f'},
+  {v:20,c:'#12347a'},{v:25,c:'#2e8b57'},{v:30,c:'#45b649'},{v:40,c:'#84c93f'},
+  {v:50,c:'#c9d92f'},{v:60,c:'#f2e02a'},{v:70,c:'#f9bd23'},{v:80,c:'#f59331'},
+  {v:100,c:'#ee6a2c'},{v:125,c:'#e03b2c'},{v:150,c:'#bd2130'},{v:200,c:'#8d1b3d'},
+  {v:250,c:'#7a1a6e'},{v:300,c:'#a83bb0'},{v:400,c:'#cf86d6'},{v:500,c:'#c9c9c9'}
+];
+var LL_ETIQ_LEYENDA=[0.1,1,2,5,10,20,30,50,70,100,150,250];
+
+function llColor(v){
+  if(v==null||isNaN(v)||v<0.1) return null;
+  for(var i=0;i<LL_ESCALA.length;i++) if(v<LL_ESCALA[i].v) return LL_ESCALA[Math.max(0,i-1)].c;
+  return LL_ESCALA[LL_ESCALA.length-1].c;
+}
+// Texto blanco a partir del azul medio, para que se lea sobre el fondo
+function llColorTexto(v){ return (v!=null&&v>=5)?'#fff':'#1e293b'; }
+
+var llModelo='ecmwf_ifs025';
+var llHoras=48;
+var llMapa=null, llCapaCampo=null, llCapaPtos=null;
+var llRejillaPts=null;
+var llCache={};        // 'modelo|ambito|dias' -> [{lat,lon,t,p}]
+var llPeticion=0;      // token para descartar respuestas de peticiones viejas
+
+function llRejilla(){
+  if(llRejillaPts) return llRejillaPts;
+  llRejillaPts=[];
+  for(var la=LL_BBOX.la0; la<=LL_BBOX.la1+1e-9; la+=LL_PASO)
+    for(var lo=LL_BBOX.lo0; lo<=LL_BBOX.lo1+1e-9; lo+=LL_PASO)
+      llRejillaPts.push({lat:Math.round(la*100)/100, lon:Math.round(lo*100)/100});
+  return llRejillaPts;
+}
+
+// Días de pronóstico que hay que pedir para poder acumular "horas" desde
+// la hora en curso (uno más, porque el día de hoy ya va empezado).
+function llDias(horas){ return Math.min(16, Math.ceil(horas/24)+1); }
+
+function llDeCache(modelo,ambito,dias){
+  for(var k in llCache){
+    var pz=k.split('|');
+    if(pz[0]===modelo && pz[1]===ambito && (+pz[2])>=dias) return llCache[k];
+  }
+  return null;
+}
+
+function llAlt(modelo){
+  for(var i=0;i<LL_MODELOS.length;i++) if(LL_MODELOS[i].id===modelo) return LL_MODELOS[i].alt||null;
+  return null;
+}
+
+function llDescargar(pts,modelo,dias){
+  var lats=[],lons=[];
+  pts.forEach(function(p){ lats.push(p.lat); lons.push(p.lon); });
+  var url='https://api.open-meteo.com/v1/forecast?latitude='+lats.join(',')
+    +'&longitude='+lons.join(',')+'&hourly=precipitation&models='+modelo
+    +'&forecast_days='+dias+'&timeformat=unixtime&timezone=UTC&cell_selection=land';
+  return fetch(url).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(d){
+    if(d&&d.error) throw new Error(d.reason||'error API');
+    var arr=Array.isArray(d)?d:[d];
+    return arr.map(function(o,i){
+      var h=o.hourly||{};
+      return {lat:pts[i]?pts[i].lat:o.latitude, lon:pts[i]?pts[i].lon:o.longitude,
+              t:h.time||[], p:h.precipitation||h['precipitation_'+modelo]||[]};
+    });
+  });
+}
+
+function llPedir(pts,modelo,ambito,dias){
+  var cache=llDeCache(modelo,ambito,dias);
+  if(cache) return Promise.resolve(cache);
+  return llDescargar(pts,modelo,dias).catch(function(e){
+    var alt=llAlt(modelo);
+    if(!alt) throw e;
+    return llDescargar(pts,alt,dias);
+  }).then(function(res){
+    llCache[modelo+'|'+ambito+'|'+dias]=res;
+    return res;
+  });
+}
+
+// Ventana de acumulación: desde el inicio de la hora en curso
+function llVentana(horas){
+  var ini=Math.floor(Date.now()/3600000)*3600;
+  return {ini:ini, fin:ini+horas*3600};
+}
+
+// Devuelve {v: mm acumulados, cob: fracción del plazo con datos}. La
+// cobertura importa porque los modelos de alcance corto (ICON-EU,
+// ARPEGE) no llegan a 7 días: su acumulado se marca con * en vez de
+// hacerlo pasar por un total comparable con el de ECMWF o GFS.
+function llAcumular(serie,ven){
+  if(!serie||!serie.t||!serie.t.length) return null;
+  var s=0,con=0,total=Math.max(1,Math.round((ven.fin-ven.ini)/3600));
+  for(var i=0;i<serie.t.length;i++){
+    var t=serie.t[i];
+    if(t<ven.ini) continue;
+    if(t>=ven.fin) break;
+    var v=serie.p[i];
+    if(v!=null&&!isNaN(v)){ s+=v; con++; }
+  }
+  return con?{v:s, cob:con/total}:null;
+}
+
+function llVal(a){ return a?a.v:null; }
+
+function llFmt(a){
+  if(a==null||isNaN(a.v)) return '—';
+  return (a.v<10?a.v.toFixed(1):String(Math.round(a.v)))+(a.cob<0.9?'*':'');
+}
+
+function llFechaTxt(epochSeg){
+  return new Date(epochSeg*1000).toLocaleString('es-ES',
+    {timeZone:'Europe/Madrid',weekday:'short',day:'2-digit',month:'2-digit',
+     hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Vista ───────────────────────────────────────────────────
+var llAjustado=false;
+function mostrarVistaLluvia(){
+  document.getElementById('vl').classList.add('open');
+  llInitMapa();
+  // El mapa se crea con el contenedor recién mostrado: hay que recalcular
+  // su tamaño. El encuadre solo se ajusta la primera vez, para no deshacer
+  // el zoom del usuario cada vez que vuelve a abrir la pantalla.
+  setTimeout(function(){
+    if(!llMapa) return;
+    llMapa.invalidateSize();
+    if(!llAjustado){ llMapa.fitBounds(LL_LIMITES); llAjustado=true; }
+  },60);
+  llRender();
+}
+function ocultarVistaLluvia(){
+  document.getElementById('vl').classList.remove('open');
+}
+
+function llInitMapa(){
+  if(llMapa) return;
+  llMapa=L.map('vl-mapa',{scrollWheelZoom:false});
+  llMapa.fitBounds(LL_LIMITES);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+    {attribution:'© CARTO © OSM'}).addTo(llMapa);
+  llMapa.createPane('llcampo');
+  llMapa.getPane('llcampo').style.zIndex=390;
+  llMapa.getPane('llcampo').style.filter='blur(9px)';
+  llMapa.createPane('lletiq');
+  llMapa.getPane('lletiq').style.zIndex=450;
+  llMapa.getPane('lletiq').style.pointerEvents='none';
+  llCapaCampo=L.layerGroup().addTo(llMapa);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',
+    {pane:'lletiq'}).addTo(llMapa);
+  llCapaPtos=L.layerGroup().addTo(llMapa);
+  llMapa.on('click',llClickMapa);
+  llMapa.on('zoomend',llDibujarPoblaciones);
+  llPintarLeyenda();
+}
+
+function llPintarChips(){
+  var cm=document.getElementById('vl-modelos');
+  if(cm) cm.innerHTML=LL_MODELOS.map(function(m){
+    return '<button type="button" class="ll-chip'+(m.id===llModelo?' active':'')+'"'
+      +' title="'+m.det+'" onclick="llSetModelo(\''+m.id+'\')">'
+      +(m.top?'⭐ ':'')+m.nombre+'</button>';
+  }).join('');
+  var cp=document.getElementById('vl-plazos');
+  if(cp) cp.innerHTML=LL_PLAZOS.map(function(p){
+    return '<button type="button" class="ll-chip'+(p.h===llHoras?' active':'')+'"'
+      +' onclick="llSetPlazo('+p.h+')">'+p.txt+'</button>';
+  }).join('');
+}
+
+function llSetModelo(id){ if(id===llModelo) return; llModelo=id; llRender(); }
+function llSetPlazo(h){ if(h===llHoras) return; llHoras=h; llRender(); }
+
+function llCargando(activo,txt){
+  var el=document.getElementById('vl-cargando');
+  if(!el) return;
+  el.textContent=txt||'⏳ Descargando pronóstico…';
+  el.style.display=activo?'block':'none';
+}
+
+function llNombreModelo(id){
+  for(var i=0;i<LL_MODELOS.length;i++) if(LL_MODELOS[i].id===id) return LL_MODELOS[i].nombre;
+  return id;
+}
+
+function llRender(){
+  llInitMapa();
+  llPintarChips();
+  var ven=llVentana(llHoras), dias=llDias(llHoras);
+  var plazo='';
+  LL_PLAZOS.forEach(function(p){ if(p.h===llHoras) plazo=p.txt; });
+
+  var cab=document.getElementById('vl-rango');
+  if(cab) cab.innerHTML='<b>Precipitación total acumulada '+plazo+'</b> — '
+    +llNombreModelo(llModelo)+' · de '+llFechaTxt(ven.ini)+' a '+llFechaTxt(ven.fin)+' (hora local)';
+
+  var token=++llPeticion;
+  llCargando(true);
+  llPedir(llRejilla(),llModelo,'rejilla',dias).then(function(datos){
+    if(token!==llPeticion) return;
+    llPintarCampo(datos,ven);
+    llCargando(false);
+  }).catch(function(){
+    if(token!==llPeticion) return;
+    llCapaCampo.clearLayers();
+    llCargando(true,'⚠ '+llNombreModelo(llModelo)+' no ha devuelto datos. Prueba con otro modelo.');
+  });
+
+  llRenderComparativa(ven,dias,token);
+}
+
+function llPintarCampo(datos,ven){
+  llCapaCampo.clearLayers();
+  var feats=[];
+  datos.forEach(function(s){
+    var a=llAcumular(s,ven);
+    if(a==null) return;
+    feats.push(turf.point([s.lon,s.lat],{value:a.v}));
+  });
+  if(feats.length<3) return;
+  try{
+    var g=turf.interpolate(turf.featureCollection(feats),5,
+      {gridType:'square',property:'value',units:'kilometers',weight:2.2});
+    var cl=turf.featureCollection(g.features.filter(function(f){
+      var v=f.properties.value;
+      return v!=null&&!isNaN(v)&&v>=0.1;
+    }));
+    llCapaCampo.addLayer(L.geoJSON(cl,{pane:'llcampo',style:function(f){
+      return {fillColor:llColor(f.properties.value),fillOpacity:0.8,stroke:false};
+    }}));
+  }catch(e){ console.error('Campo lluvia:',e); }
+}
+
+// Etiquetas de las poblaciones sobre el mapa. Con el mapa alejado varias
+// caen casi encima (Totana-Aledo, Alhama-Librilla), así que se colocan por
+// orden de prioridad y se descarta la que pisaría a otra ya puesta; al
+// hacer zoom vuelven a aparecer. Los valores exactos de todas están
+// siempre en la tabla de abajo.
+var llPobDatos=null, llPobVen=null;
+function llPintarPoblaciones(datosPob,ven){
+  llPobDatos=datosPob||null;
+  llPobVen=ven||null;
+  llDibujarPoblaciones();
+}
+// Separado del anterior para poder recolocar las etiquetas al hacer zoom
+// sin tocar los datos (y sin arrastrar los del modelo anterior si el
+// modelo activo se ha quedado sin respuesta).
+function llDibujarPoblaciones(){
+  if(!llCapaPtos) return;
+  llCapaPtos.clearLayers();
+  if(!llPobDatos||!llPobVen) return;
+  var puestos=[];
+  LL_POBLACIONES.map(function(p,i){ return {p:p,i:i}; })
+    .sort(function(a,b){ return (a.p.pri||9)-(b.p.pri||9); })
+    .forEach(function(o){
+      var pt=llMapa.latLngToLayerPoint([o.p.lat,o.p.lon]);
+      for(var k=0;k<puestos.length;k++)
+        if(Math.abs(puestos[k].x-pt.x)<38 && Math.abs(puestos[k].y-pt.y)<20) return;
+      puestos.push(pt);
+      var a=llAcumular(llPobDatos[o.i],llPobVen), v=llVal(a);
+      var bg=llColor(v)||'#f1f5f9';
+      var html='<div class="ll-pin" style="background:'+bg+';color:'+llColorTexto(v)+';">'
+        +llFmt(a)+'</div>';
+      L.marker([o.p.lat,o.p.lon],{icon:L.divIcon({className:'',html:html,iconSize:[34,18],iconAnchor:[17,9]})})
+        .bindTooltip('<b>'+o.p.n+'</b><br>'+llFmt(a)+' mm',{direction:'top',offset:[0,-10]})
+        .addTo(llCapaPtos);
+    });
+}
+
+function llPintarLeyenda(){
+  var el=document.getElementById('vl-leyenda');
+  if(!el) return;
+  var celdas=LL_ESCALA.slice(0,LL_ESCALA.length-1).map(function(e){
+    var et=LL_ETIQ_LEYENDA.indexOf(e.v)>=0?String(e.v):'';
+    return '<div class="ll-lg-cel"><span class="ll-lg-col" style="background:'+e.c+'"></span>'
+      +'<span class="ll-lg-txt">'+et+'</span></div>';
+  }).join('');
+  el.innerHTML='<div class="ll-lg-tit">Precipitación acumulada (mm)</div>'
+    +'<div class="ll-lg-barra">'+celdas+'</div>';
+}
+
+// ── Comparativa de modelos en las poblaciones del valle ─────
+function llRenderComparativa(ven,dias,token){
+  var cont=document.getElementById('vl-tabla');
+  if(!cont) return;
+  cont.innerHTML='<div class="ll-nota">⏳ Comparando modelos en el valle…</div>';
+  var pts=LL_POBLACIONES.map(function(p){ return {lat:p.lat,lon:p.lon}; });
+  var pend=LL_MODELOS.map(function(m){
+    return llPedir(pts,m.id,'pob',dias)
+      .then(function(d){ return {id:m.id,datos:d}; })
+      .catch(function(){ return {id:m.id,datos:null}; });
+  });
+  Promise.all(pend).then(function(res){
+    if(token!==llPeticion) return;
+    var porModelo={};
+    res.forEach(function(r){ porModelo[r.id]=r.datos; });
+    llPintarPoblaciones(porModelo[llModelo],ven);
+
+    var disponibles=LL_MODELOS.filter(function(m){ return porModelo[m.id]; });
+    if(!disponibles.length){
+      cont.innerHTML='<div class="ll-nota">⚠ No se ha podido cargar la comparativa de modelos.</div>';
+      return;
+    }
+    var th=disponibles.map(function(m){
+      return '<th'+(m.id===llModelo?' class="ll-col-act"':'')+' title="'+m.det+'">'
+        +(m.top?'⭐ ':'')+m.nombre+'</th>';
+    }).join('');
+    var filas=LL_POBLACIONES.map(function(p,i){
+      var vals=[],tds='';
+      disponibles.forEach(function(m){
+        var a=llAcumular(porModelo[m.id][i],ven), v=llVal(a);
+        if(v!=null) vals.push(v);
+        var bg=llColor(v);
+        tds+='<td'+(m.id===llModelo?' class="ll-col-act"':'')+' style="'
+          +(bg?'background:'+bg+';color:'+llColorTexto(v)+';':'')+'">'+llFmt(a)+'</td>';
+      });
+      var media=vals.length?vals.reduce(function(x,y){return x+y;},0)/vals.length:null;
+      var bgm=llColor(media);
+      return '<tr><th class="ll-pob">'+p.n+'</th>'+tds
+        +'<td class="ll-media" style="'+(bgm?'background:'+bgm+';color:'+llColorTexto(media)+';':'')+'">'
+        +llFmt(media==null?null:{v:media,cob:1})+'</td></tr>';
+    }).join('');
+
+    cont.innerHTML='<div class="ll-tabla-tit">🌧 Acumulado previsto por modelo (mm) — poblaciones del valle</div>'
+      +'<div class="ll-tabla-scroll"><table class="ll-tabla"><tr><th></th>'+th
+      +'<th class="ll-media">Media</th></tr>'+filas+'</table></div>'
+      +'<div class="ll-nota">⭐ <b>ECMWF</b> (referencia mundial) e <b>ICON-EU</b> (7 km, la mayor resolución que cubre Murcia) '
+      +'son los más fiables en el sureste peninsular; ARPEGE aporta bien los temporales mediterráneos. '
+      +'Cuando los modelos coinciden, la previsión es sólida; si se separan mucho, la incertidumbre es alta y conviene '
+      +'quedarse con la <b>media</b>. Un <b>*</b> indica que ese modelo no alcanza todo el plazo (acumulado parcial). '
+      +'Toca cualquier punto del mapa para ver la comparativa ahí mismo.</div>'
+      +'<div class="ll-fuente">Fuente: Open-Meteo (datos abiertos ECMWF · DWD · Météo-France · Met Office · NOAA)</div>';
+  });
+}
+
+// ── Consulta puntual al pinchar en el mapa ──────────────────
+function llClickMapa(e){
+  var lat=Math.round(e.latlng.lat*1000)/1000, lon=Math.round(e.latlng.lng*1000)/1000;
+  var ven=llVentana(llHoras), dias=llDias(llHoras);
+  var pop=L.popup({maxWidth:260}).setLatLng(e.latlng)
+    .setContent('<div style="font-size:12px;">⏳ Consultando modelos…</div>').openOn(llMapa);
+  var pts=[{lat:lat,lon:lon}], amb='punto'+lat+','+lon;
+  Promise.all(LL_MODELOS.map(function(m){
+    return llPedir(pts,m.id,amb,dias)
+      .then(function(d){ return {m:m,a:llAcumular(d[0],ven)}; })
+      .catch(function(){ return {m:m,a:null}; });
+  })).then(function(res){
+    var vals=res.filter(function(r){return r.a!=null;}).map(function(r){return r.a.v;});
+    var media=vals.length?vals.reduce(function(x,y){return x+y;},0)/vals.length:null;
+    var filas=res.map(function(r){
+      var v=llVal(r.a), bg=llColor(v);
+      return '<tr><td style="padding:2px 6px;">'+(r.m.top?'⭐ ':'')+r.m.nombre+'</td>'
+        +'<td style="padding:2px 6px;text-align:right;font-weight:700;'
+        +(bg?'background:'+bg+';color:'+llColorTexto(v)+';':'')+'">'+llFmt(r.a)+'</td></tr>';
+    }).join('');
+    pop.setContent('<div style="font-size:12px;">'
+      +'<div style="font-weight:700;margin-bottom:4px;">📍 '+lat.toFixed(2)+', '+lon.toFixed(2)+'</div>'
+      +'<div style="color:#64748b;font-size:10.5px;margin-bottom:6px;">Acumulado '+llHoras+' h (mm)</div>'
+      +'<table style="border-collapse:collapse;font-size:11.5px;">'+filas
+      +'<tr><td style="padding:2px 6px;border-top:1px solid rgba(15,23,42,.15);font-weight:700;">Media</td>'
+      +'<td style="padding:2px 6px;text-align:right;font-weight:700;border-top:1px solid rgba(15,23,42,.15);">'
+      +llFmt(media==null?null:{v:media,cob:1})+'</td></tr></table></div>');
+  });
+}
+
 // Mostrar aviso de días si procede
 if(AVISO_DIAS){
   var av=document.getElementById('aviso-dias');
@@ -2274,6 +2702,90 @@ HTML_BASE = """<!DOCTYPE html>
       #vp-volver{margin-left:0;order:3;width:100%}
     }
 
+
+    /* ── Pantalla completa: mapa de lluvia prevista ── */
+    #btn-lluvia{
+      background:rgba(14,165,233,.16);border:1px solid rgba(14,165,233,.42);
+      border-radius:8px;color:#7dd3fc;font-size:.8rem;font-weight:700;padding:7px 12px;
+      cursor:pointer;font-family:inherit;flex-shrink:0;
+    }
+    #btn-lluvia:hover{background:rgba(14,165,233,.3)}
+    #vl{
+      display:none;position:fixed;inset:0;z-index:3000;color:#1e293b;
+      background:linear-gradient(160deg,#eaf4fb 0%,#dbe9f6 45%,#eef6fb 100%);
+      flex-direction:column;
+    }
+    #vl.open{display:flex}
+    #vl-topbar{
+      display:flex;align-items:center;gap:12px;padding:12px 20px;flex-wrap:wrap;flex-shrink:0;
+      background:rgba(255,255,255,0.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-bottom:1px solid rgba(15,23,42,0.08);
+    }
+    #vl-titulo{font-size:.95rem;font-weight:800;color:#0f172a;line-height:1.2}
+    #vl-titulo small{display:block;font-size:.6rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.6px}
+    .vl-btn{
+      background:#fff;border:1px solid rgba(15,23,42,0.13);
+      border-radius:8px;color:#1e293b;font-size:.8rem;font-weight:600;padding:8px 14px;
+      cursor:pointer;font-family:inherit;flex-shrink:0;
+    }
+    .vl-btn:hover{background:#f1f5f9}
+    #vl-volver{margin-left:auto}
+    #vl-cuerpo{flex:1;overflow-y:auto;padding:16px 18px 46px}
+    #vl-cuerpo::-webkit-scrollbar{width:6px}
+    #vl-cuerpo::-webkit-scrollbar-thumb{background:rgba(15,23,42,.15);border-radius:3px}
+    #vl-inner{max-width:1040px;margin:0 auto}
+    .ll-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:7px}
+    .ll-chips-tit{font-size:.62rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px}
+    .ll-chip{
+      background:#fff;border:1px solid rgba(15,23,42,0.13);border-radius:7px;
+      color:#334155;font-size:.72rem;font-weight:700;padding:6px 11px;
+      cursor:pointer;font-family:inherit;
+    }
+    .ll-chip:hover{background:#f1f5f9}
+    .ll-chip.active{background:#1d4ed8;border-color:transparent;color:#fff}
+    #vl-rango{font-size:.76rem;color:#334155;margin:10px 0 8px}
+    #vl-mapa-wrap{position:relative;border-radius:12px;overflow:hidden;box-shadow:0 6px 22px rgba(15,23,42,.15)}
+    #vl-mapa{height:52vh;min-height:300px;background:#e2e8f0}
+    #vl-cargando{
+      display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1200;
+      background:rgba(255,255,255,.94);border:1px solid rgba(15,23,42,.1);border-radius:8px;
+      padding:6px 12px;font-size:.74rem;font-weight:700;color:#334155;
+      box-shadow:0 3px 12px rgba(15,23,42,.18);max-width:90%;text-align:center;
+    }
+    .ll-pin{
+      border:1.5px solid #fff;border-radius:6px;width:34px;height:18px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:10.5px;font-weight:700;box-shadow:0 1px 5px rgba(0,0,0,.35);
+    }
+    #vl-leyenda{margin-top:10px}
+    .ll-lg-tit{font-size:.68rem;font-weight:700;color:#475569;margin-bottom:3px}
+    .ll-lg-barra{display:flex;align-items:flex-end;gap:0}
+    .ll-lg-cel{flex:1;text-align:center;min-width:0}
+    .ll-lg-col{display:block;height:12px}
+    .ll-lg-txt{display:block;font-size:.53rem;color:#475569;margin-top:2px}
+    #vl-tabla{margin-top:16px}
+    .ll-tabla-tit{font-size:.76rem;font-weight:700;color:#0f172a;margin-bottom:6px}
+    .ll-tabla-scroll{overflow-x:auto;border-radius:10px;background:#fff;box-shadow:0 3px 12px rgba(15,23,42,.1)}
+    .ll-tabla{border-collapse:collapse;font-size:.72rem;width:100%;min-width:520px}
+    .ll-tabla th,.ll-tabla td{padding:5px 8px;text-align:center;border-bottom:1px solid rgba(15,23,42,.06)}
+    .ll-tabla th{background:#eef2f8;color:#0f172a;font-weight:700;font-size:.68rem}
+    .ll-tabla th.ll-pob{background:#fff;text-align:left;font-weight:700;color:#0f172a;white-space:nowrap}
+    .ll-tabla th.ll-col-act{background:#1d4ed8;color:#fff}
+    .ll-tabla td.ll-col-act{box-shadow:inset 2px 0 0 rgba(29,78,216,.45),inset -2px 0 0 rgba(29,78,216,.45)}
+    .ll-tabla .ll-media{font-weight:800}
+    .ll-nota{
+      background:#f0f7ff;border-left:3px solid #3498db;border-radius:6px;
+      padding:9px 13px;font-size:.72rem;color:#334155;margin-top:10px;line-height:1.6;
+    }
+    .ll-fuente{font-size:.64rem;color:#6b7280;margin-top:8px}
+    @media(max-width:700px){
+      #vl-topbar{padding:10px 12px;gap:8px}
+      #vl-cuerpo{padding:12px 12px 40px}
+      #vl-volver{margin-left:0;order:3}
+      #vl-mapa{height:46vh;min-height:250px}
+      .ll-lg-txt{font-size:.48rem}
+    }
+
     /* ── Máquina del tiempo (formato tipo radarspain.es) ───────── */
     #tm-bar{
       position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:999;
@@ -2524,6 +3036,7 @@ HTML_BASE = """<!DOCTYPE html>
   </div>
   <div class="sep"></div>
   <button type="button" id="btn-pronostico" onclick="mostrarVistaPronostico()">🔮 Pronóstico</button>
+  <button type="button" id="btn-lluvia" onclick="mostrarVistaLluvia()">🌧 Lluvia prevista</button>
   <div class="sep"></div>
   <div id="ctrl-radar">
     <label><input type="checkbox" id="radar-chk"> 📡 Radar</label>
@@ -2596,6 +3109,7 @@ HTML_BASE = """<!DOCTYPE html>
       <input type="text" id="vp-buscador-input" placeholder="🔍 Buscar población…" autocomplete="off">
       <div id="vp-buscador-resultados"></div>
     </div>
+    <button type="button" class="vl-btn" onclick="mostrarVistaMapa();mostrarVistaLluvia()">🌧 Mapa de lluvia</button>
     <button type="button" id="vp-volver" onclick="mostrarVistaMapa()">← Mapa</button>
   </div>
   <div id="vp-contenido">
@@ -2613,6 +3127,31 @@ HTML_BASE = """<!DOCTYPE html>
         <button type="button" id="vpd-cerrar" onclick="cerrarDetalleDia()">✕</button>
       </div>
       <div id="vpd-body"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Pantalla completa: mapa de precipitación acumulada prevista -->
+<div id="vl">
+  <div id="vl-topbar">
+    <div id="vl-titulo">🌧 Lluvia prevista<small>Precipitación acumulada · Región de Murcia</small></div>
+    <button type="button" class="vl-btn" onclick="ocultarVistaLluvia();mostrarVistaPronostico()">🔮 Pronóstico por población</button>
+    <button type="button" class="vl-btn" id="vl-volver" onclick="ocultarVistaLluvia()">← Mapa</button>
+  </div>
+  <div id="vl-cuerpo">
+    <div id="vl-inner">
+      <div class="ll-chips-tit">Modelo</div>
+      <div class="ll-chips" id="vl-modelos"></div>
+      <div class="ll-chips-tit">Plazo acumulado</div>
+      <div class="ll-chips" id="vl-plazos"></div>
+      <div id="vl-rango"></div>
+      <div id="vl-mapa-wrap">
+        <div id="vl-mapa"></div>
+        <div id="vl-cargando">⏳ Descargando pronóstico…</div>
+      </div>
+      <div id="vl-leyenda"></div>
+      <div id="vl-tabla"></div>
     </div>
   </div>
 </div>

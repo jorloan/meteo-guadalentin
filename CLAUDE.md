@@ -197,6 +197,9 @@ To add a station: append its WU station ID to `estaciones.txt`. It will be picke
 - **Map center:** Totana, Murcia (37.76°N, -1.53°W)
 - **Features:** parameter selector (temp/humidity/precipitation/wind), time-slider playback over `history_24h.json`, opacity slider, station pop-ups with custom names, grayscale tile option
 - **Custom station names:** `nombresPersonalizados` object in the generated JS maps station IDs to friendly display names
+- **Forecast screens (full-screen overlays, light theme):**
+  - `#vp` — per-town forecast: Open-Meteo geocoder search + model comparison (ECMWF/ICON/GFS/AROME) with daily cards, SVG charts and an hourly detail modal
+  - `#vl` — accumulated precipitation forecast map (`ll*` functions): ~100-point grid over Murcia (bbox 37.0-38.9 N, -3.0-0.0 E, 0.25° step) fetched from Open-Meteo per selected model, accumulated from the current hour over 24h/48h/72h/5d/7d, interpolated with Turf IDW and painted with the standard mm colour scale; plus a per-model comparison table for the valley towns and a click-anywhere multi-model popup. Model list, colour scale and geographic window live in `LL_MODELOS` / `LL_ESCALA` / `LL_BBOX`
 
 To change the map layout, UI controls, or color scales: edit `generar_html()` in `mapa_totana.py`, then run the script to regenerate `index.html`.
 
