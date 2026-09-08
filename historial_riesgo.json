@@ -64928,6 +64928,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IALHAM23": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 224,
+      "dsv_7d": 20,
+      "lat": 37.844378,
+      "lon": -1.428541,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IALHAM31": {
       "oidio": 3,
       "mildiu": 1,
@@ -65648,16 +65658,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ITOTAN43": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 239,
-      "dsv_7d": 18,
-      "lat": 37.775914,
-      "lon": -1.52123,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "IGUILA10": {
       "oidio": 3,
       "mildiu": 1,
@@ -66032,7 +66032,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 48,
-      "dsv_7d": 25,
+      "dsv_7d": 24,
       "lat": 37.048823,
       "lon": -2.041163,
       "datos_ok": true,
@@ -66052,7 +66052,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 49,
-      "dsv_7d": 19,
+      "dsv_7d": 18,
       "lat": 37.609,
       "lon": -2.699,
       "datos_ok": true,
