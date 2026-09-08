@@ -65468,6 +65468,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "IMULA41": {
+      "oidio": 3,
+      "mildiu": 1,
+      "dsv_temporada": 183,
+      "dsv_7d": 16,
+      "lat": 37.924439,
+      "lon": -1.597045,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IMULA49": {
       "oidio": 3,
       "mildiu": 1,
@@ -65482,7 +65492,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 69,
-      "dsv_7d": 16,
+      "dsv_7d": 15,
       "lat": 37.544651,
       "lon": -1.865574,
       "datos_ok": true,
@@ -66185,6 +66195,16 @@
       "dsv_7d": 28,
       "lat": 37.662855,
       "lon": -1.186846,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 11d"
+    },
+    "ICARTA50": {
+      "oidio": 2,
+      "mildiu": 1,
+      "dsv_temporada": 53,
+      "dsv_7d": 28,
+      "lat": 37.705477,
+      "lon": -1.050768,
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
     },
