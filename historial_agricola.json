@@ -16187,7 +16187,7 @@
       "lon": -1.450125
     },
     "IMULA25": {
-      "tempMax": 37.7,
+      "tempMax": 37.8,
       "tempMin": 17.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -17005,7 +17005,7 @@
     "IREGINDE53": {
       "tempMax": 37.4,
       "tempMin": 15.7,
-      "precipTotal": 0.0,
+      "precipTotal": 2.01,
       "humedadAltaMinutos": 0,
       "lat": 38.694279,
       "lon": -1.16892
