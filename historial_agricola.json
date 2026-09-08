@@ -15884,9 +15884,9 @@
     },
     "ILORCA106": {
       "tempMax": 20.3,
-      "tempMin": 17.5,
+      "tempMin": 17.3,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1710,
+      "humedadAltaMinutos": 1715,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -16059,7 +16059,7 @@
       "lon": -1.94572
     },
     "ILORCA86": {
-      "tempMax": 34.1,
+      "tempMax": 34.3,
       "tempMin": 18.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16371,7 +16371,7 @@
       "lon": -1.41
     },
     "ITOTAN42": {
-      "tempMax": 39.6,
+      "tempMax": 39.7,
       "tempMin": 21.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16379,7 +16379,7 @@
       "lon": -1.539632
     },
     "ITOTAN43": {
-      "tempMax": 38.1,
+      "tempMax": 38.6,
       "tempMin": 20.8,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16659,7 +16659,7 @@
       "lon": -1.091008
     },
     "IALBAC26": {
-      "tempMax": 35.6,
+      "tempMax": 35.7,
       "tempMin": 23.0,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16779,7 +16779,7 @@
       "lon": -1.430653
     },
     "IOJS1": {
-      "tempMax": 38.3,
+      "tempMax": 38.8,
       "tempMin": 22.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16787,7 +16787,7 @@
       "lon": -1.342168
     },
     "ICIEZA1": {
-      "tempMax": 37.9,
+      "tempMax": 38.0,
       "tempMin": 16.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16795,7 +16795,7 @@
       "lon": -1.422595
     },
     "IGUILA25": {
-      "tempMax": 33.2,
+      "tempMax": 33.6,
       "tempMin": 23.5,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16987,7 +16987,7 @@
       "lon": -2.642
     },
     "IBAZA13": {
-      "tempMax": 35.4,
+      "tempMax": 35.5,
       "tempMin": 18.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -17003,7 +17003,7 @@
       "lon": -1.230179
     },
     "IREGINDE53": {
-      "tempMax": 36.4,
+      "tempMax": 37.4,
       "tempMin": 15.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
