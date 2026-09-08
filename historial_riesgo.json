@@ -66497,16 +66497,6 @@
       "lon": -1.696521,
       "datos_ok": true,
       "fuente_datos": "WU propio 11d"
-    },
-    "ICHINC62": {
-      "oidio": 1,
-      "mildiu": 1,
-      "dsv_temporada": 23,
-      "dsv_7d": 21,
-      "lat": 39.035,
-      "lon": -1.701,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 9d"
     }
   }
 }
