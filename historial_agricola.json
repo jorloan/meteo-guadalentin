@@ -15884,9 +15884,9 @@
     },
     "ILORCA106": {
       "tempMax": 20.3,
-      "tempMin": 14.2,
+      "tempMin": 14.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1882,
+      "humedadAltaMinutos": 1886,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -15950,7 +15950,7 @@
       "tempMax": 30.0,
       "tempMin": 21.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 558,
+      "humedadAltaMinutos": 562,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -16534,7 +16534,7 @@
       "tempMax": 31.0,
       "tempMin": 22.0,
       "precipTotal": 12.95,
-      "humedadAltaMinutos": 66,
+      "humedadAltaMinutos": 70,
       "lat": 38.195,
       "lon": -0.556
     },
@@ -16684,7 +16684,7 @@
     },
     "ILAVIL16": {
       "tempMax": 33.0,
-      "tempMin": 26.7,
+      "tempMin": 26.6,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.510997,
@@ -16710,7 +16710,7 @@
       "tempMax": 29.2,
       "tempMin": 21.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 182,
+      "humedadAltaMinutos": 186,
       "lat": 36.854477,
       "lon": -2.30637
     },
@@ -16926,7 +16926,7 @@
       "tempMax": 33.6,
       "tempMin": 20.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 182,
+      "humedadAltaMinutos": 186,
       "lat": 36.961412,
       "lon": -2.122682
     },
@@ -16942,7 +16942,7 @@
       "tempMax": 30.3,
       "tempMin": 22.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 294,
+      "humedadAltaMinutos": 298,
       "lat": 36.839695,
       "lon": -2.403375
     },
@@ -17022,7 +17022,7 @@
       "tempMax": 37.1,
       "tempMin": 14.3,
       "precipTotal": 2.01,
-      "humedadAltaMinutos": 544,
+      "humedadAltaMinutos": 548,
       "lat": 38.867105,
       "lon": -1.199184
     },
