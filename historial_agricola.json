@@ -15950,7 +15950,7 @@
       "tempMax": 30.0,
       "tempMin": 21.9,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 0,
+      "humedadAltaMinutos": 14,
       "lat": 37.534962,
       "lon": -1.45076
     },
@@ -17021,7 +17021,7 @@
     "IALMAN23": {
       "tempMax": 37.1,
       "tempMin": 14.3,
-      "precipTotal": 0.0,
+      "precipTotal": 1.8,
       "humedadAltaMinutos": 0,
       "lat": 38.867105,
       "lon": -1.199184
