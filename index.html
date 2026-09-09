@@ -303,6 +303,17 @@
     #ctrl-op{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0}
     #ctrl-op label{font-size:.58rem;color:#6e7f9a;font-weight:700;letter-spacing:.3px}
 
+    /* Ventana de acumulado de la capa de precipitación (solo visible
+       con ese parámetro activo) */
+    #ctrl-precip{display:none;gap:4px;flex-shrink:0}
+    .precip-chip{
+      background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
+      border-radius:6px;color:#cbd5e1;font-size:.68rem;font-weight:700;padding:5px 8px;
+      cursor:pointer;font-family:inherit;
+    }
+    .precip-chip:hover{background:rgba(255,255,255,0.14)}
+    .precip-chip.active{background:rgba(59,130,246,.85);border-color:transparent;color:#fff}
+
     /* Toggle radar (independiente del parámetro) */
     #ctrl-radar{display:flex;align-items:center;gap:6px;flex-shrink:0}
     #ctrl-radar label{display:flex;align-items:center;gap:4px;font-size:.72rem;color:#e6edf3;font-weight:600;cursor:pointer;user-select:none}
@@ -493,6 +504,7 @@
       <option value="mildiu">🍃 Riesgo Mildiu</option>
     </select>
   </div>
+  <div id="ctrl-precip" style="display:none"></div>
   <div class="sep"></div>
   <button type="button" id="btn-pronostico" onclick="mostrarVistaPronostico()">🔮 Pronóstico</button>
   <button type="button" id="btn-lluvia" onclick="mostrarVistaLluvia()">🌧 Lluvia prevista</button>
@@ -846,45 +858,107 @@ function col(v,p){
   if(p==='wind') return v>=40?'#b71c1c':v>=30?'#e65100':v>=20?'#f57f17':v>=10?'#fbc02d':v>=5?'#81c784':'#b2dfdb';
   return '#aaa';
 }
-// Precipitación en la hora anterior AL MOMENTO MOSTRADO en la máquina del
-// tiempo (no respecto al reloj real): diferencia entre el precipTotal en
-// ese momento y el de 1h antes (precipTotal es acumulado desde medianoche,
-// así que la resta da lo llovido en esa hora concreta). Busca en el mismo
-// dataset (activeData) que está usando el slider en ese momento, para no
-// mezclar datos de otro periodo.
-function getPrecipHoraDe(sid, tsRef){
-  var refT = new Date(tsRef).getTime();
-  var haceHora = refT - 3600*1000;
-  var datos = activeData;
-  var valorRef = null, valorHace = null;
-  for(var i=datos.length-1; i>=0; i--){
-    var snap = datos[i];
-    var t = new Date(snap.timestamp).getTime();
-    if(t > refT) continue; // ignorar frames posteriores al momento mostrado
-    var ests = snap.stations || [];
-    var p = null;
-    for(var j=0; j<ests.length; j++){
-      if(ests[j] && ests[j].stationID === sid){
-        p = ests[j].metric && ests[j].metric.precipTotal != null ? ests[j].metric.precipTotal : null;
+// ── Capa de precipitación: ventana de acumulado seleccionable ──────
+// precipTotal es un contador que cada estación reinicia a medianoche
+// (acumulado desde las 00:00), así que para ventanas de más de un día
+// no basta con restar el valor más antiguo al más reciente: hay que
+// recorrer la serie sumando los incrementos, y cuando un valor sale MÁS
+// BAJO que el anterior es que hubo un reinicio (no lluvia negativa), así
+// que ese paso se cuenta como "lo acumulado desde el reinicio" en vez de
+// como una resta. Esto sustituye a la getPrecipHoraDe() original (solo
+// válida para 1h) por una versión general para cualquier ventana.
+var PRECIP_VENTANAS=[{h:1,txt:'1 h'},{h:12,txt:'12 h'},{h:24,txt:'24 h'},{h:48,txt:'48 h'}];
+var precipVentana=parseFloat(llRecordado('meteo_precip_ventana','1'))||1;
+
+// El dataset de 24h embebido (historyData) NO se recorta nunca al
+// cambiar el periodo de la cinta de tiempo — eso solo afecta a
+// activeData — así que para ventanas de hasta 24h es la fuente más
+// fiable mientras el momento mostrado esté dentro de esas últimas 24h.
+// Si la cinta está en un periodo más largo (2 días/semana) y el momento
+// mostrado es más antiguo, se usa el dataset de ese periodo (activeData).
+// Una ventana de 48h necesita más profundidad de la que historyData
+// ofrece incluso para el momento actual, así que siempre se apoya en el
+// histórico de 2 días (30 min de resolución), compartiendo la misma
+// caché (extData) que usa el selector de periodos de la cinta, para no
+// descargarlo dos veces si el usuario ya cambió a "2 días".
+var precip2dPidiendo=false;
+function datosParaPrecip(horas, tsRef, cb){
+  if(horas<=24){
+    var refT=new Date(tsRef).getTime();
+    if(historyData.length && refT>=new Date(historyData[0].timestamp).getTime()){ cb(historyData); return; }
+    cb(activeData); return;
+  }
+  if(extData['2d']){ cb(extData['2d']); return; }
+  if(precip2dPidiendo){ setTimeout(function(){datosParaPrecip(horas,tsRef,cb);},250); return; }
+  precip2dPidiendo=true;
+  fetch('history_2d.json?v='+Date.now()).then(function(r){return r.json();})
+    .then(function(datos){ extData['2d']=(datos&&datos.length)?datos:[]; })
+    .catch(function(){ extData['2d']=[]; })
+    .then(function(){ precip2dPidiendo=false; cb(extData['2d']); });
+}
+
+// Suma la lluvia de una estación en las `horas` anteriores al momento
+// tsRef (no al reloj real), dentro del dataset ya cargado que se le pase
+// (ver datosParaPrecip). No es asíncrona: si el dataset con suficiente
+// profundidad aún no ha llegado, devuelve null y el llamante repinta
+// cuando datosParaPrecip complete su callback.
+function acumularPrecip(sid, tsRef, horas, datos){
+  if(!datos || !datos.length) return null;
+  var refT=new Date(tsRef).getTime();
+  var inicioT=refT-horas*3600*1000;
+  var serie=[];
+  for(var i=0;i<datos.length;i++){
+    var snap=datos[i];
+    var t=new Date(snap.timestamp).getTime();
+    if(t>refT) break;
+    var ests=snap.stations||[];
+    for(var j=0;j<ests.length;j++){
+      if(ests[j] && ests[j].stationID===sid){
+        var p=ests[j].metric&&ests[j].metric.precipTotal!=null?ests[j].metric.precipTotal:null;
+        if(p!=null) serie.push({t:t,p:p});
         break;
       }
     }
-    if(p === null) continue;
-    if(valorRef === null){ valorRef = p; continue; }
-    if(t <= haceHora){ valorHace = p; break; }
   }
-  if(valorRef === null) return null;
-  if(valorHace === null) return Math.round(valorRef*10)/10; // aún sin 1h de histórico antes de ese momento
-  var delta = valorRef - valorHace;
-  return Math.round((delta>=0?delta:valorRef)*10)/10;
+  if(!serie.length) return null;
+  var desde=0;
+  for(var k=serie.length-1;k>=0;k--){ if(serie[k].t<inicioT){ desde=k; break; } }
+  var ventana=serie.slice(desde);
+  if(ventana.length<2) return Math.round(ventana[0].p*10)/10; // aún sin margen para calcular un incremento
+  var suma=0;
+  for(var m=1;m<ventana.length;m++){
+    var delta=ventana[m].p-ventana[m-1].p;
+    suma += delta>=0 ? delta : ventana[m].p; // valor menor que el anterior = reinicio de medianoche
+  }
+  return Math.round(suma*10)/10;
+}
+
+// Punto de entrada usado por raw()/panel de estación: mantiene la firma
+// de la función original (síncrona, con fallback a precipTotal) para el
+// caso normal (1h/12h/24h, casi siempre ya en memoria), y dispara la
+// descarga en segundo plano + repintado cuando la ventana es 48h y el
+// histórico de 2 días todavía no está cargado.
+function getPrecipHoraDe(sid, tsRef){
+  return getPrecipVentana(sid, tsRef, 1);
+}
+function getPrecipVentana(sid, tsRef, horas){
+  if(horas<=24){
+    var refT=new Date(tsRef).getTime();
+    var datos=(historyData.length && refT>=new Date(historyData[0].timestamp).getTime())?historyData:activeData;
+    return acumularPrecip(sid, tsRef, horas, datos);
+  }
+  if(extData['2d']) return acumularPrecip(sid, tsRef, horas, extData['2d']);
+  datosParaPrecip(horas, tsRef, function(){ render(); }); // repinta en cuanto llegue
+  return null;
 }
 
 function raw(est,p,tsRef){
   if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}
   var m=est.metric; if(!m) return null;
   if(p==='precip'){
-    var acum=getPrecipHoraDe(est.stationID, tsRef||new Date());
-    return acum!=null?acum:(m.precipTotal!=null?m.precipTotal:0);
+    var acum=getPrecipVentana(est.stationID, tsRef||new Date(), precipVentana);
+    if(acum!=null) return acum;
+    return precipVentana<=24 && m.precipTotal!=null ? m.precipTotal : 0;
   }
   if(p==='temp')     return m.temp;
   if(p==='humidity') return est.humidity;
@@ -915,7 +989,7 @@ leg.upd=function(p){
   } else {
     var g,ti,u;
     if(p==='precip'){
-      ti='🌧 Precip 1h';u='mm';g=[0.5,2,4,10,20,30,40,50,70];
+      ti='🌧 Precip '+precipTxt(precipVentana);u='mm';g=[0.5,2,4,10,20,30,40,50,70];
     } else if(p==='temp'){ti='🌡 Temp';u='°C';g=[5,10,15,20,25,30,35,40];}
     else if(p==='humidity'){ti='💧 Humedad';u='%';g=[30,50,70,90];}
     else{ti='💨 Viento';u='km/h';g=[2,5,10,20,30,40];}
@@ -2423,12 +2497,41 @@ function cargarRiesgoHistorico(cb){
     .catch(function(){ riesgoHistCargado=true; if(cb) cb(); });
 }
 
+function precipTxt(h){
+  for(var i=0;i<PRECIP_VENTANAS.length;i++) if(PRECIP_VENTANAS[i].h===h) return PRECIP_VENTANAS[i].txt;
+  return h+' h';
+}
+
+// Selector de ventana de acumulado, visible solo con el parámetro
+// "Precipitación" activo (se muestra/oculta desde onParamChange()).
+(function(){
+  var wrap=document.getElementById('ctrl-precip');
+  if(!wrap) return;
+  wrap.innerHTML=PRECIP_VENTANAS.map(function(v){
+    return '<button type="button" class="precip-chip'+(v.h===precipVentana?' active':'')+'"'
+      +' data-h="'+v.h+'" onclick="setPrecipVentana('+v.h+')">'+v.txt+'</button>';
+  }).join('');
+})();
+
+function setPrecipVentana(h){
+  if(h===precipVentana) return;
+  precipVentana=h;
+  llRecordar('meteo_precip_ventana', String(h));
+  document.querySelectorAll('#ctrl-precip .precip-chip').forEach(function(b){
+    b.classList.toggle('active', +b.getAttribute('data-h')===h);
+  });
+  leg.upd('precip');
+  render();
+}
+
 function onParamChange(){
   var p = document.getElementById('ps').value;
   var esRiesgo = (p==='oidio'||p==='mildiu');
   var eraRiesgo = (_prevParam==='oidio'||_prevParam==='mildiu');
   if(esRiesgo && !eraRiesgo) _legCollapsed = true; // al entrar en riesgo, plegada por defecto
   _prevParam = p;
+  var ctrlPrecip=document.getElementById('ctrl-precip');
+  if(ctrlPrecip) ctrlPrecip.style.display=(p==='precip')?'flex':'none';
   actualizarModoSlider();
   render();
   if(esRiesgo && !riesgoHistCargado) cargarRiesgoHistorico(render);
