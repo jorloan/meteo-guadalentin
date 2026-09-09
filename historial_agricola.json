@@ -16204,7 +16204,7 @@
     },
     "IALHAM4": {
       "tempMax": 32.0,
-      "tempMin": 24.4,
+      "tempMin": 24.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.883939,
@@ -16236,8 +16236,8 @@
     },
     "IALHAM88": {
       "tempMax": 38.1,
-      "tempMin": 25.6,
-      "precipTotal": 0.76,
+      "tempMin": 24.4,
+      "precipTotal": 1.27,
       "humedadAltaMinutos": 0,
       "lat": 37.852,
       "lon": -1.425
@@ -16245,15 +16245,15 @@
     "ILIBRI6": {
       "tempMax": 35.9,
       "tempMin": 20.1,
-      "precipTotal": 0.99,
-      "humedadAltaMinutos": 15,
+      "precipTotal": 1.7,
+      "humedadAltaMinutos": 30,
       "lat": 37.897934,
       "lon": -1.367283
     },
     "ILIBRILL2": {
       "tempMax": 36.5,
-      "tempMin": 20.8,
-      "precipTotal": 3.61,
+      "tempMin": 20.1,
+      "precipTotal": 4.6,
       "humedadAltaMinutos": 0,
       "lat": 37.88858,
       "lon": -1.350858
@@ -16596,8 +16596,8 @@
     },
     "IMULA34": {
       "tempMax": 32.4,
-      "tempMin": 20.6,
-      "precipTotal": 0.0,
+      "tempMin": 20.1,
+      "precipTotal": 0.2,
       "humedadAltaMinutos": 0,
       "lat": 38.141779,
       "lon": -1.592649
@@ -16821,7 +16821,7 @@
     "ICARTA267": {
       "tempMax": 36.8,
       "tempMin": 20.5,
-      "precipTotal": 0.0,
+      "precipTotal": 0.99,
       "humedadAltaMinutos": 1114,
       "lat": 37.695322,
       "lon": -0.935908
@@ -16830,7 +16830,7 @@
       "tempMax": 31.0,
       "tempMin": 17.2,
       "precipTotal": 3.61,
-      "humedadAltaMinutos": 179,
+      "humedadAltaMinutos": 194,
       "lat": 38.471875,
       "lon": -1.421486
     },
@@ -16852,7 +16852,7 @@
     },
     "IVILLA1263": {
       "tempMax": 37.7,
-      "tempMin": 24.6,
+      "tempMin": 24.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 38.113005,
@@ -16862,15 +16862,15 @@
       "tempMax": 38.1,
       "tempMin": 20.6,
       "precipTotal": 4.32,
-      "humedadAltaMinutos": 15,
+      "humedadAltaMinutos": 30,
       "lat": 38.068994,
       "lon": -1.044818
     },
     "IMURCI180": {
       "tempMax": 38.1,
-      "tempMin": 22.0,
-      "precipTotal": 10.69,
-      "humedadAltaMinutos": 0,
+      "tempMin": 20.8,
+      "precipTotal": 18.01,
+      "humedadAltaMinutos": 15,
       "lat": 37.971022,
       "lon": -1.17308
     },
@@ -17052,7 +17052,7 @@
     },
     "IREGINDE127": {
       "tempMax": 36.1,
-      "tempMin": 20.0,
+      "tempMin": 19.9,
       "precipTotal": 0.51,
       "humedadAltaMinutos": 0,
       "lat": 38.321629,
@@ -17246,7 +17246,7 @@
       "tempMax": 30.6,
       "tempMin": 16.8,
       "precipTotal": 3.0,
-      "humedadAltaMinutos": 144,
+      "humedadAltaMinutos": 159,
       "lat": 38.479119,
       "lon": -1.411124
     },
@@ -17262,23 +17262,23 @@
       "tempMax": 32.7,
       "tempMin": 17.6,
       "precipTotal": 2.79,
-      "humedadAltaMinutos": 129,
+      "humedadAltaMinutos": 144,
       "lat": 38.497562,
       "lon": -1.359164
     },
     "IMURCI133": {
       "tempMax": 37.8,
       "tempMin": 20.1,
-      "precipTotal": 11.94,
-      "humedadAltaMinutos": 30,
+      "precipTotal": 12.19,
+      "humedadAltaMinutos": 45,
       "lat": 37.950335,
       "lon": -1.239743
     },
     "IMURCI90": {
       "tempMax": 38.4,
-      "tempMin": 21.5,
-      "precipTotal": 10.9,
-      "humedadAltaMinutos": 30,
+      "tempMin": 21.0,
+      "precipTotal": 13.0,
+      "humedadAltaMinutos": 45,
       "lat": 38.025,
       "lon": -1.12
     },
@@ -17406,15 +17406,15 @@
       "tempMax": 30.4,
       "tempMin": 17.1,
       "precipTotal": 3.1,
-      "humedadAltaMinutos": 129,
+      "humedadAltaMinutos": 144,
       "lat": 38.628883,
       "lon": -1.230179
     },
     "IREGINDE53": {
       "tempMax": 30.2,
       "tempMin": 16.6,
-      "precipTotal": 3.1,
-      "humedadAltaMinutos": 179,
+      "precipTotal": 3.61,
+      "humedadAltaMinutos": 194,
       "lat": 38.694279,
       "lon": -1.16892
     },
@@ -17422,7 +17422,7 @@
       "tempMax": 28.7,
       "tempMin": 15.6,
       "precipTotal": 2.49,
-      "humedadAltaMinutos": 230,
+      "humedadAltaMinutos": 245,
       "lat": 38.767154,
       "lon": -1.067067
     },
@@ -17430,7 +17430,7 @@
       "tempMax": 30.6,
       "tempMin": 14.2,
       "precipTotal": 0.61,
-      "humedadAltaMinutos": 390,
+      "humedadAltaMinutos": 405,
       "lat": 38.867105,
       "lon": -1.199184
     },
@@ -17460,7 +17460,7 @@
     },
     "IALHAM92": {
       "tempMax": 40.6,
-      "tempMin": 24.4,
+      "tempMin": 24.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.848953,
