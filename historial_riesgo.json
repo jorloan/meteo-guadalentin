@@ -66492,7 +66492,7 @@
   "2026-09-09": {
     "IALEDO7": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 225,
       "dsv_7d": 16,
       "lat": 37.771905,
@@ -67464,7 +67464,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 47,
-      "dsv_7d": 23,
+      "dsv_7d": 21,
       "lat": 38.35,
       "lon": -0.474,
       "datos_ok": true,
@@ -67624,7 +67624,7 @@
       "oidio": 2,
       "mildiu": 1,
       "dsv_temporada": 50,
-      "dsv_7d": 20,
+      "dsv_7d": 18,
       "lat": 38.510997,
       "lon": -0.233971,
       "datos_ok": true,
