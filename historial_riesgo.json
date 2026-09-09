@@ -66614,7 +66614,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 83,
-      "dsv_7d": 14,
+      "dsv_7d": 12,
       "lat": 37.88858,
       "lon": -1.350858,
       "datos_ok": true,
@@ -67852,7 +67852,7 @@
     },
     "IMURCI90": {
       "oidio": 2,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 56,
       "dsv_7d": 21,
       "lat": 38.025,
