@@ -522,6 +522,8 @@
       <span id="tl-sub">-</span>
     </div>
     <div id="tm-periodos">
+      <button type="button" class="tm-per-btn" data-per="6h">6h</button>
+      <button type="button" class="tm-per-btn" data-per="12h">12h</button>
       <button type="button" class="tm-per-btn active" data-per="24h">24h</button>
       <button type="button" class="tm-per-btn" data-per="2d">2 días</button>
       <button type="button" class="tm-per-btn" data-per="7d">Semana</button>
@@ -2123,11 +2125,37 @@ var velocidadMs=500;
 // 24h: usa historyData embebido (resolución 5 min, ya viene con la página)
 // 2d/7d: se descargan bajo demanda (resolución 30 min / 3 h) para no
 // disparar el tamaño de la página en la carga inicial.
+// 6h y 12h no descargan nada: son el propio historial de 24h recortado a
+// las últimas N horas. Conservan su misma resolución, pero repartida en
+// una ventana más corta, así que cada paso del slider cubre menos tiempo
+// real: es lo que hace falta para seguir un chubasco de cerca.
 var PERIODOS={
+  '6h': {archivo:null, horas:6},
+  '12h':{archivo:null, horas:12},
   '24h':{archivo:null},
   '2d': {archivo:'history_2d.json'},
   '7d': {archivo:'history_7d.json'}
 };
+
+// Recorta un historial a sus últimas N horas. Si el recorte se quedara
+// vacío (hueco de datos), se devuelve el último snapshot para no dejar
+// el slider sin nada que mostrar.
+function recortarHoras(datos,horas){
+  if(!horas||!datos||!datos.length) return datos;
+  var limite=Date.now()-horas*3600*1000;
+  var r=datos.filter(function(e){
+    var t=new Date(e.timestamp).getTime();
+    return !isNaN(t) && t>=limite;
+  });
+  return r.length?r:datos.slice(-1);
+}
+
+// Dataset que corresponde al periodo activo cuando no hay descarga de por
+// medio (6h/12h/24h). Se usa también al refrescar historyData.
+function datosLocales(){
+  var cfg=PERIODOS[periodoActivo];
+  return (cfg&&cfg.horas)?recortarHoras(historyData,cfg.horas):historyData;
+}
 var periodoActivo='24h';
 var extData={};        // caché de periodos descargados: {'2d':[...], '7d':[...]}
 var activeData=historyData;   // dataset que alimenta el slider en modo no-riesgo
@@ -2171,7 +2199,8 @@ function getModoIndices(){
 // Descarga (con caché) el histórico del periodo seleccionado y lo
 // convierte en el dataset activo del slider.
 function cargarPeriodo(p, cb){
-  if(p==='24h'){ activeData=historyData; cb(); return; }
+  var cfg=PERIODOS[p]||PERIODOS['24h'];
+  if(!cfg.archivo){ activeData=cfg.horas?recortarHoras(historyData,cfg.horas):historyData; cb(); return; }
   if(extData[p]){ activeData=extData[p]; cb(); return; }
   sl.disabled=true;
   fetch(PERIODOS[p].archivo+'?v='+Date.now())
@@ -2487,7 +2516,7 @@ function cargarHistoria24hInicial(cb){
       if(datos && datos.length){
         historyData=datos;
         construirDiaIdx();
-        if(periodoActivo==='24h') activeData=historyData;
+        if(!PERIODOS[periodoActivo].archivo) activeData=datosLocales();
       }
     })
     .catch(function(){})
@@ -2511,7 +2540,7 @@ cargarHistoria24hInicial(function(){
       .then(function(datos){
         if(!datos||!datos.length) return;
         historyData=datos;
-        if(periodoActivo==='24h') activeData=historyData;
+        if(!PERIODOS[periodoActivo].archivo) activeData=datosLocales();
         var indices=getModoIndices();
         var eraActual=(idxActual>=indices.length-1);
         actualizarModoSlider();
