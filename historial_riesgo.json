@@ -66574,7 +66574,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 224,
-      "dsv_7d": 14,
+      "dsv_7d": 12,
       "lat": 37.85,
       "lon": -1.43,
       "datos_ok": true,
@@ -66584,7 +66584,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 220,
-      "dsv_7d": 14,
+      "dsv_7d": 12,
       "lat": 37.852,
       "lon": -1.425,
       "datos_ok": true,
@@ -66602,7 +66602,7 @@
     },
     "ILIBRI6": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 85,
       "dsv_7d": 17,
       "lat": 37.897934,
@@ -67192,7 +67192,7 @@
     },
     "ITOTAN25": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 105,
       "dsv_7d": 15,
       "lat": 37.778201,
@@ -67212,7 +67212,7 @@
     },
     "ITOTAN31": {
       "oidio": 3,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 243,
       "dsv_7d": 21,
       "lat": 37.747905,
@@ -67337,16 +67337,6 @@
       "dsv_7d": 19,
       "lat": 38.113005,
       "lon": -1.324433,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
-    "ISANTO462": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 318,
-      "dsv_7d": 22,
-      "lat": 38.068994,
-      "lon": -1.044818,
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
