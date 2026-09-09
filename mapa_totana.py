@@ -52,8 +52,12 @@ def leer(ruta, default):
     return default
 
 def guardar(ruta, data):
+    # Sin indentar: son ficheros que el navegador descarga en cada visita
+    # (history_24h.json llega a pesar varios MB con el cron cada 5 min).
+    # indent=2 no aporta nada a un JSON que nadie edita a mano y añade
+    # ~40% de bytes solo en espacios/saltos de línea antes de comprimir.
     with open(ruta, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
 
 def dist(la1, lo1, la2, lo2):
     return ((la1-la2)**2 + (lo1-lo2)**2)**0.5
@@ -1130,6 +1134,116 @@ function legToggle(){
   var t=document.querySelector('.leg-tog');
   if(b){b.style.display=_legCollapsed?'none':'';}
   if(t){t.textContent=_legCollapsed?'▼':'▲';}
+}
+
+// ── Gráfica de tendencia (12h) en el panel de estación ──────────
+// Al pinchar cualquier estación se añade, debajo de sus datos actuales,
+// una mini-gráfica con temperatura y lluvia hora a hora de las últimas
+// 12h. Reutiliza historyData (últimas 24h ya en memoria, sin fetch
+// nuevo) y acumularPrecip() (la misma función que ya usa el selector de
+// ventana de la capa de precipitación) para el acumulado de cada hora.
+var HORAS_PANEL=12;
+
+// Hora del día (0-23) de un instante, EN MADRID, independientemente de
+// la zona horaria del navegador de quien visite la web (mismo criterio
+// que llFechaTxt() en el mapa de lluvia prevista). Se usa 'en-GB' solo
+// para el parseo — un locale neutro que siempre da "HH" limpio sin
+// sufijos — la hora en sí ya viene fijada a Europe/Madrid.
+function horaEnMadrid(tsMs){
+  return parseInt(new Date(tsMs).toLocaleString('en-GB',
+    {timeZone:'Europe/Madrid',hour:'2-digit',hour12:false}), 10);
+}
+
+// 12 puntos horarios (alineados a la hora en punto) hasta la hora
+// actual: para cada uno, la temperatura más cercana dentro de una
+// tolerancia (si la estación lleva más de 40 min sin dato, esa hora
+// queda sin valor en vez de mostrar un dato ya viejo) y la lluvia caída
+// en esa hora concreta.
+function datosHorariosEstacion(sid, horas){
+  var horaActual=Math.floor(Date.now()/3600000)*3600000;
+  var TOLERANCIA=40*60*1000;
+  var puntos=[];
+  for(var h=horas-1; h>=0; h--){
+    var ts=horaActual-h*3600000;
+    var mejorTemp=null, mejorDif=Infinity;
+    for(var i=0;i<historyData.length;i++){
+      var snap=historyData[i];
+      var t=new Date(snap.timestamp).getTime();
+      var dif=Math.abs(t-ts);
+      if(dif>=mejorDif) continue;
+      var ests=snap.stations||[];
+      for(var j=0;j<ests.length;j++){
+        if(ests[j] && ests[j].stationID===sid){
+          var tv=ests[j].metric&&ests[j].metric.temp!=null?ests[j].metric.temp:null;
+          if(tv!=null){ mejorDif=dif; mejorTemp=tv; }
+          break;
+        }
+      }
+    }
+    if(mejorDif>TOLERANCIA) mejorTemp=null;
+    var precip=acumularPrecip(sid, new Date(ts), 1, historyData);
+    puntos.push({ts:ts, temp:mejorTemp, precip:precip!=null?precip:0});
+  }
+  return puntos;
+}
+
+function graficoEstacion12h(sid){
+  var pts=datosHorariosEstacion(sid, HORAS_PANEL);
+  var temps=pts.map(function(p){return p.temp;}).filter(function(v){return v!=null;});
+  if(!temps.length) return ''; // estación sin histórico suficiente todavía (p.ej. recién añadida)
+
+  var W=272,H=120,mL=26,mR=8,mT=8,mB=16;
+  var pw=W-mL-mR, ph2=H-mT-mB, n=pts.length;
+  var vMin=Math.min.apply(null,temps)-1, vMax=Math.max.apply(null,temps)+1;
+  if(vMax-vMin<2){ vMin-=1; vMax+=1; } // ensancha si ha estado casi plana, para que la línea no pegue con los bordes
+  var pMax=Math.max(1, Math.max.apply(null, pts.map(function(p){return p.precip;})));
+
+  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
+  function yTemp(v){ return mT+ph2-((v-vMin)/(vMax-vMin))*ph2; }
+  // *0.85: deja un hueco arriba para que las barras de lluvia no lleguen
+  // a solapar la línea de temperatura cuando ambas están altas a la vez.
+  function yPrecip(v){ return mT+ph2-(v/pMax)*ph2*0.85; }
+
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
+  [vMin,(vMin+vMax)/2,vMax].forEach(function(v){
+    var y=yTemp(v);
+    svg+='<line x1="'+mL+'" y1="'+y.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(255,255,255,0.09)"/>';
+    svg+='<text x="1" y="'+(y+3).toFixed(1)+'" font-size="8" fill="#8b98ab">'+Math.round(v)+'°</text>';
+  });
+
+  var bw=Math.max(2,(pw/n)*0.55);
+  pts.forEach(function(p,i){
+    if(p.precip<=0) return;
+    var y=yPrecip(p.precip), x=xAt(i)-bw/2, hb=(mT+ph2)-y;
+    svg+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,hb).toFixed(1)
+      +'" rx="1" fill="#3b82f6" opacity="0.6"><title>'+p.precip.toFixed(1)+' mm</title></rect>';
+  });
+
+  var d='',en=false;
+  pts.forEach(function(p,i){
+    if(p.temp==null){ en=false; return; }
+    d+=(en?'L':'M')+xAt(i).toFixed(1)+','+yTemp(p.temp).toFixed(1)+' ';
+    en=true;
+  });
+  if(d) svg+='<path d="'+d+'" fill="none" stroke="#f59e0b" stroke-width="2"/>';
+  pts.forEach(function(p,i){
+    if(p.temp==null) return;
+    svg+='<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yTemp(p.temp).toFixed(1)+'" r="2.3" fill="#f59e0b">'
+      +'<title>'+String(horaEnMadrid(p.ts)).padStart(2,'0')+':00 — '+p.temp.toFixed(1)+'°C</title></circle>';
+  });
+
+  var paso=n>8?2:1;
+  for(var i=0;i<n;i+=paso){
+    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#8b98ab" text-anchor="middle">'
+      +String(horaEnMadrid(pts[i].ts)).padStart(2,'0')+'h</text>';
+  }
+  svg+='</svg>';
+
+  return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">'
+    +'<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">📈 Últimas '+HORAS_PANEL+'h'
+    +' &nbsp;<span style="color:#f59e0b;">▬</span> Temp'
+    +' &nbsp;<span style="color:#3b82f6;">▮</span> Lluvia/h</div>'
+    +svg+'</div>';
 }
 
 // ── Panel lateral fijo ─────────────────────────────────────
@@ -2265,7 +2379,8 @@ function render(){
     }
 
     var fh='<div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:4px;">'+nm+'</div>'
-      +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+est.stationID+'</div>'+ph;
+      +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+est.stationID+'</div>'+ph
+      +graficoEstacion12h(est.stationID);
 
     (function(id,h){mk.on('click',function(){showPanel(id,h);});})(est.stationID,fh);
     mk.bindTooltip('<b>'+nm+'</b>'+(estiado?' ⏱':''),{direction:'top',offset:[0,-16],opacity:0.9});
@@ -2759,9 +2874,15 @@ HTML_BASE = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Meteo Guadalentín</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <!-- Leaflet y Turf autoalojados (vendor/) en vez de unpkg/jsdelivr: la
+       carga dependía de dos CDN externos con un <script> bloqueante en
+       <head>, así que cualquier lentitud/caída de esos CDN retrasaba la
+       página entera (incluso en pestaña privada, sin caché de por medio).
+       Rutas absolutas desde la raíz del sitio para que funcionen igual
+       desde /index.html que desde /public/index.html. -->
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css"/>
+  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script src="/vendor/turf/turf.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#e6edf3;height:100vh;overflow:hidden}
