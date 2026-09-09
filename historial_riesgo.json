@@ -67750,16 +67750,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 12d"
     },
-    "ICARTA50": {
-      "oidio": 2,
-      "mildiu": 1,
-      "dsv_temporada": 55,
-      "dsv_7d": 25,
-      "lat": 37.705477,
-      "lon": -1.050768,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 12d"
-    },
     "ITORRE87": {
       "oidio": 2,
       "mildiu": 1,
