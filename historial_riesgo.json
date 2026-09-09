@@ -67900,16 +67900,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 12d"
     },
-    "IORCE4": {
-      "oidio": 2,
-      "mildiu": 2,
-      "dsv_temporada": 52,
-      "dsv_7d": 24,
-      "lat": 37.728014,
-      "lon": -2.454096,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 12d"
-    },
     "ICARAV78": {
       "oidio": 2,
       "mildiu": 1,
