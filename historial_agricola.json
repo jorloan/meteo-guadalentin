@@ -16276,7 +16276,7 @@
     },
     "ILORCA104": {
       "tempMax": 29.5,
-      "tempMin": 23.1,
+      "tempMin": 22.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
       "lat": 37.682,
@@ -16286,7 +16286,7 @@
       "tempMax": 14.7,
       "tempMin": 13.2,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 805,
+      "humedadAltaMinutos": 815,
       "lat": 37.698662,
       "lon": -1.923552
     },
@@ -16691,7 +16691,7 @@
       "lon": -1.495711
     },
     "ITOTAN10": {
-      "tempMax": 26.5,
+      "tempMax": 26.9,
       "tempMin": 20.7,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16795,7 +16795,7 @@
       "lon": -1.52123
     },
     "IGUILA10": {
-      "tempMax": 28.6,
+      "tempMax": 28.8,
       "tempMin": 24.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 0,
@@ -16811,7 +16811,7 @@
       "lon": -1.748503
     },
     "IVERA31": {
-      "tempMax": 29.9,
+      "tempMax": 30.7,
       "tempMin": 24.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 514,
@@ -16907,7 +16907,7 @@
       "lon": -0.795
     },
     "ICARTA80": {
-      "tempMax": 27.6,
+      "tempMax": 27.8,
       "tempMin": 24.9,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 818,
@@ -16939,7 +16939,7 @@
       "lon": -0.652781
     },
     "ISANTA1907": {
-      "tempMax": 28.0,
+      "tempMax": 28.4,
       "tempMin": 24.2,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 433,
@@ -16998,7 +16998,7 @@
       "tempMax": 25.1,
       "tempMin": 23.6,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 614,
+      "humedadAltaMinutos": 624,
       "lat": 36.839912,
       "lon": -2.464639
     },
@@ -17118,7 +17118,7 @@
       "tempMax": 24.9,
       "tempMin": 22.0,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1254,
+      "humedadAltaMinutos": 1264,
       "lat": 36.854477,
       "lon": -2.30637
     },
@@ -17307,7 +17307,7 @@
       "lon": -0.54112
     },
     "IALICA95": {
-      "tempMax": 26.2,
+      "tempMax": 26.7,
       "tempMin": 23.1,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 478,
@@ -17339,7 +17339,7 @@
       "lon": -2.122682
     },
     "INJAR58": {
-      "tempMax": 26.0,
+      "tempMax": 26.1,
       "tempMin": 20.4,
       "precipTotal": 0.0,
       "humedadAltaMinutos": 1044,
@@ -17350,7 +17350,7 @@
       "tempMax": 25.6,
       "tempMin": 22.7,
       "precipTotal": 0.0,
-      "humedadAltaMinutos": 1254,
+      "humedadAltaMinutos": 1264,
       "lat": 36.839695,
       "lon": -2.403375
     },
