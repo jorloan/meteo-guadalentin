@@ -67344,7 +67344,7 @@
       "oidio": 3,
       "mildiu": 1,
       "dsv_temporada": 318,
-      "dsv_7d": 24,
+      "dsv_7d": 22,
       "lat": 38.068994,
       "lon": -1.044818,
       "datos_ok": true,
@@ -67842,7 +67842,7 @@
     },
     "IMURCI133": {
       "oidio": 2,
-      "mildiu": 1,
+      "mildiu": 2,
       "dsv_temporada": 58,
       "dsv_7d": 12,
       "lat": 37.950335,
