@@ -66650,16 +66650,6 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
-    "ILORCA106": {
-      "oidio": 3,
-      "mildiu": 1,
-      "dsv_temporada": 61,
-      "dsv_7d": 32,
-      "lat": 37.698662,
-      "lon": -1.923552,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 14d"
-    },
     "ILORCA108": {
       "oidio": 3,
       "mildiu": 1,
@@ -67867,16 +67857,6 @@
       "dsv_7d": 23,
       "lat": 38.025,
       "lon": -1.12,
-      "datos_ok": true,
-      "fuente_datos": "WU propio 12d"
-    },
-    "IELCHE140": {
-      "oidio": 1,
-      "mildiu": 2,
-      "dsv_temporada": 30,
-      "dsv_7d": 16,
-      "lat": 38.180948,
-      "lon": -0.678458,
       "datos_ok": true,
       "fuente_datos": "WU propio 12d"
     },
