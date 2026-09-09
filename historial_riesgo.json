@@ -67310,6 +67310,16 @@
       "datos_ok": true,
       "fuente_datos": "WU propio 14d"
     },
+    "ISANTO462": {
+      "oidio": 3,
+      "mildiu": 2,
+      "dsv_temporada": 318,
+      "dsv_7d": 22,
+      "lat": 38.068994,
+      "lon": -1.044818,
+      "datos_ok": true,
+      "fuente_datos": "WU propio 14d"
+    },
     "IMURCI180": {
       "oidio": 3,
       "mildiu": 2,
