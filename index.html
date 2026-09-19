@@ -61,13 +61,22 @@
     .ps-sub{display:none;padding-left:4px}
     .ps-sub.open{display:block}
 
-    /* Botón de acceso a la pantalla de pronóstico */
-    #btn-pronostico{
+    /* Selector único de "Pronóstico" (antes dos botones sueltos —
+       Pronóstico / Lluvia prevista — que no dejaban claro cuál de las
+       dos pantallas estaba abierta). Mismo patrón visual que #ps-wrap. */
+    #pron-wrap{position:relative}
+    #pron-btn{
       background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.4);
-      border-radius:8px;color:#93c5fd;font-size:.8rem;font-weight:700;padding:7px 12px;
-      cursor:pointer;font-family:inherit;flex-shrink:0;
+      border-radius:8px;color:#93c5fd;font-size:.8rem;font-weight:700;padding:7px 10px;
+      cursor:pointer;font-family:inherit;flex-shrink:0;display:flex;align-items:center;gap:6px;
     }
-    #btn-pronostico:hover{background:rgba(59,130,246,.3)}
+    #pron-btn:hover{background:rgba(59,130,246,.3)}
+    #pron-menu{
+      display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:200px;
+      background:#1c2433;border:1px solid rgba(255,255,255,0.13);border-radius:10px;
+      box-shadow:0 8px 28px rgba(0,0,0,.5);padding:4px;z-index:2000;
+    }
+    #pron-menu.open{display:block}
 
     /* Resultados del buscador de población (tema claro, solo se usa en #vp) */
     .br-item{padding:8px 10px;border-radius:6px;font-size:.78rem;color:#1e293b;cursor:pointer}
@@ -161,12 +170,6 @@
 
 
     /* ── Pantalla completa: mapa de lluvia prevista ── */
-    #btn-lluvia{
-      background:rgba(14,165,233,.16);border:1px solid rgba(14,165,233,.42);
-      border-radius:8px;color:#7dd3fc;font-size:.8rem;font-weight:700;padding:7px 12px;
-      cursor:pointer;font-family:inherit;flex-shrink:0;
-    }
-    #btn-lluvia:hover{background:rgba(14,165,233,.3)}
     #vl{
       display:none;position:fixed;inset:0;z-index:3000;color:#1e293b;
       background:linear-gradient(160deg,#eaf4fb 0%,#dbe9f6 45%,#eef6fb 100%);
@@ -319,6 +322,14 @@
     }
     .precip-chip:hover{background:rgba(255,255,255,0.14)}
     .precip-chip.active{background:rgba(59,130,246,.85);border-color:transparent;color:#fff}
+
+    /* Toggle máquina del tiempo — oculta por defecto para una pantalla
+       más limpia y, sobre todo, para no descargar history_24h.json (el
+       histórico completo de 24h) hasta que de verdad se necesita: al
+       activarla o al entrar en un riesgo agrícola. */
+    #ctrl-tm{display:flex;align-items:center;gap:6px;flex-shrink:0}
+    #ctrl-tm label{display:flex;align-items:center;gap:4px;font-size:.72rem;color:#e6edf3;font-weight:600;cursor:pointer;user-select:none}
+    #ctrl-tm input[type=checkbox]{cursor:pointer;accent-color:#3b82f6}
 
     /* Toggle radar (independiente del parámetro) */
     #ctrl-radar{display:flex;align-items:center;gap:6px;flex-shrink:0}
@@ -512,8 +523,17 @@
   </div>
   <div id="ctrl-precip" style="display:none"></div>
   <div class="sep"></div>
-  <button type="button" id="btn-pronostico" onclick="mostrarVistaPronostico()">🔮 Pronóstico</button>
-  <button type="button" id="btn-lluvia" onclick="mostrarVistaLluvia()">🌧 Lluvia prevista</button>
+  <div id="pron-wrap">
+    <button type="button" id="pron-btn"><span id="pron-btn-label">🔮 Pronóstico</span><span class="ps-caret">▾</span></button>
+    <div id="pron-menu">
+      <div class="ps-opt" data-v="poblacion">📅 Por población</div>
+      <div class="ps-opt" data-v="lluvia">🌧 Lluvia prevista</div>
+    </div>
+  </div>
+  <div class="sep"></div>
+  <div id="ctrl-tm">
+    <label><input type="checkbox" id="tm-chk"> 🕐 Máquina del tiempo</label>
+  </div>
   <div class="sep"></div>
   <div id="ctrl-radar">
     <label><input type="checkbox" id="radar-chk"> 📡 Radar</label>
@@ -1196,6 +1216,7 @@ function debounce(fn,ms){
 // con el panel lateral de 300px.
 function mostrarVistaPronostico(){
   document.getElementById('vp').classList.add('open');
+  actualizarPronBtn('poblacion');
   if(!pronData){
     var ultima=cargarUltimaPoblacion();
     if(ultima){ seleccionarPoblacion(ultima); return; }
@@ -1207,6 +1228,7 @@ function mostrarVistaPronostico(){
 }
 function mostrarVistaMapa(){
   document.getElementById('vp').classList.remove('open');
+  actualizarPronBtn(null);
 }
 
 // Recuerda la última población consultada (localStorage, por navegador)
@@ -1758,6 +1780,7 @@ function llFechaTxt(epochSeg){
 var llAjustado=false;
 function mostrarVistaLluvia(){
   document.getElementById('vl').classList.add('open');
+  actualizarPronBtn('lluvia');
   llInitMapa();
   // El mapa se crea con el contenedor recién mostrado: hay que recalcular
   // su tamaño. El encuadre solo se ajusta la primera vez, para no deshacer
@@ -1771,6 +1794,7 @@ function mostrarVistaLluvia(){
 }
 function ocultarVistaLluvia(){
   document.getElementById('vl').classList.remove('open');
+  actualizarPronBtn(null);
 }
 
 function llInitMapa(){
@@ -2441,6 +2465,7 @@ function actualizarModoSlider(){
     slFechaFin.style.display='none';
     slSep.style.display='none';
   }
+  actualizarVisibilidadTM();
   actualizarLabel();
 }
 
@@ -2652,6 +2677,7 @@ function onParamChange(){
   actualizarModoSlider();
   render();
   if(esRiesgo && !riesgoHistCargado) cargarRiesgoHistorico(render);
+  if(esRiesgo && !historia24hCargada) asegurarHistoria24hCompleta(function(){ actualizarModoSlider(); render(); });
 }
 
 // ── Radar de lluvia: capa independiente, combinable con cualquier parámetro ──
@@ -2718,6 +2744,83 @@ if(radarChk){
   });
 })();
 
+// ── Selector único "Pronóstico" ─────────────────────────────────
+// Antes había dos botones sueltos (Pronóstico / Lluvia prevista) sin
+// forma de saber cuál de las dos pantallas estaba abierta. Un solo
+// desplegable, con la etiqueta y la opción activa reflejando la
+// pantalla realmente abierta (o "🔮 Pronóstico" a secas si no hay
+// ninguna, es decir, si se está viendo el mapa).
+var PRON_ETIQ={poblacion:'📅 Por población', lluvia:'🌧 Lluvia prevista'};
+function actualizarPronBtn(activo){
+  var lbl=document.getElementById('pron-btn-label');
+  var menu=document.getElementById('pron-menu');
+  if(!lbl||!menu) return;
+  lbl.textContent=activo?PRON_ETIQ[activo]:'🔮 Pronóstico';
+  menu.querySelectorAll('.ps-opt').forEach(function(o){
+    o.classList.toggle('active', o.getAttribute('data-v')===activo);
+  });
+}
+(function(){
+  var btn=document.getElementById('pron-btn');
+  var menu=document.getElementById('pron-menu');
+  function cerrarMenu(){ menu.classList.remove('open'); }
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(menu.classList.contains('open')) cerrarMenu(); else menu.classList.add('open');
+  });
+  menu.querySelectorAll('.ps-opt').forEach(function(o){
+    o.addEventListener('click', function(e){
+      e.stopPropagation();
+      cerrarMenu();
+      if(this.getAttribute('data-v')==='poblacion') mostrarVistaPronostico();
+      else mostrarVistaLluvia();
+    });
+  });
+  document.addEventListener('click', function(){
+    if(menu.classList.contains('open')) cerrarMenu();
+  });
+})();
+
+// ── Máquina del tiempo: oculta por defecto ──────────────────────
+// history_24h.json (el histórico completo de 24h que alimenta la cinta
+// de tiempo) pesa varios MB y antes se descargaba siempre, entera, en
+// cuanto se abría la página — se usara o no la cinta. Ahora esa
+// descarga se retrasa hasta que de verdad hace falta: al activar la
+// máquina del tiempo a mano, o al entrar en un riesgo agrícola
+// (oídio/mildiu), que también necesita el histórico por días.
+var historia24hCargada=false, historia24hCargando=false;
+var tmVisible=llRecordado('meteo_tm_visible','false')==='true';
+
+function asegurarHistoria24hCompleta(cb){
+  if(historia24hCargada){ if(cb) cb(); return; }
+  if(historia24hCargando){ setTimeout(function(){asegurarHistoria24hCompleta(cb);},200); return; }
+  historia24hCargando=true;
+  cargarHistoria24hInicial(function(){
+    historia24hCargada=true; historia24hCargando=false;
+    if(cb) cb();
+  });
+}
+
+// La cinta se ve siempre en modo riesgo (ahí sirve para filtrar por
+// fechas, no es la misma barra que la del slider en vivo) y además
+// cuando el usuario la ha activado explícitamente.
+function actualizarVisibilidadTM(){
+  var bar=document.getElementById('tm-bar');
+  if(bar) bar.style.display=(modoRiesgo||tmVisible)?'':'none';
+}
+
+(function(){
+  var chk=document.getElementById('tm-chk');
+  if(!chk) return;
+  chk.checked=tmVisible;
+  chk.addEventListener('change', function(){
+    tmVisible=this.checked;
+    llRecordar('meteo_tm_visible', tmVisible?'true':'false');
+    actualizarVisibilidadTM();
+    if(tmVisible) asegurarHistoria24hCompleta(function(){ actualizarModoSlider(); render(); });
+  });
+})();
+
 function initSl(){
   var n = historyData.length;
   if(!n){ document.getElementById('tl').innerText='Sin datos'; return; }
@@ -2744,10 +2847,15 @@ function cargarHistoria24hInicial(cb){
 }
 
 initSl();
-cargarHistoria24hInicial(function(){
-  actualizarModoSlider();
-  render();
-});
+actualizarVisibilidadTM();
+// El histórico completo de 24h YA NO se descarga aquí sin condiciones:
+// solo cuando se active la máquina del tiempo o se entre en un riesgo
+// agrícola (asegurarHistoria24hCompleta(), ver más arriba). Mientras
+// tanto el mapa vive con la "semilla" embebida (último snapshot) y el
+// refresco periódico de más abajo, que sigue trayendo el histórico
+// completo cada 5 min para no perder el "en vivo" ya lo pone al día
+// solo, aunque nunca se abra la cinta de tiempo.
+if(modoRiesgo || tmVisible) asegurarHistoria24hCompleta(function(){ actualizarModoSlider(); render(); });
 </script>
 <script>
 (function(){
@@ -2760,6 +2868,7 @@ cargarHistoria24hInicial(function(){
       .then(function(datos){
         if(!datos||!datos.length) return;
         historyData=datos;
+        historia24hCargada=true; // este refresco ya trae el histórico completo
         if(!PERIODOS[periodoActivo].archivo) activeData=datosLocales();
         var indices=getModoIndices();
         var eraActual=(idxActual>=indices.length-1);
