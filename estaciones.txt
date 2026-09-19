@@ -206,3 +206,16 @@ IMURCIAA2  # Abanilla
 IJUMIL5     # Jumilla Casco Antiguo
 IYECLA82    # IES J.Martínez Ruiz "Azorín", Yecla
 IREGINDE12  # Yecla centro (yeclameteo.es)
+
+# Noroeste (Moratalla-Caravaca): mismo aviso — pendientes de confirmar.
+# De Calasparra, Hellín, Socovos, Nerpio y Elche de la Sierra no se ha
+# encontrado ninguna estación WU activa (Calasparra tiene una,
+# IREGINDE74, pero la propia búsqueda la marca offline; de las otras
+# cuatro no hay ningún PWS registrado ahí en absoluto).
+IREGINDE79  # Moratalla
+ICARAV6     # Caravaca de la Cruz
+
+# Almanzora/desierto de Almería: de Tabernas, Macael y Huércal-Overa no
+# se ha encontrado ninguna estación WU real (búsquedas repetidas, todas
+# "No PWS"). Solo Albox tiene una confirmada. Mismo aviso de arriba.
+IALMERIA1   # Albox
