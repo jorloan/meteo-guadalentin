@@ -2904,7 +2904,7 @@ function asegurarHistoria24hCompleta(cb){
 // cuando el usuario la ha activado explícitamente.
 function actualizarVisibilidadTM(){
   var bar=document.getElementById('tm-bar');
-  if(bar) bar.style.display=(modoRiesgo||tmVisible)?'':'none';
+  if(bar) bar.style.display=(modoRiesgo||tmVisible)?'flex':'none';
 }
 
 (function(){
@@ -3212,12 +3212,17 @@ HTML_BASE = """<!DOCTYPE html>
 
     /* ── Máquina del tiempo (formato tipo radarspain.es) ───────── */
     #tm-bar{
+      /* Oculta por defecto en el propio CSS (no solo por JS): así no
+         hay parpadeo al cargar la página, ni riesgo de que se quede
+         visible si algo falla antes de que actualizarVisibilidadTM()
+         llegue a ejecutarse. JS la muestra (display:flex) solo al
+         activar el toggle o al entrar en un riesgo agrícola. */
       position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:999;
       width:min(720px,94vw);
       background:rgba(13,17,23,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
       border:1px solid rgba(255,255,255,0.09);border-radius:16px;
       box-shadow:0 8px 32px rgba(0,0,0,.5);
-      padding:10px 14px 12px;display:flex;flex-direction:column;gap:7px;
+      padding:10px 14px 12px;display:none;flex-direction:column;gap:7px;
     }
     #tm-row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .tm-play{
