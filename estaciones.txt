@@ -191,3 +191,31 @@ ICORRA13
 ICORRA11
 ICHINC55
 ICHINC62
+
+# Huecos en zonas agrícolas centrales (no solo junto a autovías) —
+# localizadas por búsqueda, PENDIENTES DE CONFIRMAR en el próximo ciclo
+# real (este entorno de desarrollo no tiene acceso directo a la API de
+# WU para verificarlas antes de subirlas). Si en el próximo data.json no
+# traen coordenadas/datos válidos, hay que quitarlas.
+IALCAN10   # Cañada Hermosa, Alcantarilla (huerta de Murcia)
+IMURCIAA2  # Abanilla
+
+# Altiplano (Jumilla-Yecla): la zona vitivinícola central quedaba con
+# muy poca cobertura fuera del casco de Jumilla. Mismo aviso que arriba
+# — pendientes de confirmar en el próximo ciclo real.
+IJUMIL5     # Jumilla Casco Antiguo
+IYECLA82    # IES J.Martínez Ruiz "Azorín", Yecla
+IREGINDE12  # Yecla centro (yeclameteo.es)
+
+# Noroeste (Moratalla-Caravaca): mismo aviso — pendientes de confirmar.
+# De Calasparra, Hellín, Socovos, Nerpio y Elche de la Sierra no se ha
+# encontrado ninguna estación WU activa (Calasparra tiene una,
+# IREGINDE74, pero la propia búsqueda la marca offline; de las otras
+# cuatro no hay ningún PWS registrado ahí en absoluto).
+IREGINDE79  # Moratalla
+ICARAV6     # Caravaca de la Cruz
+
+# Almanzora/desierto de Almería: de Tabernas, Macael y Huércal-Overa no
+# se ha encontrado ninguna estación WU real (búsquedas repetidas, todas
+# "No PWS"). Solo Albox tiene una confirmada. Mismo aviso de arriba.
+IALMERIA1   # Albox
