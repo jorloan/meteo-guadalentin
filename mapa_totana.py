@@ -1128,6 +1128,9 @@ leg.upd=function(p){
     +'<div class="leg-body" id="leg-body" style="'+bst+'">'+body+'</div>';
 };
 leg.addTo(map);
+// Leaflet apila los controles de abajo encima de los ya existentes:
+// se baja la leyenda al fondo de la esquina, debajo del zoom.
+(function(c){ c.parentNode.appendChild(c); })(leg.getContainer());
 function legToggle(){
   _legCollapsed=!_legCollapsed;
   var b=document.getElementById('leg-body');
@@ -2887,7 +2890,9 @@ function actualizarPronBtn(activo){
 // máquina del tiempo a mano, o al entrar en un riesgo agrícola
 // (oídio/mildiu), que también necesita el histórico por días.
 var historia24hCargada=false, historia24hCargando=false;
-var tmVisible=llRecordado('meteo_tm_visible','false')==='true';
+// Siempre arranca desactivada: ya no se recuerda en localStorage, para
+// que quien la abrió una vez no la vuelva a encontrar tapando el mapa.
+var tmVisible=false;
 
 function asegurarHistoria24hCompleta(cb){
   if(historia24hCargada){ if(cb) cb(); return; }
@@ -2904,7 +2909,11 @@ function asegurarHistoria24hCompleta(cb){
 // cuando el usuario la ha activado explícitamente.
 function actualizarVisibilidadTM(){
   var bar=document.getElementById('tm-bar');
-  if(bar) bar.style.display=(modoRiesgo||tmVisible)?'':'none';
+  var on=(modoRiesgo||tmVisible);
+  if(bar) bar.style.display=on?'':'none';
+  // La leyenda (y el zoom) van pegados abajo del todo; solo suben para
+  // dejar hueco cuando la cinta de tiempo está a la vista.
+  document.body.classList.toggle('tm-on', on);
 }
 
 (function(){
@@ -2913,7 +2922,6 @@ function actualizarVisibilidadTM(){
   chk.checked=tmVisible;
   chk.addEventListener('change', function(){
     tmVisible=this.checked;
-    llRecordar('meteo_tm_visible', tmVisible?'true':'false');
     actualizarVisibilidadTM();
     if(tmVisible) asegurarHistoria24hCompleta(function(){ actualizarModoSlider(); render(); });
   });
@@ -3312,8 +3320,10 @@ HTML_BASE = """<!DOCTYPE html>
       white-space:nowrap;backdrop-filter:blur(8px);
     }
 
-    /* Dejar hueco para el panel de la máquina del tiempo (fijo abajo) */
-    .leaflet-bottom.leaflet-left{bottom:104px!important}
+    /* Leyenda abajo del todo; solo se deja hueco para el panel de la
+       máquina del tiempo (fijo abajo) cuando está visible */
+    .leaflet-bottom.leaflet-left{bottom:0!important}
+    body.tm-on .leaflet-bottom.leaflet-left{bottom:104px!important}
 
     /* Leyenda (Leaflet control) */
     .legend{
@@ -3436,7 +3446,7 @@ HTML_BASE = """<!DOCTYPE html>
       .legend{max-width:130px!important;font-size:.68rem!important}
       .leg-hdr{padding:5px 9px}
       .leg-body{padding:5px 9px 7px}
-      .leaflet-bottom.leaflet-left{bottom:150px!important}
+      body.tm-on .leaflet-bottom.leaflet-left{bottom:150px!important}
       #tm-bar{bottom:6px;left:6px;right:6px;width:auto;transform:none;padding:8px 10px 10px}
       #tm-row1{gap:6px}
       #tl{font-size:1.05rem}
