@@ -2439,6 +2439,8 @@ map.on('zoomend',pintarMarcadores);
 // ── Render principal ───────────────────────────────────────
 function render(){
   var p=document.getElementById('ps').value;
+  // En la pestaña Riesgos solo se pintan riesgos (un cultivo sin modelo deja el mapa vacío).
+  if(typeof vistaActual!=='undefined'&&vistaActual==='riesgos'&&!esParamRiesgo(p)){ mLG.clearLayers(); hLG.clearLayers(); return; }
   var isR=p==='oidio'||p==='mildiu';
   var pRender=p;
   leg.upd(p);
@@ -3077,8 +3079,6 @@ if(radarChk){
   var btnLabel=document.getElementById('ps-btn-label');
   var menu=document.getElementById('ps-menu');
   var sel=document.getElementById('ps');
-  var riesgoHdr=document.getElementById('ps-riesgo-hdr');
-  var riesgoSub=document.getElementById('ps-riesgo-sub');
   var opts=menu.querySelectorAll('.ps-opt');
 
   function etiquetaDe(v){
@@ -3090,8 +3090,6 @@ if(radarChk){
   }
   function cerrarMenu(){
     menu.classList.remove('open');
-    riesgoSub.classList.remove('open'); // se pliega de nuevo al cerrar
-    riesgoHdr.querySelector('.ps-caret').textContent='▸';
   }
   function abrirMenu(){
     marcarActiva(sel.value);
@@ -3100,11 +3098,6 @@ if(radarChk){
   btn.addEventListener('click', function(e){
     e.stopPropagation();
     if(menu.classList.contains('open')) cerrarMenu(); else abrirMenu();
-  });
-  riesgoHdr.addEventListener('click', function(e){
-    e.stopPropagation();
-    var abierto=riesgoSub.classList.toggle('open');
-    riesgoHdr.querySelector('.ps-caret').textContent=abierto?'▾':'▸';
   });
   for(var i=0;i<opts.length;i++){
     opts[i].addEventListener('click', function(e){
@@ -3186,6 +3179,94 @@ window.matchMedia('(max-width:768px)').addEventListener('change',colocarControle
   // El toque ya lo ha resuelto touchend: el clic que lo sigue no debe deshacerlo.
   asa.addEventListener('click',function(){ if(Date.now()-tTactil>600) dp.classList.toggle('alto'); });
 })();
+
+// ── Riesgos agrícolas ──────────────────────────────────────
+// Pestaña propia, fuera de los datos meteorológicos: se elige el cultivo y
+// después el riesgo (enfermedad o plaga). Reutiliza el mismo mapa en
+// "modo riesgo" (máquina del tiempo por días, mapa de calor, leyenda y
+// ficha de estación ya sabían pintar oídio y mildiu), con su propia barra
+// arriba en vez de la de datos meteorológicos.
+// Para añadir un riesgo: calcularlo por estación en mapa_totana.py (como
+// calcular_riesgo con oídio/mildiu, guardado en riesgoData e
+// historial_riesgo.json), darle color/raw/leyenda/ficha como a oídio en el
+// JS, y quitarle aquí el `prox`. Los marcados `prox` aún no tienen modelo:
+// se enseñan como "en preparación" para que se vea el plan por cultivo.
+var CULTIVOS_RIESGO=[
+  {id:'vid', ic:'🍇', nombre:'Vid y uva de mesa', riesgos:[
+    {id:'oidio', ic:'🍇', nombre:'Oídio', tipo:'Hongo', agente:'Erysiphe necator',
+     modelo:'Gubler-Thomas: índice DSV acumulado en la temporada (horas de humedad alta y temperatura media).'},
+    {id:'mildiu', ic:'🍃', nombre:'Mildiu', tipo:'Hongo', agente:'Plasmopara viticola',
+     modelo:'Regla 10-10-10 (Tmin > 10 °C, ≥ 10 mm de lluvia) y periodo de incubación según la temperatura.'},
+    {nombre:'Botrytis (podredumbre gris)', tipo:'Hongo', prox:true},
+    {nombre:'Polilla del racimo (Lobesia botrana)', tipo:'Plaga', prox:true}]},
+  {id:'lechuga', ic:'🥬', nombre:'Lechuga y hoja', riesgos:[
+    {nombre:'Mildiu de la lechuga (Bremia lactucae)', tipo:'Hongo', prox:true}]},
+  {id:'brasicas', ic:'🥦', nombre:'Brócoli y coliflor', riesgos:[
+    {nombre:'Mildiu de las crucíferas', tipo:'Hongo', prox:true},
+    {nombre:'Alternaria', tipo:'Hongo', prox:true}]},
+  {id:'almendro', ic:'🌰', nombre:'Almendro', riesgos:[
+    {nombre:'Helada en floración', tipo:'Clima', prox:true},
+    {nombre:'Mancha ocre (Polystigma)', tipo:'Hongo', prox:true}]},
+  {id:'citricos', ic:'🍊', nombre:'Cítricos', riesgos:[
+    {nombre:'Mosca de la fruta (Ceratitis capitata)', tipo:'Plaga', prox:true},
+    {nombre:'Aguado (Phytophthora)', tipo:'Hongo', prox:true}]}
+];
+var riesgoCultivo=(function(){ try{ return localStorage.getItem('meteo_riesgo_cultivo')||'vid'; }catch(e){ return 'vid'; } })();
+var riesgoElegido=(function(){ try{ return localStorage.getItem('meteo_riesgo')||'oidio'; }catch(e){ return 'oidio'; } })();
+var paramMeteo='temp';   // lo que se veía en el Mapa, para volver a ello
+
+function esParamRiesgo(v){ return v==='oidio'||v==='mildiu'; }
+function cultivoRiesgo(id){ for(var i=0;i<CULTIVOS_RIESGO.length;i++) if(CULTIVOS_RIESGO[i].id===id) return CULTIVOS_RIESGO[i]; return CULTIVOS_RIESGO[0]; }
+
+function entrarRiesgos(){
+  var actual=document.getElementById('ps').value;
+  if(!esParamRiesgo(actual)) paramMeteo=actual;
+  pintarBarraRiesgos();
+}
+function salirRiesgos(){
+  if(esParamRiesgo(document.getElementById('ps').value)) elegirParam(paramMeteo);
+  document.getElementById('rg-vacio').style.display='none';
+}
+function elegirCultivoRiesgo(id){
+  riesgoCultivo=id; try{ localStorage.setItem('meteo_riesgo_cultivo',id); }catch(e){}
+  var c=cultivoRiesgo(id), disp=c.riesgos.filter(function(r){return !r.prox;});
+  if(disp.length&&!disp.some(function(r){return r.id===riesgoElegido;})) riesgoElegido=disp[0].id;
+  pintarBarraRiesgos();
+}
+function elegirRiesgo(id){
+  riesgoElegido=id; try{ localStorage.setItem('meteo_riesgo',id); }catch(e){}
+  pintarBarraRiesgos();
+}
+function pintarBarraRiesgos(){
+  var c=cultivoRiesgo(riesgoCultivo), disp=c.riesgos.filter(function(r){return !r.prox;});
+  document.getElementById('rg-cultivos').innerHTML=CULTIVOS_RIESGO.map(function(o){
+    return '<button type="button" class="chip-r'+(o.id===c.id?' active':'')+'" onclick="elegirCultivoRiesgo(\''+o.id+'\')">'+o.ic+' '+o.nombre+'</button>';
+  }).join('');
+  document.getElementById('rg-riesgos').innerHTML=c.riesgos.map(function(r){
+    if(r.prox) return '<span class="chip-r prox" title="En preparación">'+r.nombre+' <small>próximamente</small></span>';
+    return '<button type="button" class="chip-r'+(r.id===riesgoElegido?' active':'')+'" onclick="elegirRiesgo(\''+r.id+'\')">'+r.ic+' '+r.nombre+'</button>';
+  }).join('');
+  var r=disp.filter(function(x){return x.id===riesgoElegido;})[0];
+  document.getElementById('rg-info').innerHTML=r
+    ?'<b>'+r.nombre+'</b> <i>('+r.agente+')</i> · '+r.modelo+' Toca una estación para ver el detalle.'
+    :'';
+  var vacio=document.getElementById('rg-vacio');
+  if(!disp.length){
+    vacio.innerHTML='<div class="rg-vacio-tit">'+c.ic+' '+c.nombre+'</div>'
+      +'<div>Todavía no hay ningún modelo de riesgo calculado para este cultivo.</div>'
+      +'<div class="rg-vacio-lista">En preparación:<br>'+c.riesgos.map(function(x){return '• '+x.nombre+' <small>('+x.tipo+')</small>';}).join('<br>')+'</div>';
+    vacio.style.display='block';
+    document.body.classList.add('rg-sin-modelo');
+    if(esParamRiesgo(document.getElementById('ps').value)) elegirParam(paramMeteo); else render();
+    return;
+  }
+  vacio.style.display='none';
+  document.body.classList.remove('rg-sin-modelo');
+  if(document.getElementById('ps').value!==riesgoElegido) elegirParam(riesgoElegido);
+  else render();
+}
+// Ver días anteriores: la máquina del tiempo, que en modo riesgo va por días.
+function riesgosDiasAnteriores(){ var c=document.getElementById('tm-chk'); if(c) c.click(); }
 
 // ── Mi zona ─────────────────────────────────────────────────
 // La pantalla de inicio en el móvil: la respuesta directa para un sitio
@@ -3514,7 +3595,7 @@ function mostrarVistaZona(){
 // La pantalla abierta va en la URL (#pronostico, #lluvia): el botón
 // "atrás" del navegador o del móvil vuelve a la anterior, y un enlace
 // con #pronostico abre directamente el pronóstico.
-var VISTAS=['mapa','zona','pronostico','lluvia'];
+var VISTAS=['mapa','zona','riesgos','pronostico','lluvia'];
 // En el móvil se abre en «Mi zona» (la respuesta directa para el
 // agricultor); en el ordenador, en el mapa. "#mapa" fuerza el mapa.
 function esMovil(){ return window.matchMedia('(max-width:768px)').matches; }
@@ -3526,12 +3607,15 @@ function aplicarVista(v){
   if(v!=='lluvia')     document.getElementById('vl').classList.remove('open');
   if(v!=='zona')       document.getElementById('vz').classList.remove('open');
   if(v==='zona')       mostrarVistaZona();
+  // Mapa y Riesgos comparten el mapa: cambia la barra de arriba y lo que se pinta.
+  if(v==='riesgos')    entrarRiesgos();
+  else if(v==='mapa')  salirRiesgos();
   if(v==='pronostico') mostrarVistaPronostico();
   if(v==='lluvia')     mostrarVistaLluvia();
   vistaActual=v;
   actualizarPronBtn(v);
   cerrarNav();
-  if(v==='mapa') setTimeout(function(){ map.invalidateSize(); },50);
+  if(v==='mapa'||v==='riesgos') setTimeout(function(){ map.invalidateSize(); },50);
 }
 function irA(v){
   if(v===vistaActual){ cerrarNav(); if(v==='zona'&&zonaBuscando){ zonaBuscando=false; renderZona(); } return; }
@@ -3576,13 +3660,16 @@ function asegurarHistoria24hCompleta(cb){
   });
 }
 
-// La cinta se ve siempre en modo riesgo (ahí sirve para filtrar por
-// fechas, no es la misma barra que la del slider en vivo) y además
-// cuando el usuario la ha activado explícitamente.
+// La cinta solo se ve cuando el usuario la abre (casilla «Máquina del
+// tiempo» o, en Riesgos, «📅 Días anteriores», donde va por fechas).
 function actualizarVisibilidadTM(){
   var bar=document.getElementById('tm-bar');
-  var on=(modoRiesgo||tmVisible);
+  // Desde que los riesgos tienen su pestaña, la cinta por días también se
+  // abre a mano (botón «📅 Días anteriores»): siempre abierta tapaba medio
+  // mapa en el móvil.
+  var on=tmVisible;
   if(bar) bar.style.display=on?'':'none';
+  var bd=document.getElementById('rg-dias'); if(bd) bd.classList.toggle('active',on);
   // La leyenda (y el zoom) van pegados abajo del todo; solo suben para
   // dejar hueco cuando la cinta de tiempo está a la vista.
   document.body.classList.toggle('tm-on', on);
@@ -3690,14 +3777,6 @@ HTML_BASE = """<!DOCTYPE html>
     .ps-opt{padding:7px 10px;border-radius:6px;font-size:.8rem;color:#e6edf3;cursor:pointer;white-space:nowrap}
     .ps-opt:hover{background:rgba(255,255,255,0.08)}
     .ps-opt.active{background:rgba(59,130,246,.28)}
-    .ps-sep{height:1px;background:rgba(255,255,255,0.1);margin:4px 2px}
-    .ps-grp-hdr{
-      padding:7px 10px;border-radius:6px;font-size:.72rem;font-weight:700;color:#9aa7bd;
-      cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;
-    }
-    .ps-grp-hdr:hover{background:rgba(255,255,255,0.06)}
-    .ps-sub{display:none;padding-left:4px}
-    .ps-sub.open{display:block}
 
     /* Selector único de "Pronóstico" (antes dos botones sueltos —
        Pronóstico / Lluvia prevista — que no dejaban claro cuál de las
@@ -4214,6 +4293,48 @@ HTML_BASE = """<!DOCTYPE html>
       #dc table{font-size:15px!important}
     }
 
+    /* ── Pestaña Riesgos ── */
+    #topbar-riesgos,#rg-vacio{display:none}
+    body[data-vista=riesgos] #topbar,body[data-vista=riesgos] #ctrl-precip{display:none!important}
+    body[data-vista=riesgos] #topbar-riesgos{
+      display:flex;flex-direction:column;gap:7px;position:fixed;top:12px;left:12px;right:12px;z-index:1000;
+      padding:9px 12px;background:rgba(13,17,23,0.86);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.09);border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.5);color:#e2e8f0}
+    .rg-fila{display:flex;align-items:center;gap:10px;min-width:0}
+    .rg-tit{font-weight:800;font-size:.95rem;color:#fff;flex-shrink:0}
+    .rg-chips{display:flex;gap:6px;overflow-x:auto;min-width:0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .rg-chips::-webkit-scrollbar{display:none}
+    .chip-r{flex-shrink:0;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.07);color:#e2e8f0;font-size:.84rem;font-weight:700;font-family:inherit;cursor:pointer;
+      white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+    .chip-r.active{background:#16a34a;border-color:#16a34a;color:#fff}
+    #rg-cultivos .chip-r.active{background:#2563eb;border-color:#2563eb}
+    .chip-r.prox{opacity:.5;cursor:default;border-style:dashed}
+    .chip-r small{font-weight:500;font-size:.68rem;opacity:.85}
+    .rg-pie{display:flex;align-items:center;gap:10px}
+    #rg-info{flex:1;font-size:.72rem;color:#9fb0c8;line-height:1.4;min-width:0}
+    #rg-dias.active{background:#2563eb;border-color:#2563eb;color:#fff}
+    #rg-dias{flex-shrink:0;min-height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);
+      color:#e2e8f0;font-size:.78rem;font-weight:700;font-family:inherit;cursor:pointer;padding:0 10px}
+    body[data-vista=riesgos] #rg-vacio[style*="block"]{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1001;
+      width:min(88vw,380px);background:#fff;color:#0f172a;border-radius:16px;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.35);
+      font-size:.95rem;line-height:1.5}
+    body.rg-sin-modelo[data-vista=riesgos] .legend{display:none}
+    .rg-vacio-tit{font-weight:800;font-size:1.1rem;margin-bottom:6px}
+    .rg-vacio-lista{margin-top:10px;color:#475569;font-size:.9rem}
+    @media(max-width:768px){
+      body[data-vista=riesgos] #topbar-riesgos{top:6px;left:6px;right:6px;padding:8px;border-radius:14px}
+      .rg-fila .nav-btn{display:none}
+      .rg-fila{flex-direction:column;align-items:stretch;gap:6px}
+      .rg-tit{display:none}
+      .rg-chips{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:20px}
+      .chip-r{min-height:40px;font-size:.88rem}
+      /* La descripción del modelo, en 2 líneas; tocándola se lee entera */
+      #rg-info{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.76rem;cursor:pointer}
+      #rg-info.abierto{display:block}
+      #dp{max-height:52dvh!important}
+    }
+
     /* ── Pestañas de abajo (móvil) ── */
     #tabs{display:none}
     @media(max-width:768px){
@@ -4295,12 +4416,6 @@ HTML_BASE = """<!DOCTYPE html>
       <div class="ps-opt" data-v="precip">🌧 Precipitación (mm)</div>
       <div class="ps-opt" data-v="humidity">💧 Humedad (%)</div>
       <div class="ps-opt" data-v="wind">💨 Viento (km/h)</div>
-      <div class="ps-sep"></div>
-      <div class="ps-grp-hdr" id="ps-riesgo-hdr"><span>🌿 Riesgos agrícolas</span><span class="ps-caret">▸</span></div>
-      <div class="ps-sub" id="ps-riesgo-sub">
-        <div class="ps-opt" data-v="oidio">🍇 Riesgo Oídio</div>
-        <div class="ps-opt" data-v="mildiu">🍃 Riesgo Mildiu</div>
-      </div>
     </div>
     <select id="ps" onchange="onParamChange()" style="display:none">
       <option value="temp" selected>🌡 Temperatura (°C)</option>
@@ -4316,8 +4431,6 @@ HTML_BASE = """<!DOCTYPE html>
     <button type="button" class="chip-p" data-v="precip">🌧 Lluvia</button>
     <button type="button" class="chip-p" data-v="humidity">💧 Humedad</button>
     <button type="button" class="chip-p" data-v="wind">💨 Viento</button>
-    <button type="button" class="chip-p" data-v="oidio">🍇 Oídio</button>
-    <button type="button" class="chip-p" data-v="mildiu">🍃 Mildiu</button>
   </div>
   <button type="button" id="btn-capas" onclick="abrirCapas()" aria-label="Capas">🧰</button>
   <div id="ctrl-precip" style="display:none"></div>
@@ -4337,6 +4450,21 @@ HTML_BASE = """<!DOCTYPE html>
   </div>
   <button id="btn-loc" title="Mi ubicación" onclick="locateMe()">🎯</button>
 </div>
+
+<!-- Barra de la pestaña Riesgos (sustituye a la de datos meteorológicos) -->
+<div id="topbar-riesgos">
+  <div class="rg-fila">
+    <button type="button" class="nav-btn" onclick="abrirNav()" title="Menú" aria-label="Menú">☰</button>
+    <div class="rg-tit">🌿 Riesgos</div>
+    <div id="rg-cultivos" class="rg-chips"></div>
+  </div>
+  <div id="rg-riesgos" class="rg-chips"></div>
+  <div class="rg-pie">
+    <div id="rg-info" onclick="this.classList.toggle('abierto')"></div>
+    <button type="button" id="rg-dias" onclick="riesgosDiasAnteriores()">📅 Días anteriores</button>
+  </div>
+</div>
+<div id="rg-vacio"></div>
 
 <!-- Máquina del tiempo ─────────────────────────────────────── -->
 <div id="tm-bar">
@@ -4465,6 +4593,7 @@ HTML_BASE = """<!DOCTYPE html>
 <nav id="tabs" aria-label="Secciones">
   <a href="#zona" class="tab" data-vista="zona" onclick="irA('zona');return false;"><span>📍</span>Mi zona</a>
   <a href="#mapa" class="tab" data-vista="mapa" onclick="irA('mapa');return false;"><span>🗺</span>Mapa</a>
+  <a href="#riesgos" class="tab" data-vista="riesgos" onclick="irA('riesgos');return false;"><span>🌿</span>Riesgos</a>
   <a href="#pronostico" class="tab" data-vista="pronostico" onclick="irA('pronostico');return false;"><span>📈</span>Pronóstico</a>
   <a href="#lluvia" class="tab" data-vista="lluvia" onclick="irA('lluvia');return false;"><span>🌧</span>Lluvia</a>
 </nav>
@@ -4477,7 +4606,8 @@ HTML_BASE = """<!DOCTYPE html>
     <button type="button" id="nav-cerrar" onclick="cerrarNav()" aria-label="Cerrar">✕</button>
   </div>
   <a href="#zona" class="nav-op" data-vista="zona" onclick="irA('zona');return false;">📍<span>Mi zona<small>Avisos, tratar y tiempo en tu finca</small></span></a>
-  <a href="#mapa" class="nav-op active" data-vista="mapa" onclick="irA('mapa');return false;">🗺<span>Mapa de estaciones<small>Datos en tiempo real y riesgos</small></span></a>
+  <a href="#riesgos" class="nav-op" data-vista="riesgos" onclick="irA('riesgos');return false;">🌿<span>Riesgos agrícolas<small>Enfermedades y plagas por cultivo</small></span></a>
+  <a href="#mapa" class="nav-op active" data-vista="mapa" onclick="irA('mapa');return false;">🗺<span>Mapa de estaciones<small>Datos meteorológicos en tiempo real</small></span></a>
   <a href="#pronostico" class="nav-op" data-vista="pronostico" onclick="irA('pronostico');return false;">🔮<span>Pronóstico por población<small>Meteograma de varios días</small></span></a>
   <a href="#lluvia" class="nav-op" data-vista="lluvia" onclick="irA('lluvia');return false;">🌧<span>Lluvia prevista<small>Precipitación acumulada en la Región</small></span></a>
 </nav>
