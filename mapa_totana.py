@@ -44,6 +44,14 @@ if not os.path.exists(F_EST):
 
 ESTACIONES = [l.split('#')[0].strip() for l in open(F_EST) if l.split('#')[0].strip()]
 
+# Estaciones que fallan, apagadas a mano (ver filtro_estaciones.py): no se
+# descargan y el mapa las quita también de los históricos ya guardados.
+from filtro_estaciones import leer_desactivadas, filtrar_lecturas, anotar_descartes
+F_DESACT = os.path.join(BASE_DIR, 'estaciones_desactivadas.txt')
+F_FILTRO = os.path.join(REPO_DIR, 'filtro_estaciones.json')
+DESACTIVADAS = leer_desactivadas(F_DESACT)
+ESTACIONES = [e for e in ESTACIONES if e.upper() not in DESACTIVADAS]
+
 # ── Utilidades ────────────────────────────────────────────────
 def leer(ruta, default):
     if os.path.exists(ruta):
@@ -86,7 +94,7 @@ def wu(sid):
 def _recortar_estacion(est):
     if not est: return est
     m = est.get('metric') or {}
-    return {
+    r = {
         'stationID': est.get('stationID'),
         'lat': est.get('lat'), 'lon': est.get('lon'),
         'neighborhood': est.get('neighborhood'),
@@ -103,6 +111,9 @@ def _recortar_estacion(est):
             'windGust': m.get('windGust'), 'precipTotal': m.get('precipTotal'),
         },
     }
+    # Campos anulados por el filtro automático, con el motivo (panel de la estación).
+    if est.get('descartado'): r['descartado'] = est['descartado']
+    return r
 
 def hist24(nuevos, ahora, minutos_intervalo=15):
     h   = leer(F_H24, [])
@@ -750,9 +761,13 @@ def generar_html(historial, riesgo_data, ahora, dias_acum):
     # descarga aparte (fetch) justo después de cargar la página. Sin esto,
     # con el cron ahora disparando cada 5 min de verdad, history_24h.json
     # llega a ~25MB/día y se embebía entero dentro del HTML.
+    semilla = [{**s, 'stations': [e for e in (s.get('stations') or [])
+                                  if e and (e.get('stationID') or '').upper() not in DESACTIVADAS]}
+               for s in historial[-1:]]
     js = ("var NOMBRES="+json.dumps(NOMBRES, ensure_ascii=False)+";\n"
+         +"var DESACTIVADAS="+json.dumps(sorted(DESACTIVADAS))+";\n"
          +"var WEBCAMS_DATA="+json.dumps(WEBCAMS, ensure_ascii=False)+";\n"
-         +"var historyData="+json.dumps(historial[-1:], ensure_ascii=False)+";\n"
+         +"var historyData="+json.dumps(semilla, ensure_ascii=False)+";\n"
          +"var riesgoData="+json.dumps(riesgo_data, ensure_ascii=False)+";\n"
          +"var riesgoHistData={};\n"
          +"var AVISO_DIAS="+json.dumps(aviso_dias)+";\n"
@@ -768,6 +783,26 @@ def generar_html(historial, riesgo_data, ahora, dias_acum):
     return ruta_pub
 
 JS_LOGICA = r"""
+// Estaciones desactivadas a mano (estaciones_desactivadas.txt): ya no se
+// descargan, pero los históricos guardados aún traen sus lecturas de antes.
+// Se quitan al cargarlos, sin tocar los archivos: al reactivarla vuelve todo.
+var _DESACT={}; DESACTIVADAS.forEach(function(s){_DESACT[s]=1;});
+function esDesactivada(sid){ return !!(sid && _DESACT[String(sid).toUpperCase()]); }
+function sinDesactivadas(snaps){
+  if(!DESACTIVADAS.length || !snaps || !snaps.map) return snaps;
+  return snaps.map(function(s){
+    if(!s || !s.stations) return s;
+    var c={}; for(var k in s) c[k]=s[k];
+    c.stations=s.stations.filter(function(e){ return e && !esDesactivada(e.stationID); });
+    return c;
+  });
+}
+function riesgoSinDesactivadas(d){        // {fecha: {stationID: {...}}}
+  if(!DESACTIVADAS.length || !d) return d;
+  var r={};
+  for(var f in d){ r[f]={}; for(var sid in d[f]) if(!esDesactivada(sid)) r[f][sid]=d[f][sid]; }
+  return r;
+}
 var RC=['#27ae60','#f39c12','#e67e22','#c0392b'];
 var RL=['Sin riesgo','Riesgo bajo','Riesgo medio','Riesgo ALTO'];
 var CI=historyData.length-1;
@@ -1016,7 +1051,7 @@ function datosParaPrecip(horas, tsRef, cb){
   if(precip2dPidiendo){ setTimeout(function(){datosParaPrecip(horas,tsRef,cb);},250); return; }
   precip2dPidiendo=true;
   fetch('history_2d.json?v='+Date.now()).then(function(r){return r.json();})
-    .then(function(datos){ extData['2d']=(datos&&datos.length)?datos:[]; })
+    .then(function(datos){ extData['2d']=(datos&&datos.length)?sinDesactivadas(datos):[]; })
     .catch(function(){ extData['2d']=[]; })
     .then(function(){ precip2dPidiendo=false; cb(extData['2d']); });
 }
@@ -1082,6 +1117,7 @@ function raw(est,p,tsRef){
   if(p==='precip'){
     var acum=getPrecipVentana(est.stationID, tsRef||new Date(), precipVentana);
     if(acum!=null) return acum;
+    if(est.descartado && est.descartado.precipTotal) return null;  // anulada por el filtro: no es 0 mm
     return precipVentana<=24 && m.precipTotal!=null ? m.precipTotal : 0;
   }
   if(p==='temp')     return m.temp;
@@ -2351,7 +2387,21 @@ function render(){
         +'padding:6px 10px;margin-bottom:10px;font-size:11px;color:#856404;">'
         +'⏱ Sin actualizar desde hace <b>'+minutos_sin_datos+' min</b> — dato antiguo</div>':'';
       var sensacion=m.heatIndex!=null&&m.heatIndex!==m.temp?m.heatIndex:(m.windChill!=null&&m.windChill!==m.temp?m.windChill:null);
-      ph=avisoEstiado
+      var avisoFiltro='';
+      if(est.descartado){
+        var NOMC={temp:'Temperatura',dewpt:'Pto. rocío',humidity:'Humedad',pressure:'Presión',
+          windSpeed:'Viento',windGust:'Racha',precipTotal:'Precipitación',solarRadiation:'Radiación',
+          uv:'Índice UV',heatIndex:'Sensación',windChill:'Sensación'};
+        var lis=[];
+        for(var cmp in est.descartado){
+          if(/^depende de /.test(est.descartado[cmp])) continue;
+          lis.push('<b>'+(NOMC[cmp]||cmp)+'</b>: '+est.descartado[cmp]);
+        }
+        if(lis.length) avisoFiltro='<div style="background:#fdecea;border:1px solid #f5c2c0;border-radius:6px;'
+          +'padding:6px 10px;margin-bottom:10px;font-size:11px;color:#8a1c14;">'
+          +'🧹 Lectura descartada por el filtro automático (no se pinta):<br>'+lis.join('<br>')+'</div>';
+      }
+      ph=avisoEstiado+avisoFiltro
         +'<table style="width:100%;font-size:13px;border-collapse:collapse;line-height:2;">'
         +'<tr><td style="color:#888">🌡 Temperatura</td>'
         +'<td style="font-weight:700">'+(m.temp!=null?m.temp.toFixed(1)+'°C':'—')+'</td></tr>'
@@ -2522,7 +2572,7 @@ function cargarPeriodo(p, cb){
   fetch(PERIODOS[p].archivo+'?v='+Date.now())
     .then(function(r){return r.json();})
     .then(function(datos){
-      extData[p]=(datos&&datos.length)?datos:historyData;
+      extData[p]=(datos&&datos.length)?sinDesactivadas(datos):historyData;
       activeData=extData[p];
       sl.disabled=false;
       cb();
@@ -2733,7 +2783,7 @@ function cargarRiesgoHistorico(cb){
   fetch('historial_riesgo.json?v='+Date.now())
     .then(function(r){return r.json();})
     .then(function(datos){
-      riesgoHistData=datos||{};
+      riesgoHistData=riesgoSinDesactivadas(datos||{});
       riesgoHistCargado=true;
       if(cb) cb();
     })
@@ -2943,7 +2993,7 @@ function cargarHistoria24hInicial(cb){
     .then(function(r){return r.json();})
     .then(function(datos){
       if(datos && datos.length){
-        historyData=datos;
+        historyData=sinDesactivadas(datos);
         construirDiaIdx();
         if(!PERIODOS[periodoActivo].archivo) activeData=datosLocales();
       }
@@ -3642,7 +3692,7 @@ HTML_BASE = """<!DOCTYPE html>
       .then(function(r){return r.json();})
       .then(function(datos){
         if(!datos||!datos.length) return;
-        historyData=datos;
+        historyData=sinDesactivadas(datos);
         historia24hCargada=true; // este refresco ya trae el histórico completo
         if(!PERIODOS[periodoActivo].archivo) activeData=datosLocales();
         var indices=getModoIndices();
@@ -3700,6 +3750,17 @@ def principal():
         print("  ❌ Sin datos WU. Comprueba la conexión."); return
 
     h_prev = leer(F_H24, [])
+
+    print("\n🧹 Filtrando lecturas imposibles...")
+    datos_wu, descartes = filtrar_lecturas(datos_wu, h_prev, ahora)
+    for sid, campo, valor, motivo in descartes:
+        print(f"  ⚠ {sid} {campo}={valor}: {motivo}")
+    if not descartes: print("  ✅ Ninguna lectura descartada")
+    guardar(F_FILTRO, anotar_descartes(leer(F_FILTRO, {}), descartes, ahora))
+    if DESACTIVADAS: print(f"  ℹ Desactivadas a mano: {', '.join(sorted(DESACTIVADAS))}")
+    if not datos_wu:
+        print("  ❌ Ninguna estación con datos actuales."); return
+
     minutos = 15
     if h_prev:
         try:
@@ -3724,6 +3785,10 @@ def principal():
     print(f"\n🌾 Historial agrícola... (+{minutos} min)")
     hagri = hist_agri(datos_wu, ahora, minutos)
     dias_acum = len(hagri)
+    # El historial agrícola guardado aún puede traer días de una estación ya
+    # desactivada: para el riesgo no cuenta (ni como vecina de otra).
+    hagri = {f: {s: v for s, v in d.items() if s.upper() not in DESACTIVADAS}
+             for f, d in hagri.items()}
 
     if dias_acum < MIN_DIAS:
         falt = MIN_DIAS - dias_acum

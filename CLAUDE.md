@@ -187,6 +187,13 @@ Station ID format: prefix + number (e.g., `ITOTAN8`, `ILORCA23`, `IALEDO5`, `IAL
 
 To add a station: append its WU station ID to `estaciones.txt`. It will be picked up on the next run of `mapa_totana.py`.
 
+### Estaciones que fallan: lista a mano y filtro automático (`filtro_estaciones.py`)
+
+- **`estaciones_desactivadas.txt`**: una estación por línea (`ILORCA45  # motivo y fecha`). No se descarga, el riesgo no la usa (ni como vecina) y el mapa la quita también de los históricos ya guardados (`sinDesactivadas()` / `riesgoSinDesactivadas()` en el JS, al cargar `history_24h/2d/7d.json` e `historial_riesgo.json`). **Los archivos no se tocan**: quitar su línea la reactiva con todo su historial. Es más cómodo que comentarla en `estaciones.txt`, que solo deja de descargarla y no limpia lo ya guardado.
+- **Filtro automático** (`filtrar_lecturas()`, se aplica a cada lectura nueva antes de guardarla): rangos físicos (`RANGOS`), rocío por encima de la temperatura, saltos imposibles respecto a la última lectura válida de la misma estación en los últimos 30 min (temperatura >10 °C, humedad >50 puntos, lluvia que sube >50 mm; bajar a 0 a medianoche es normal), temperatura a más de 9 °C de la mediana de las vecinas en 20 km (con ≥4 vecinas), y observaciones de hace más de 3 h (esas se quitan enteras). Lo malo se guarda como `null` con el motivo en `est.descartado` (el panel de la estación lo enseña; los derivados —rocío, sensación— caen con su campo) y se acumula en **`filtro_estaciones.json`** (por estación y campo: veces, primera/última vez, último valor; 7 días), que es donde mirar antes de desactivar una.
+- Contrastado con las 24 h reales (oct 2026): de 12.441 lecturas descartó 426, de 5 estaciones (ILORCA124 con humedad 0 % y 0 °C, IELCHE114 a 1.100 hPa, IMULA25 con rocío de −39 °C…). Algunas estaciones en altura dan la presión de la estación (~940 hPa), no la del nivel del mar: por eso el mínimo es 900.
+- Pruebas: `python3 -m unittest test_filtro_estaciones`.
+
 ---
 
 ## Frontend (`index.html`)
