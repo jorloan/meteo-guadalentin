@@ -1355,7 +1355,10 @@ function mostrarVistaPronostico(){
   document.getElementById('vp').classList.add('open');
   actualizarPronBtn('poblacion');
   if(!pronData){
-    var ultima=cargarUltimaPoblacion();
+    // La última población consultada o, si nunca se ha buscado ninguna,
+    // el sitio elegido en «Mi zona».
+    var ultima=cargarUltimaPoblacion(), z=zonaActual();
+    if(!ultima&&z) ultima={name:z.nombre,latitude:z.lat,longitude:z.lon,admin1:z.sub||''};
     if(ultima){ seleccionarPoblacion(ultima); return; }
   }
   setTimeout(function(){
@@ -1495,8 +1498,8 @@ function mgPulverizar(h,i){
   if(pp!=null){ if(pp>=60) malo.push('prob. lluvia '+pp+'%'); else if(pp>=30) regular.push('prob. lluvia '+pp+'%'); }
   if(v!=null){ if(v>=18) malo.push('viento '+Math.round(v)+' km/h'); else if(v>=12) regular.push('viento '+Math.round(v)+' km/h'); else if(v<2) regular.push('calma (inversión)'); }
   if(r!=null && r>=30) malo.push('rachas '+Math.round(r)+' km/h');
-  if(t!=null){ if(t>=30) malo.push(Math.round(t)+' °C'); else if(t>=25) regular.push(Math.round(t)+' °C'); else if(t<5) regular.push(Math.round(t)+' °C'); }
-  if(hr!=null){ if(hr<35) malo.push('HR '+hr+'%'); else if(hr<50) regular.push('HR '+hr+'%'); }
+  if(t!=null){ if(t>=30) malo.push('calor, '+Math.round(t)+' °C'); else if(t>=25) regular.push('calor, '+Math.round(t)+' °C'); else if(t<5) regular.push('frío, '+Math.round(t)+' °C'); }
+  if(hr!=null){ if(hr<35) malo.push('aire seco, '+Math.round(hr)+' % de humedad'); else if(hr<50) regular.push('aire seco, '+Math.round(hr)+' % de humedad'); }
   if(malo.length) return {n:2,txt:malo.concat(regular).join(', ')};
   if(regular.length) return {n:1,txt:regular.join(', ')};
   return {n:0,txt:'adecuado'};
@@ -3020,6 +3023,324 @@ if(radarChk){
   });
 })();
 
+// ── Mi zona ─────────────────────────────────────────────────
+// La pantalla de inicio en el móvil: la respuesta directa para un sitio
+// (la ubicación del usuario o una finca guardada), sin tener que
+// interpretar el mapa. Junta lo que ya hay en la web —la estación más
+// cercana con datos ahora, el riesgo de oídio/mildiu de esa estación y el
+// pronóstico de Open-Meteo— en tarjetas: avisos, si se puede tratar, el
+// tiempo ahora y los próximos días.
+// Los sitios se guardan en el navegador (localStorage), no en ningún
+// servidor: la web es estática.
+var ZONA_CLAVE='meteo_zonas';
+var ZONA_HV='temperature_2m,precipitation,precipitation_probability,weather_code,'
+  +'wind_speed_10m,wind_gusts_10m,wind_direction_10m,relative_humidity_2m,is_day';
+var ZONA_DV='weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,'
+  +'precipitation_probability_max,wind_gusts_10m_max';
+var zonaPron={};          // caché del pronóstico por sitio: {clave: {t, d}}
+var zonaBuscando=false;
+
+function zonasGuardadas(){
+  try{ var z=JSON.parse(localStorage.getItem(ZONA_CLAVE)||'[]'); return Array.isArray(z)?z:[]; }catch(e){ return []; }
+}
+function guardarZonas(z){ try{ localStorage.setItem(ZONA_CLAVE,JSON.stringify(z.slice(0,8))); }catch(e){} }
+function zonaActual(){ return zonasGuardadas()[0]||null; }
+function claveZona(z){ return z.lat.toFixed(3)+','+z.lon.toFixed(3); }
+// El sitio elegido pasa a ser el primero; si ya estaba (mismo punto), se mueve.
+function elegirZona(z){
+  var lista=zonasGuardadas().filter(function(o){ return claveZona(o)!==claveZona(z); });
+  lista.unshift(z); guardarZonas(lista);
+  zonaBuscando=false; renderZona();
+}
+function quitarZona(i){
+  var lista=zonasGuardadas(); lista.splice(i,1); guardarZonas(lista);
+  renderZona();
+}
+
+function kmEntre(la1,lo1,la2,lo2){
+  var r=Math.PI/180, x=(lo2-lo1)*r*Math.cos((la1+la2)/2*r), y=(la2-la1)*r;
+  return 6371*Math.sqrt(x*x+y*y);
+}
+// Estaciones con datos en la última instantánea, de la más cercana a la más lejana.
+function estacionesCercanas(lat,lon){
+  var snap=historyData[historyData.length-1], res=[];
+  ((snap&&snap.stations)||[]).forEach(function(e){
+    if(!e||e.lat==null||e.lon==null||!e.metric||e.metric.temp==null) return;
+    res.push({e:e,km:kmEntre(lat,lon,e.lat,e.lon)});
+  });
+  res.sort(function(a,b){ return a.km-b.km; });
+  return res;
+}
+function nombreEstacion(e){
+  return NOMBRES[e.stationID]||(e.neighborhood&&e.neighborhood.trim()?e.neighborhood:e.stationID);
+}
+
+function usarMiUbicacion(){
+  var est=document.getElementById('vz-gps-estado');
+  if(!navigator.geolocation){ if(est) est.textContent='Este navegador no da la ubicación.'; return; }
+  if(est) est.textContent='⏳ Buscando tu ubicación…';
+  navigator.geolocation.getCurrentPosition(function(p){
+    var lat=p.coords.latitude, lon=p.coords.longitude, cerca=estacionesCercanas(lat,lon)[0];
+    var nombre=cerca&&cerca.km<15?'Mi ubicación ('+nombreEstacion(cerca.e)+')':'Mi ubicación';
+    // Open-Meteo no tiene geocodificación inversa: se nombra por la estación más cercana.
+    elegirZona({nombre:nombre,lat:lat,lon:lon,gps:true});
+  },function(err){
+    if(est) est.textContent=err&&err.code===1
+      ?'⚠ Sin permiso de ubicación. Actívalo en el navegador o busca tu población.'
+      :'⚠ No se pudo obtener la ubicación. Busca tu población.';
+  },{enableHighAccuracy:false,timeout:15000,maximumAge:600000});
+}
+
+var buscarZona=debounce(function(q){
+  var box=document.getElementById('vz-res'); if(!box) return;
+  if(!q||q.trim().length<2){ box.innerHTML=''; return; }
+  fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q.trim())+'&count=6&language=es&format=json')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var res=(d&&d.results)||[];
+      if(!res.length){ box.innerHTML='<div class="vz-vacio">Sin resultados</div>'; return; }
+      window._zonaRes=res;
+      box.innerHTML=res.map(function(r,i){
+        return '<button type="button" class="vz-opcion" onclick="elegirZonaBuscada('+i+')"><b>'+r.name+'</b><small>'
+          +[r.admin2,r.admin1,r.country].filter(Boolean).join(', ')+'</small></button>';
+      }).join('');
+    }).catch(function(){ box.innerHTML='<div class="vz-vacio">Error al buscar</div>'; });
+},350);
+function elegirZonaBuscada(i){
+  var r=(window._zonaRes||[])[i]; if(!r) return;
+  elegirZona({nombre:r.name,lat:r.latitude,lon:r.longitude,sub:[r.admin2,r.admin1].filter(Boolean).join(', ')});
+}
+
+function pintarZona(html){ document.getElementById('vz-cuerpo').innerHTML='<div id="vz-inner">'+html+'</div>'; }
+
+// Selector de sitio: GPS, buscador de población y sitios guardados.
+function htmlBuscadorZona(){
+  var lista=zonasGuardadas();
+  return '<div class="vz-tarjeta">'
+    +'<div class="vz-tit">¿Para qué sitio quieres ver el tiempo?</div>'
+    +'<button type="button" class="vz-boton-grande" onclick="usarMiUbicacion()">📍 Usar mi ubicación</button>'
+    +'<div id="vz-gps-estado" class="vz-nota"></div>'
+    +'<div class="vz-o">o busca una población</div>'
+    +'<input type="search" id="vz-buscar" class="vz-input" placeholder="🔍 Totana, Lorca, Alhama…" autocomplete="off" oninput="buscarZona(this.value)">'
+    +'<div id="vz-res"></div>'
+    +(lista.length?'<div class="vz-tit" style="margin-top:16px">Sitios guardados</div>'
+      +lista.map(function(z,i){
+        return '<div class="vz-guardado"><button type="button" class="vz-opcion" onclick="elegirZona(zonasGuardadas()['+i+'])"><b>'
+          +(z.gps?'📍 ':'🏡 ')+z.nombre+'</b>'+(z.sub?'<small>'+z.sub+'</small>':'')+'</button>'
+          +'<button type="button" class="vz-quitar" onclick="quitarZona('+i+')" aria-label="Quitar">🗑</button></div>';
+      }).join(''):'')
+    +(lista.length?'<button type="button" class="vz-enlace" onclick="zonaBuscando=false;renderZona()">Cancelar</button>':'')
+    +'</div>';
+}
+
+function renderZona(){
+  var cuerpo=document.getElementById('vz-cuerpo'); if(!cuerpo) return;
+  var z=zonaActual();
+  if(!z||zonaBuscando){
+    pintarZona(htmlBuscadorZona());
+    return;
+  }
+  var lista=zonasGuardadas();
+  var cab='<div class="vz-chips">'
+    +lista.map(function(o,i){
+      return '<button type="button" class="vz-chip'+(i===0?' active':'')+'" onclick="elegirZona(zonasGuardadas()['+i+'])">'
+        +(o.gps?'📍 ':'🏡 ')+o.nombre+'</button>';
+    }).join('')
+    +'<button type="button" class="vz-chip vz-chip-mas" onclick="zonaBuscando=true;renderZona()">＋ Otro sitio</button>'
+    +'</div>';
+
+  var cerca=estacionesCercanas(z.lat,z.lon);
+  var p=zonaPron[claveZona(z)];
+  var fresco=p&&(Date.now()-p.t<30*60*1000);
+  pintarZona(cab+htmlZona(z,cerca,fresco?p.d:null,!fresco));
+  if(!fresco){
+    var url='https://api.open-meteo.com/v1/forecast?latitude='+z.lat+'&longitude='+z.lon
+      +'&hourly='+ZONA_HV+'&daily='+ZONA_DV+'&forecast_days=4&timezone=auto';
+    var k=claveZona(z);
+    fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.hourly) throw new Error((d&&d.reason)||'sin datos');
+      zonaPron[k]={t:Date.now(),d:d};
+    }).catch(function(e){
+      zonaPron[k]={t:Date.now()-25*60*1000,d:null,error:true};   // reintenta en 5 min
+    }).then(function(){
+      var za=zonaActual();
+      if(vistaActual==='zona'&&za&&claveZona(za)===k&&!zonaBuscando) pintarZona(cab+htmlZona(z,cerca,zonaPron[k].d,false,zonaPron[k].error));
+    });
+  }
+}
+
+// Hora (0-23) del índice horario i, y el índice de la hora actual.
+function zonaIdxAhora(h){
+  var ahora=Date.now(), idx=0;
+  for(var i=0;i<h.time.length;i++) if(new Date(h.time[i]).getTime()<=ahora) idx=i;
+  return idx;
+}
+function horaTxt(t){ return t.slice(11,16); }
+
+// Avisos de las próximas 48 h a partir del pronóstico y del riesgo de la estación.
+function avisosZona(d,est){
+  var av=[];
+  if(d){
+    var dl=d.daily, h=d.hourly, i0=zonaIdxAhora(h);
+    var tmin=Infinity,iMin=-1, racha=0,iR=-1, tmax=-Infinity,iMax=-1;
+    for(var i=i0;i<Math.min(h.time.length,i0+48);i++){
+      var t=h.temperature_2m[i]; if(t!=null&&t<tmin){tmin=t;iMin=i;} if(t!=null&&t>tmax){tmax=t;iMax=i;}
+      var g=h.wind_gusts_10m[i]; if(g!=null&&g>racha){racha=g;iR=i;}
+    }
+    function cuando(i){ var dt=new Date(h.time[i].slice(0,10)+'T00:00:00'), hoy=new Date(); hoy.setHours(0,0,0,0);
+      var dd=Math.round((dt-hoy)/864e5); return (dd===0?'hoy':dd===1?'mañana':DIAS_LARGO[dt.getDay()])+' a las '+horaTxt(h.time[i]); }
+    if(tmin<=0) av.push({n:2,ic:'🥶',t:'Helada: '+tmin.toFixed(1)+' °C '+cuando(iMin)});
+    else if(tmin<=2) av.push({n:1,ic:'❄️',t:'Riesgo de helada: '+tmin.toFixed(1)+' °C '+cuando(iMin)});
+    if(tmax>=40) av.push({n:2,ic:'🔥',t:'Calor extremo: '+Math.round(tmax)+' °C '+cuando(iMax)});
+    else if(tmax>=36) av.push({n:1,ic:'🌡',t:'Mucho calor: '+Math.round(tmax)+' °C '+cuando(iMax)});
+    if(racha>=60) av.push({n:2,ic:'🌪',t:'Rachas fuertes de '+Math.round(racha)+' km/h '+cuando(iR)});
+    else if(racha>=45) av.push({n:1,ic:'💨',t:'Rachas de '+Math.round(racha)+' km/h '+cuando(iR)});
+    for(var k=0;k<Math.min(2,dl.time.length);k++){
+      var ps=dl.precipitation_sum[k];
+      var nom=k===0?'Hoy':'Mañana';
+      if(ps>=30) av.push({n:2,ic:'⛈',t:nom+': lluvia fuerte, '+Math.round(ps)+' mm'});
+      else if(ps>=10) av.push({n:1,ic:'🌧',t:nom+': lluvia de '+Math.round(ps)+' mm'});
+    }
+  }
+  var r=est&&riesgoData[est.stationID];
+  if(r&&r.datos_ok){
+    var nv=['','bajo','medio','ALTO'];
+    if(r.oidio>=2) av.push({n:r.oidio>=3?2:1,ic:'🍇',t:'Riesgo de oídio '+nv[r.oidio]+' (DSV '+r.dsv_temporada+')'});
+    if(r.mildiu>=2) av.push({n:r.mildiu>=3?2:1,ic:'🍃',t:'Riesgo de mildiu '+nv[r.mildiu]});
+  }
+  av.sort(function(a,b){ return b.n-a.n; });
+  return av;
+}
+
+// ¿Se puede tratar? Estado de ahora y la próxima ventana buena (≥2 h
+// seguidas "adecuado") en las próximas 24 h, con los mismos criterios que
+// el meteograma (mgPulverizar).
+function tratarZona(h){
+  var i0=zonaIdxAhora(h), fin=Math.min(h.time.length,i0+24), estados=[];
+  for(var i=i0;i<fin;i++) estados.push(mgPulverizar(h,i));
+  var ahora=estados[0], txt, sub='', n=ahora.n;
+  function hasta(desde,cond){ var j=desde; while(j<estados.length&&cond(estados[j])) j++; return j; }
+  if(ahora.n===0){
+    var j=hasta(0,function(s){return s.n===0;});
+    txt='Sí, se puede tratar';
+    sub=j>=estados.length?'Buenas condiciones las próximas 24 h':'Hasta las '+horaTxt(h.time[i0+j])+(estados[j]?' · después: '+estados[j].txt:'');
+  } else {
+    txt=ahora.n===2?'No es buen momento':'Con precaución';
+    sub='Ahora: '+ahora.txt;
+    // Próxima ventana de al menos 2 h buenas
+    var hay=false;
+    for(var k=1;k<estados.length;){
+      if(estados[k].n!==0){ k++; continue; }
+      var e=hasta(k,function(s){return s.n===0;});
+      if(e-k>=2){
+        sub+='<br>Próxima ventana buena: <b>'+horaTxt(h.time[i0+k])+'–'+horaTxt(h.time[Math.min(i0+e,h.time.length-1)])+'</b>'
+          +(h.time[i0+k].slice(0,10)!==h.time[i0].slice(0,10)?' (mañana)':'');
+        hay=true; break;
+      }
+      k=e;
+    }
+    if(!hay) sub+='<br>Sin ventana buena en las próximas 24 h';
+  }
+  // Tira de 24 h con el color de cada hora
+  var tira='<div class="vz-tira">'+estados.map(function(s,k){
+    var hh=+h.time[i0+k].slice(11,13);
+    return '<div class="vz-tira-h" style="background:'+MG_PULV_COL[s.n]+'" title="'+horaTxt(h.time[i0+k])+': '+s.txt+'">'
+      +(hh%3===0?'<span>'+hh+'</span>':'')+'</div>';
+  }).join('')+'</div>';
+  return {n:n,txt:txt,sub:sub,tira:tira};
+}
+
+function htmlZona(z,cerca,d,cargando,error){
+  var html='';
+  var est=cerca[0]&&cerca[0].km<=25?cerca[0]:null;
+
+  // 1. Avisos
+  var av=avisosZona(d,est&&est.e);
+  if(d||est){
+    html+='<div class="vz-tarjeta">'
+      +'<div class="vz-tit">⚠️ Avisos (48 h)</div>'
+      +(av.length?av.map(function(a){
+        return '<div class="vz-aviso vz-aviso-'+a.n+'"><span>'+a.ic+'</span>'+a.t+'</div>';
+      }).join(''):'<div class="vz-aviso vz-aviso-0"><span>✅</span>Sin avisos</div>')
+      +(!d&&cargando?'<div class="vz-nota">⏳ Cargando pronóstico…</div>':'')
+      +'</div>';
+  }
+
+  // 2. ¿Se puede tratar?
+  if(d){
+    var tr=tratarZona(d.hourly);
+    html+='<div class="vz-tarjeta">'
+      +'<div class="vz-tit">🚜 ¿Se puede tratar?</div>'
+      +'<div class="vz-tratar vz-tratar-'+tr.n+'">'+['✅','⚠️','⛔'][tr.n]+' '+tr.txt+'</div>'
+      +'<div class="vz-sub">'+tr.sub+'</div>'
+      +tr.tira
+      +'<div class="vz-nota">Viento entre 2 y 12 km/h, sin lluvia ni en las 2 h siguientes, menos de 25 °C y humedad por encima del 50 %.</div>'
+      +'</div>';
+  }
+
+  // 3. Ahora, en la estación más cercana
+  if(est){
+    var e=est.e, m=e.metric, min=e.epoch?Math.round((Date.now()/1000-e.epoch)/60):null;
+    html+='<div class="vz-tarjeta">'
+      +'<div class="vz-tit">🌡 Ahora <small>· '+nombreEstacion(e)+', a '+(est.km<1?'menos de 1':est.km.toFixed(1).replace('.',','))+' km'
+      +(min!=null?' · hace '+min+' min':'')+'</small></div>'
+      +'<div class="vz-ahora">'
+      +'<div class="vz-temp">'+m.temp.toFixed(1).replace('.',',')+'<span>°C</span></div>'
+      +'<div class="vz-datos">'
+      +'<div>💧 Humedad <b>'+(e.humidity!=null?e.humidity+' %':'—')+'</b></div>'
+      +'<div>💨 Viento <b>'+(m.windSpeed!=null?Math.round(m.windSpeed)+' km/h '+wdL(e.winddir):'—')+'</b>'
+      +(m.windGust!=null?' <small>rachas '+Math.round(m.windGust)+'</small>':'')+'</div>'
+      +'<div>🌧 Lluvia hoy <b>'+(m.precipTotal!=null?m.precipTotal.toFixed(1).replace('.',',')+' mm':'—')+'</b></div>'
+      +'</div></div>'
+      +(cerca.length>1&&cerca[1].km<=15?'<div class="vz-nota">Otras cerca: '+cerca.slice(1,4).filter(function(c){return c.km<=15;}).map(function(c){
+        return nombreEstacion(c.e)+' '+Math.round(c.e.metric.temp)+'°';
+      }).join(' · ')+'</div>':'')
+      +'</div>';
+  } else {
+    html+='<div class="vz-tarjeta"><div class="vz-tit">🌡 Ahora</div><div class="vz-nota">No hay ninguna estación a menos de 25 km de este sitio.</div></div>';
+  }
+
+  // 4. Próximos días
+  if(d){
+    var dl=d.daily;
+    html+='<div class="vz-tarjeta">'
+      +'<div class="vz-tit">📅 Próximos días</div>'
+      +dl.time.slice(0,4).map(function(t,k){
+        var dt=new Date(t+'T00:00:00');
+        var nom=k===0?'Hoy':k===1?'Mañana':DIAS_LARGO[dt.getDay()].charAt(0).toUpperCase()+DIAS_LARGO[dt.getDay()].slice(1);
+        var ps=dl.precipitation_sum[k], pp=dl.precipitation_probability_max?dl.precipitation_probability_max[k]:null;
+        return '<div class="vz-dia">'
+          +'<span class="vz-dia-n">'+nom+'</span>'
+          +'<span class="vz-dia-ic">'+wxInfo(dl.weather_code[k]).ic+'</span>'
+          +'<span class="vz-dia-t"><b style="color:#b91c1c">'+Math.round(dl.temperature_2m_max[k])+'°</b> <b style="color:#1d4ed8">'+Math.round(dl.temperature_2m_min[k])+'°</b></span>'
+          +'<span class="vz-dia-ll">'+(ps>=0.1?'🌧 '+ps.toFixed(1).replace('.',',')+' mm':'<span style="color:#94a3b8">sin lluvia</span>')
+          +(pp!=null&&pp>=20?' <small>'+pp+'%</small>':'')+'</span>'
+          +'</div>';
+      }).join('')
+      +'<button type="button" class="vz-boton" onclick="verMeteogramaZona()">📈 Ver hora a hora (meteograma)</button>'
+      +'</div>';
+  } else if(error){
+    html+='<div class="vz-tarjeta"><div class="vz-nota">⚠ No se pudo cargar el pronóstico. Se reintentará en unos minutos.</div></div>';
+  }
+
+  html+='<div class="vz-pie">'+(z.gps?'📍 ':'🏡 ')+z.nombre+' · '+z.lat.toFixed(3)+', '+z.lon.toFixed(3)
+    +' · Datos: estaciones Weather Underground y pronóstico Open-Meteo</div>';
+  return html;
+}
+
+// El meteograma de la pestaña Pronóstico, para este mismo sitio.
+function verMeteogramaZona(){
+  var z=zonaActual(); if(!z) return;
+  guardarUltimaPoblacion({name:z.nombre,latitude:z.lat,longitude:z.lon,admin1:z.sub||''});
+  pronData=null;
+  irA('pronostico');
+}
+
+function mostrarVistaZona(){
+  document.getElementById('vz').classList.add('open');
+  renderZona();
+}
+
 // ── Menú principal lateral ──────────────────────────────────────
 // Una sola forma de moverse entre las tres pantallas (mapa de
 // estaciones, pronóstico por población y lluvia prevista): el botón ☰
@@ -3029,21 +3350,28 @@ if(radarChk){
 // La pantalla abierta va en la URL (#pronostico, #lluvia): el botón
 // "atrás" del navegador o del móvil vuelve a la anterior, y un enlace
 // con #pronostico abre directamente el pronóstico.
-var VISTAS=['mapa','pronostico','lluvia'];
-function vistaDeHash(){ var v=(location.hash||'').replace('#',''); return VISTAS.indexOf(v)>0?v:'mapa'; }
+var VISTAS=['mapa','zona','pronostico','lluvia'];
+// En el móvil se abre en «Mi zona» (la respuesta directa para el
+// agricultor); en el ordenador, en el mapa. "#mapa" fuerza el mapa.
+function esMovil(){ return window.matchMedia('(max-width:768px)').matches; }
+function vistaInicio(){ return esMovil()?'zona':'mapa'; }
+function vistaDeHash(){ var v=(location.hash||'').replace('#',''); return VISTAS.indexOf(v)>=0?v:vistaInicio(); }
 var vistaActual='mapa';
 function aplicarVista(v){
   if(v!=='pronostico') document.getElementById('vp').classList.remove('open');
   if(v!=='lluvia')     document.getElementById('vl').classList.remove('open');
+  if(v!=='zona')       document.getElementById('vz').classList.remove('open');
+  if(v==='zona')       mostrarVistaZona();
   if(v==='pronostico') mostrarVistaPronostico();
   if(v==='lluvia')     mostrarVistaLluvia();
   vistaActual=v;
   actualizarPronBtn(v);
   cerrarNav();
+  if(v==='mapa') setTimeout(function(){ map.invalidateSize(); },50);
 }
 function irA(v){
-  if(v===vistaActual){ cerrarNav(); return; }
-  try{ history.pushState({vista:v},'',v==='mapa'?location.pathname+location.search:'#'+v); }catch(e){}
+  if(v===vistaActual){ cerrarNav(); if(v==='zona'&&zonaBuscando){ zonaBuscando=false; renderZona(); } return; }
+  try{ history.pushState({vista:v},'',v===vistaInicio()?location.pathname+location.search:'#'+v); }catch(e){}
   aplicarVista(v);
 }
 window.addEventListener('popstate',function(){ aplicarVista(vistaDeHash()); });
@@ -3054,11 +3382,13 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape') cerrarNav(
 // que abren cada pantalla).
 function actualizarPronBtn(activo){
   var v=activo==='poblacion'?'pronostico':(activo||'mapa');
-  document.querySelectorAll('#nav .nav-op').forEach(function(o){
+  document.querySelectorAll('#nav .nav-op, #tabs .tab').forEach(function(o){
     o.classList.toggle('active', o.getAttribute('data-vista')===v);
   });
+  document.body.setAttribute('data-vista',v);
 }
 if(vistaDeHash()!=='mapa') setTimeout(function(){ aplicarVista(vistaDeHash()); },0);
+else actualizarPronBtn('mapa');
 
 // ── Máquina del tiempo: oculta por defecto ──────────────────────
 // history_24h.json (el histórico completo de 24h que alimenta la cinta
@@ -3617,6 +3947,93 @@ HTML_BASE = """<!DOCTYPE html>
     .nav-op:hover{background:rgba(255,255,255,.06)}
     .nav-op.active{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.45)}
 
+    /* ── Mi zona ── */
+    #vz{
+      display:none;position:fixed;inset:0;z-index:3000;color:#1e293b;flex-direction:column;
+      background:linear-gradient(160deg,#eaf4fb 0%,#dbe9f6 45%,#eef6fb 100%);
+    }
+    #vz.open{display:flex}
+    #vz-topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;flex-shrink:0;
+      background:rgba(255,255,255,0.8);border-bottom:1px solid rgba(15,23,42,0.08)}
+    #vz-logo{display:flex;flex-direction:column;line-height:1.15;user-select:none}
+    #vz-logo .lm{font-size:.92rem;font-weight:800;letter-spacing:.5px;color:#0f172a}
+    #vz-logo .ls{font-size:.58rem;color:#64748b;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+    #vz-titulo{margin-left:auto;font-weight:800;font-size:1rem;color:#0f172a}
+    #vz-cuerpo{flex:1;overflow-y:auto;padding:12px 12px 24px;-webkit-overflow-scrolling:touch}
+    #vz-inner{max-width:620px;margin:0 auto;font-size:16px}
+    .vz-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;-webkit-overflow-scrolling:touch}
+    .vz-chip{flex-shrink:0;border:1px solid rgba(15,23,42,.15);background:#fff;color:#0f172a;border-radius:999px;
+      padding:9px 14px;font-size:.92rem;font-weight:700;font-family:inherit;cursor:pointer;min-height:44px}
+    .vz-chip.active{background:#0f172a;color:#fff;border-color:#0f172a}
+    .vz-chip-mas{color:#1d4ed8;border-style:dashed}
+    .vz-tarjeta{background:#fff;border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 12px rgba(15,23,42,.08)}
+    .vz-tit{font-size:1rem;font-weight:800;color:#0f172a;margin-bottom:10px}
+    .vz-tit small{font-weight:500;color:#64748b;font-size:.8rem}
+    .vz-aviso{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;margin-bottom:6px;font-weight:700;font-size:.98rem}
+    .vz-aviso span{font-size:1.3rem}
+    .vz-aviso-0{background:#ecfdf5;color:#065f46}
+    .vz-aviso-1{background:#fef9c3;color:#713f12;border-left:5px solid #eab308}
+    .vz-aviso-2{background:#fee2e2;color:#7f1d1d;border-left:5px solid #dc2626}
+    .vz-tratar{font-size:1.35rem;font-weight:800;padding:6px 0 2px}
+    .vz-tratar-0{color:#15803d}.vz-tratar-1{color:#a16207}.vz-tratar-2{color:#b91c1c}
+    .vz-sub{font-size:.98rem;color:#334155;line-height:1.5;margin-bottom:10px}
+    .vz-tira{display:flex;height:30px;border-radius:8px;overflow:hidden;margin-bottom:8px}
+    .vz-tira-h{flex:1;position:relative;border-right:1px solid rgba(255,255,255,.35)}
+    .vz-tira-h span{position:absolute;bottom:-1px;left:1px;font-size:.62rem;font-weight:700;color:rgba(15,23,42,.75)}
+    .vz-nota{font-size:.82rem;color:#64748b;line-height:1.45;margin-top:6px}
+    .vz-ahora{display:flex;align-items:center;gap:18px}
+    .vz-temp{font-size:3rem;font-weight:800;color:#0f172a;line-height:1}
+    .vz-temp span{font-size:1.1rem;color:#64748b;margin-left:2px}
+    .vz-datos{display:flex;flex-direction:column;gap:5px;font-size:.98rem;color:#334155}
+    .vz-datos small{color:#64748b}
+    .vz-dia{display:grid;grid-template-columns:5.6em 2em 4.6em 1fr;align-items:center;gap:6px;padding:10px 0;
+      border-bottom:1px solid rgba(15,23,42,.07);font-size:1rem}
+    .vz-dia:last-of-type{border-bottom:none}
+    .vz-dia-n{font-weight:700}.vz-dia-ic{font-size:1.4rem}.vz-dia-ll{text-align:right;color:#1d4ed8;font-weight:600}
+    .vz-dia-ll small{color:#9333ea}
+    .vz-boton,.vz-boton-grande{display:block;width:100%;min-height:48px;margin-top:10px;border:none;border-radius:12px;
+      background:#0f172a;color:#fff;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer}
+    .vz-boton{background:#e0e7ff;color:#1e3a8a}
+    .vz-o{text-align:center;color:#64748b;font-size:.85rem;margin:14px 0 8px}
+    .vz-input{width:100%;min-height:48px;border:1px solid rgba(15,23,42,.2);border-radius:12px;padding:0 14px;
+      font-size:16px;font-family:inherit;background:#fff;color:#0f172a;box-sizing:border-box}
+    .vz-opcion{display:block;width:100%;text-align:left;background:#f8fafc;border:1px solid rgba(15,23,42,.08);
+      border-radius:10px;padding:10px 12px;margin-top:6px;font-family:inherit;font-size:1rem;color:#0f172a;cursor:pointer;min-height:48px}
+    .vz-opcion small{display:block;color:#64748b;font-size:.8rem}
+    .vz-guardado{display:flex;gap:6px;align-items:stretch}
+    .vz-guardado .vz-opcion{flex:1}
+    .vz-quitar{margin-top:6px;border:1px solid rgba(15,23,42,.08);background:#fff;border-radius:10px;width:48px;font-size:1.1rem;cursor:pointer}
+    .vz-enlace{display:block;margin:14px auto 0;background:none;border:none;color:#1d4ed8;font-size:.95rem;font-weight:700;font-family:inherit;cursor:pointer}
+    .vz-vacio{padding:10px;color:#64748b;font-size:.9rem}
+    .vz-pie{font-size:.72rem;color:#64748b;text-align:center;margin:6px 0 4px}
+
+    /* ── Pestañas de abajo (móvil) ── */
+    #tabs{display:none}
+    @media(max-width:768px){
+      :root{--tabs-h:calc(60px + env(safe-area-inset-bottom))}
+      #tabs{
+        display:flex;position:fixed;left:0;right:0;bottom:0;z-index:4500;height:var(--tabs-h);
+        padding-bottom:env(safe-area-inset-bottom);background:#fff;border-top:1px solid rgba(15,23,42,.12);
+        box-shadow:0 -4px 16px rgba(15,23,42,.08);
+      }
+      .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+        text-decoration:none;color:#64748b;font-size:.72rem;font-weight:700;-webkit-tap-highlight-color:transparent}
+      .tab span{font-size:1.35rem;line-height:1;filter:grayscale(1);opacity:.7}
+      .tab.active{color:#0f172a}
+      .tab.active span{filter:none;opacity:1}
+      .tab.active::before{content:'';position:absolute;top:0;width:44px;height:3px;border-radius:0 0 3px 3px;background:#2563eb}
+      .tab{position:relative}
+      /* Con las pestañas, el ☰ sobra en el móvil */
+      .nav-btn{display:none}
+      /* Todo lo que iba pegado abajo sube por encima de la barra */
+      #map{bottom:var(--tabs-h)}
+      #vp,#vl,#vz{bottom:var(--tabs-h)}
+      #tm-bar{bottom:calc(var(--tabs-h) + 6px)}
+    }
+    @media(max-width:600px){
+      #dp{bottom:calc(150px + var(--tabs-h))}
+    }
+
     /* ── Meteograma ── */
     .mg-cabecera{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:8px}
     .mg-plazos{display:flex;gap:6px}
@@ -3793,14 +4210,33 @@ HTML_BASE = """<!DOCTYPE html>
   </div>
 </div>
 
-<!-- Menú principal lateral (☰), común a las tres pantallas -->
+<!-- Pantalla completa: Mi zona (inicio en el móvil) -->
+<div id="vz">
+  <div id="vz-topbar">
+    <button type="button" class="nav-btn nav-btn-claro" onclick="abrirNav()" title="Menú" aria-label="Menú">☰</button>
+    <div id="vz-logo"><span class="lm">🌿 METEO</span><span class="ls">Guadalentín</span></div>
+    <div id="vz-titulo">📍 Mi zona</div>
+  </div>
+  <div id="vz-cuerpo"></div>
+</div>
+
+<!-- Pestañas de abajo (solo en el móvil) -->
+<nav id="tabs" aria-label="Secciones">
+  <a href="#zona" class="tab" data-vista="zona" onclick="irA('zona');return false;"><span>📍</span>Mi zona</a>
+  <a href="#mapa" class="tab" data-vista="mapa" onclick="irA('mapa');return false;"><span>🗺</span>Mapa</a>
+  <a href="#pronostico" class="tab" data-vista="pronostico" onclick="irA('pronostico');return false;"><span>📈</span>Pronóstico</a>
+  <a href="#lluvia" class="tab" data-vista="lluvia" onclick="irA('lluvia');return false;"><span>🌧</span>Lluvia</a>
+</nav>
+
+<!-- Menú principal lateral (☰), común a todas las pantallas -->
 <div id="nav-velo" onclick="cerrarNav()"></div>
 <nav id="nav" aria-label="Menú principal">
   <div id="nav-cab">
     <div><span class="lm">🌿 METEO</span><span class="ls">Guadalentín</span></div>
     <button type="button" id="nav-cerrar" onclick="cerrarNav()" aria-label="Cerrar">✕</button>
   </div>
-  <a href="./" class="nav-op active" data-vista="mapa" onclick="irA('mapa');return false;">🗺<span>Mapa de estaciones<small>Datos en tiempo real y riesgos</small></span></a>
+  <a href="#zona" class="nav-op" data-vista="zona" onclick="irA('zona');return false;">📍<span>Mi zona<small>Avisos, tratar y tiempo en tu finca</small></span></a>
+  <a href="#mapa" class="nav-op active" data-vista="mapa" onclick="irA('mapa');return false;">🗺<span>Mapa de estaciones<small>Datos en tiempo real y riesgos</small></span></a>
   <a href="#pronostico" class="nav-op" data-vista="pronostico" onclick="irA('pronostico');return false;">🔮<span>Pronóstico por población<small>Meteograma de varios días</small></span></a>
   <a href="#lluvia" class="nav-op" data-vista="lluvia" onclick="irA('lluvia');return false;">🌧<span>Lluvia prevista<small>Precipitación acumulada en la Región</small></span></a>
 </nav>
@@ -3829,6 +4265,7 @@ HTML_BASE = """<!DOCTYPE html>
           actualizarLabel();
         }
         render();
+        if(vistaActual==='zona'&&!zonaBuscando) renderZona();
       }).catch(function(){});
   }
   function programar(){clearTimeout(timer);timer=setTimeout(function(){actualizarDatos();programar();},INTERVALO);}
