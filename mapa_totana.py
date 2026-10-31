@@ -26,6 +26,8 @@ F_H7D    = os.path.join(REPO_DIR, 'history_7d.json')
 F_AGRI   = os.path.join(REPO_DIR, 'historial_agricola.json')
 F_DSV    = os.path.join(REPO_DIR, 'historial_dsv.json')
 F_RIESGO = os.path.join(REPO_DIR, 'historial_riesgo.json')
+# Hora de la última pasada que sumó minutos al historial agrícola (ver principal()).
+F_ESTADO_AGRI = os.path.join(REPO_DIR, 'estado_agricola.json')
 DIR_RADAR = os.path.join(REPO_DIR, 'radar_tiles')
 F_RADAR_MANIFEST = os.path.join(DIR_RADAR, 'manifest.json')
 os.makedirs(DIR_PUB, exist_ok=True)
@@ -260,6 +262,7 @@ def hist_agri(nuevos, ahora, minutos=15):
                 'tempMin':  t if t is not None else  99,
                 'precipTotal': p if p is not None else 0.0,
                 'humedadAltaMinutos': 0,
+                'h90_frio': 0, 'h90_calido': 0,
                 'lat': est.get('lat', 0),
                 'lon': est.get('lon', 0)}
         else:
@@ -271,6 +274,18 @@ def hist_agri(nuevos, ahora, minutos=15):
                 d['precipTotal'] = p
         if hm is not None and hm >= 85:
             h[hoy][sid]['humedadAltaMinutos'] = h[hoy][sid].get('humedadAltaMinutos', 0) + minutos
+        # Minutos con hoja probablemente mojada (HR ≥ 90 %) en dos bandas de
+        # temperatura, para los modelos de hortícolas (ver RIESGOS_HORT):
+        # fresca (5-20 °C: mildiu de lechuga y de crucíferas) y templada
+        # (18-30 °C: alternaria). Un día que ya existía cuando se empezó a
+        # contar queda marcado 'parcial' y esos modelos lo estiman como antes.
+        d = h[hoy][sid]
+        if 'h90_frio' not in d:
+            d['parcial'] = True
+            d['h90_frio'] = 0; d['h90_calido'] = 0
+        if hm is not None and hm >= 90 and t is not None:
+            if 5 <= t <= 20:  d['h90_frio']   += minutos
+            if 18 <= t <= 30: d['h90_calido'] += minutos
 
     for d in sorted(h.keys())[:-14]: del h[d]
     guardar(F_AGRI, h)
@@ -312,6 +327,84 @@ def periodo_incubacion_mildiu(tmed):
     if tmed < 25: return 7
     if tmed < 30: return 6
     return None  # >30°C inhibe
+
+# ── Hortícolas: iceberg y brócoli ────────────────────────────
+# Modelos de reglas sencillos, a validar con observaciones de campo: un día
+# es favorable a la infección si la hoja ha estado mojada (HR ≥ 90 %) las
+# horas que pide el hongo dentro de su rango de temperatura. Con el
+# contador horario (h90_frio / h90_calido de hist_agri) se mide; en días sin
+# él se estima con las horas de HR ≥ 85 % y la temperatura media del día.
+# Nivel según los días favorables de los últimos 7: 0 ninguno, 1 uno, 2 dos
+# o tres, 3 cuatro o más o los dos últimos seguidos.
+#   Bremia lactucae (mildiu de la lechuga): 5-20 °C, ≥ 4 h mojada.
+#   Hyaloperonospora (mildiu de las crucíferas): 5-20 °C, ≥ 6 h.
+#   Alternaria brassicicola/brassicae: 18-30 °C, ≥ 9 h.
+RIESGOS_HORT = {
+    'bremia':      {'contador': 'h90_frio',   'horas': 4, 'tmin': 5,  'tmax': 20, 'horas85': 6},
+    'mildiu_cruc': {'contador': 'h90_frio',   'horas': 6, 'tmin': 5,  'tmax': 20, 'horas85': 8},
+    'alternaria':  {'contador': 'h90_calido', 'horas': 9, 'tmin': 18, 'tmax': 30, 'horas85': 10},
+}
+DIAS_SEM_PY = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
+
+def anotar_contadores_3h(hagri):
+    """Para los días sin contador completo ('parcial': los anteriores a que
+    existiera, oct 2026), estima los minutos con HR ≥ 90 % por banda de
+    temperatura con history_7d.json: lecturas reales cada 3 h de la última
+    semana, que es la ventana que usan los modelos (cada lectura vale 3 h).
+    No se guarda: se recalcula en cada pasada, y en una semana ya no hace falta."""
+    cuenta = {}
+    for snap in leer(F_H7D, []):
+        fecha = (snap.get('timestamp') or '')[:10]
+        for e in snap.get('stations') or []:
+            if not e: continue
+            t = (e.get('metric') or {}).get('temp'); hm = e.get('humidity')
+            c = cuenta.setdefault((fecha, e.get('stationID')), {'n': 0, 'frio': 0, 'calido': 0})
+            c['n'] += 1
+            if hm is not None and t is not None and hm >= 90:
+                if 5 <= t <= 20:  c['frio'] += 180
+                if 18 <= t <= 30: c['calido'] += 180
+    for fecha, ests in hagri.items():
+        for sid, d in ests.items():
+            c = cuenta.get((fecha, sid))
+            if (d.get('parcial') or 'h90_frio' not in d) and c and c['n'] >= 4:   # al menos medio día de lecturas
+                d['h90_frio_3h'] = c['frio']; d['h90_calido_3h'] = c['calido']
+    return hagri
+
+def dia_favorable(f, cfg):
+    """(favorable, 'medido'|'cada 3 h'|'estimado') o (None, None) si no hay datos."""
+    c = f.get(cfg['contador'])
+    if c is not None and not f.get('parcial'):
+        return c / 60 >= cfg['horas'], 'medido'
+    c3 = f.get(cfg['contador'] + '_3h')
+    if c3 is not None:
+        return c3 / 60 >= cfg['horas'], 'cada 3 h'
+    tm, tn = f.get('tmax'), f.get('tmin')
+    if tm is None or tn is None or tm == -99 or tn == 99: return None, None
+    tmed = (tm + tn) / 2
+    horas85 = min(f.get('hum_min', 0) or 0, 1440) / 60
+    return (cfg['tmin'] <= tmed <= cfg['tmax'] and horas85 >= cfg['horas85']), 'estimado'
+
+def riesgo_hort(filas, cfg):
+    ult = filas[-7:]
+    dias = [(f['fecha'],) + dia_favorable(f, cfg) for f in ult]
+    validos = [d for d in dias if d[1] is not None]
+    if len(validos) < 3:
+        return -1, [f"⚠ {len(validos)} días con datos — hacen falta 3"]
+    fav = [d for d in validos if d[1]]
+    n = len(fav)
+    seguidos = len(dias) >= 2 and dias[-1][1] and dias[-2][1]
+    nivel = 0 if n == 0 else 1 if n == 1 else 3 if (n >= 4 or seguidos) else 2
+    def nom(fecha):
+        try: return DIAS_SEM_PY[datetime.strptime(fecha, '%Y-%m-%d').weekday()] + ' ' + fecha[8:10]
+        except Exception: return fecha
+    det = [f"Días favorables (últimos {len(validos)}): {n}" + (" — " + ", ".join(nom(d[0]) for d in fav) if fav else "")]
+    if seguidos: det.append("Los dos últimos días seguidos favorables")
+    det.append(f"Condición: HR ≥ 90 % al menos {cfg['horas']} h con {cfg['tmin']}-{cfg['tmax']} °C")
+    c3 = sum(1 for d in validos if d[2] == 'cada 3 h')
+    if c3: det.append(f"{c3} día{'s' if c3 > 1 else ''} con lecturas cada 3 h (antes del contador horario)")
+    est = sum(1 for d in validos if d[2] == 'estimado')
+    if est: det.append(f"{est} día{'s' if est > 1 else ''} estimado{'s' if est > 1 else ''} con HR ≥ 85 % y la temperatura media")
+    return nivel, det
 
 def calcular_riesgo(hwu, actuales_list):
     act  = {e['stationID']: e for e in actuales_list if e and 'stationID' in e}
@@ -359,6 +452,9 @@ def calcular_riesgo(hwu, actuales_list):
                     'tmin':    dd.get('tempMin'),
                     'prec':    dd.get('precipTotal', 0),
                     'hum_min': dd.get('humedadAltaMinutos', 0),
+                    'h90_frio': dd.get('h90_frio'), 'h90_calido': dd.get('h90_calido'),
+                    'h90_frio_3h': dd.get('h90_frio_3h'), 'h90_calido_3h': dd.get('h90_calido_3h'),
+                    'parcial': dd.get('parcial', False),
                     'src':     'propio'})
 
         # 2. Vecinos WU si faltan días
@@ -379,6 +475,9 @@ def calcular_riesgo(hwu, actuales_list):
                             'tmin':    dd.get('tempMin'),
                             'prec':    dd.get('precipTotal', 0),
                             'hum_min': dd.get('humedadAltaMinutos', 0),
+                            'h90_frio': dd.get('h90_frio'), 'h90_calido': dd.get('h90_calido'),
+                    'h90_frio_3h': dd.get('h90_frio_3h'), 'h90_calido_3h': dd.get('h90_calido_3h'),
+                            'parcial': dd.get('parcial', False),
                             'src':     f'vecino:{vsid}'})
                         fechas_ok.add(f)
                 if len(filas) >= MIN_DIAS: break
@@ -513,9 +612,11 @@ def calcular_riesgo(hwu, actuales_list):
             if not ct:
                 dm.append("Temperatura mínima aún baja")
 
+        hort = {k: riesgo_hort(filas, cfg) for k, cfg in RIESGOS_HORT.items()}
         res[sid] = {
             'lat': la, 'lon': lo,
             'oidio':  no, 'mildiu': nm,
+            **{k: v[0] for k, v in hort.items()},
             'datos_ok': ok, 'dias_disponibles': nd, 'fuente_datos': flbl,
             'dsv_temporada':  dsv_temporada,
             'dsv_7d':         dsv_7d,
@@ -524,6 +625,7 @@ def calcular_riesgo(hwu, actuales_list):
             'fecha_sintomas':  fecha_sintomas,
             'detalles': {
                 'oidio':  do, 'mildiu': dm,
+                **{k: v[1] for k, v in hort.items()},
                 'temp_actual':       ta,
                 'hum_actual':        ha,
                 'precip_10dias':     round(p10, 1),
@@ -545,6 +647,7 @@ def guardar_riesgo_dia(riesgo_data, ahora):
         snapshot[sid] = {
             'oidio':          r.get('oidio', -1),
             'mildiu':         r.get('mildiu', -1),
+            **{k: r.get(k, -1) for k in RIESGOS_HORT},
             'dsv_temporada':  r.get('dsv_temporada', 0),
             'dsv_7d':         r.get('dsv_7d', 0),
             'lat':            r.get('lat'),
@@ -623,6 +726,7 @@ def recalcular_riesgo_dias_anteriores(hwu, dsv_hist_orig, actuales_list, ahora, 
             snapshot[sid] = {
                 'oidio':         r.get('oidio', -1),
                 'mildiu':        r.get('mildiu', -1),
+                **{k: r.get(k, -1) for k in RIESGOS_HORT},
                 'dsv_temporada': r.get('dsv_temporada', 0),
                 'dsv_7d':        r.get('dsv_7d', 0),
                 'lat':           r.get('lat'),
@@ -783,6 +887,11 @@ def generar_html(historial, riesgo_data, ahora, dias_acum):
     return ruta_pub
 
 JS_LOGICA = r"""
+// Riesgos agrícolas con modelo (calculados por estación en mapa_totana.py,
+// en riesgoData e historial_riesgo.json). Su catálogo por cultivo, en
+// CULTIVOS_RIESGO (pestaña Riesgos).
+var RIESGO_IDS=['oidio','mildiu','bremia','mildiu_cruc','alternaria'];
+function esParamRiesgo(v){ return RIESGO_IDS.indexOf(v)>=0; }
 // Estaciones desactivadas a mano (estaciones_desactivadas.txt): ya no se
 // descargan, pero los históricos guardados aún traen sus lecturas de antes.
 // Se quitan al cargarlos, sin tocar los archivos: al reactivarla vuelve todo.
@@ -1002,7 +1111,7 @@ function lerp(c1,c2,t){
   return 'rgb('+Math.round(c1[0]+t*(c2[0]-c1[0]))+','+Math.round(c1[1]+t*(c2[1]-c1[1]))+','+Math.round(c1[2]+t*(c2[2]-c1[2]))+')';
 }
 function col(v,p){
-  if(p==='oidio'||p==='mildiu'){if(v<0)return '#aaa';return RC[Math.min(3,Math.max(0,Math.round(v)))];}
+  if(esParamRiesgo(p)){if(v<0)return '#aaa';return RC[Math.min(3,Math.max(0,Math.round(v)))];}
   if(p==='temp'){
     var s=[{v:-5,c:[148,0,211]},{v:0,c:[0,0,200]},{v:5,c:[0,115,255]},{v:10,c:[0,200,200]},
            {v:15,c:[50,205,50]},{v:20,c:[255,255,0]},{v:25,c:[255,140,0]},{v:30,c:[220,20,60]},
@@ -1112,7 +1221,7 @@ function getPrecipVentana(sid, tsRef, horas){
 }
 
 function raw(est,p,tsRef){
-  if(p==='oidio'||p==='mildiu'){var r=riesgoData[est.stationID];return r?r[p]:null;}
+  if(esParamRiesgo(p)){var r=riesgoData[est.stationID];return r?r[p]:null;}
   var m=est.metric; if(!m) return null;
   if(p==='precip'){
     var acum=getPrecipVentana(est.stationID, tsRef||new Date(), precipVentana);
@@ -1141,11 +1250,12 @@ leg.onAdd=function(){
 };
 leg.upd=function(p){
   var title='',body='';
-  if(p==='oidio'||p==='mildiu'){
-    title=(p==='oidio'?'🍇 Oídio':'🍃 Mildiu');
+  if(esParamRiesgo(p)){
+    var inf=infoRiesgo(p)||{};
+    title=(inf.ic||'')+' '+(inf.corto||inf.nombre||p);
     body+='<span class="li-row"><i style="background:#aaa"></i>Sin datos</span>';
     for(var i=3;i>=0;i--) body+='<span class="li-row"><i style="background:'+RC[i]+'"></i>'+RL[i]+'</span>';
-    body+='<div style="color:#6b7280;font-size:.66rem;margin-top:4px">'+(p==='oidio'?'Gubler-Thomas':'10-10-10+EPI')+'</div>';
+    body+='<div style="color:#6b7280;font-size:.66rem;margin-top:4px">'+(inf.modeloCorto||'')+'</div>';
   } else {
     var g,ti,u;
     if(p==='precip'){
@@ -2409,7 +2519,7 @@ function pintarMarcadores(){
     var pt=map.project([m.lat,m.lon],z), k=Math.floor(pt.x/AGR_PX)+'_'+Math.floor(pt.y/AGR_PX);
     (celdas[k]=celdas[k]||[]).push(m);
   });
-  var p=_marcParam, esR=(p==='oidio'||p==='mildiu'), usaMax=(esR||p==='precip'||p==='wind');
+  var p=_marcParam, esR=esParamRiesgo(p), usaMax=(esR||p==='precip'||p==='wind');
   Object.keys(celdas).forEach(function(k){
     var g=celdas[k];
     if(g.length===1){ mLG.addLayer(g[0].mk); return; }
@@ -2441,7 +2551,7 @@ function render(){
   var p=document.getElementById('ps').value;
   // En la pestaña Riesgos solo se pintan riesgos (un cultivo sin modelo deja el mapa vacío).
   if(typeof vistaActual!=='undefined'&&vistaActual==='riesgos'&&!esParamRiesgo(p)){ mLG.clearLayers(); hLG.clearLayers(); return; }
-  var isR=p==='oidio'||p==='mildiu';
+  var isR=esParamRiesgo(p);
   var pRender=p;
   leg.upd(p);
   if(heatActive) hLG.clearLayers(); mLG.clearLayers(); HL=null;
@@ -2556,7 +2666,7 @@ function render(){
             +'</div>'
             +'<div style="font-size:11px;color:#aaa;margin-top:8px;">📊 '+r.fuente_datos+'</div>';
 
-        } else {
+        } else if(p==='mildiu') {
           // ── MILDIU ───────────────────────────────────────────
           ph=av
             +'<div style="margin-bottom:6px;">'
@@ -2602,6 +2712,15 @@ function render(){
             +'</table>'
             +'</div>'
             +'<div style="font-size:11px;color:#aaa;margin-top:8px;">📊 '+r.fuente_datos+'</div>';
+        } else {
+          // ── Riesgos de hortícolas y los que se añadan: nivel y detalle del modelo ──
+          var inf=infoRiesgo(p)||{}, nv=r[p], dg=det[p]||[];
+          ph='<div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">'+(inf.cultivo?inf.cultivo+' · ':'')+'<i>'+(inf.agente||'')+'</i></div>'
+            +'<div style="display:inline-block;padding:6px 12px;border-radius:8px;background:'+(nv==null||nv<0?'#888':RC[nv])+';color:#fff;font-weight:800;font-size:15px;margin-bottom:10px;">'
+            +(inf.ic||'')+' '+(nv==null||nv<0?'Sin datos suficientes':RL[nv])+'</div>'
+            +'<div style="font-size:12.5px;color:#cbd5e1;line-height:1.6;">&bull; '+(dg.join('<br>&bull; ')||'—')+'</div>'
+            +'<div style="font-size:11px;color:#94a3b8;margin-top:10px;line-height:1.5;">'+(inf.modelo||'')+'</div>'
+            +'<div style="font-size:11px;color:#6b7280;margin-top:8px;">📊 '+(r.fuente_datos||'')+'</div>';
         }
       } else {
         ph='<div style="color:#999;font-size:13px;line-height:1.7;">Sin datos de riesgo.</div>';
@@ -2680,20 +2799,20 @@ function render(){
   if(heatActive && validFeats.length>2){
     try{
       var c=turf.featureCollection(validFeats);
-      var weight=pRender==='temp'?2:pRender==='oidio'||pRender==='mildiu'?6:4;
+      var weight=pRender==='temp'?2:esParamRiesgo(pRender)?6:4;
       // Celda de rejilla más grande que el original (2.5-3km): con la
       // zona cubierta ahora mucho más extensa (Almería-Albacete-Benidorm)
       // y más estaciones, una rejilla fina dispara el nº de celdas y el
       // tiempo de cálculo. Con 4-4.5km se ve igual de suave y es ~2.5x
       // más rápido.
-      var g=turf.interpolate(c,pRender==='oidio'||pRender==='mildiu'?4.5:4,
+      var g=turf.interpolate(c,esParamRiesgo(pRender)?4.5:4,
         {gridType:'square',property:'value',units:'kilometers',weight:weight});
       var cl=turf.featureCollection(g.features.filter(function(f){
         return f.properties.value!=null&&!isNaN(f.properties.value);
       }));
       HL=L.geoJSON(cl,{pane:'hp',style:function(f){
         var v=f.properties.value;
-        if(pRender==='oidio'||pRender==='mildiu') v=Math.min(3,Math.max(0,Math.round(v)));
+        if(esParamRiesgo(pRender)) v=Math.min(3,Math.max(0,Math.round(v)));
         return{fillColor:col(v,pRender),fillOpacity:window.HO,stroke:false};
       }});
       hLG.clearLayers();
@@ -2818,7 +2937,7 @@ function cargarPeriodo(p, cb){
 
 function actualizarModoSlider(){
   var p=document.getElementById('ps').value;
-  modoRiesgo=(p==='oidio'||p==='mildiu');
+  modoRiesgo=esParamRiesgo(p);
   var indices=getModoIndices();
   sl.min=0; sl.max=Math.max(0,indices.length-1); sl.value=indices.length-1;
   idxActual=indices.length-1;
@@ -2937,7 +3056,7 @@ var _renderOriginal = render;
 
 render = function(){
   var p   = document.getElementById('ps').value;
-  var isR = p==='oidio' || p==='mildiu';
+  var isR =esParamRiesgo(p);
 
   // Calcular índice correcto según modo
   var indices = getModoIndices();
@@ -2950,14 +3069,19 @@ render = function(){
     var ts       = historyData[CI] ? historyData[CI].timestamp : '';
     var fechaDia = ts.slice(0, 10);
     if(riesgoHistData[fechaDia]){
+      var ultimo=historyData[historyData.length-1], esHoy=!!(ultimo&&ultimo.timestamp&&ultimo.timestamp.slice(0,10)===fechaDia);
       var rdBak = riesgoData;
       var rTemp = {};
       Object.keys(rdBak).forEach(function(sid){
         rTemp[sid] = Object.assign({}, rdBak[sid]);
         var h = riesgoHistData[fechaDia][sid];
         if(h){
-          rTemp[sid].oidio         = h.oidio;
-          rTemp[sid].mildiu        = h.mildiu;
+          // Un día guardado antes de existir un riesgo no lo trae: sin datos
+          // ese día, salvo hoy, que vale el cálculo actual (riesgoData).
+          RIESGO_IDS.forEach(function(k){
+            if(h[k]!==undefined) rTemp[sid][k]=h[k];
+            else if(!esHoy) rTemp[sid][k]=-1;
+          });
           rTemp[sid].dsv_temporada = h.dsv_temporada;
           rTemp[sid].dsv_7d        = h.dsv_7d;
           rTemp[sid].datos_ok      = h.datos_ok;
@@ -3047,8 +3171,8 @@ function setPrecipVentana(h){
 
 function onParamChange(){
   var p = document.getElementById('ps').value;
-  var esRiesgo = (p==='oidio'||p==='mildiu');
-  var eraRiesgo = (_prevParam==='oidio'||_prevParam==='mildiu');
+  var esRiesgo = esParamRiesgo(p);
+  var eraRiesgo = esParamRiesgo(_prevParam);
   if(esRiesgo && !eraRiesgo) _legCollapsed = true; // al entrar en riesgo, plegada por defecto
   _prevParam = p;
   var ctrlPrecip=document.getElementById('ctrl-precip');
@@ -3193,17 +3317,26 @@ window.matchMedia('(max-width:768px)').addEventListener('change',colocarControle
 // se enseñan como "en preparación" para que se vea el plan por cultivo.
 var CULTIVOS_RIESGO=[
   {id:'vid', ic:'🍇', nombre:'Vid y uva de mesa', riesgos:[
-    {id:'oidio', ic:'🍇', nombre:'Oídio', tipo:'Hongo', agente:'Erysiphe necator',
+    {id:'oidio', ic:'🍇', nombre:'Oídio', corto:'Oídio', modeloCorto:'Gubler-Thomas', tipo:'Hongo', agente:'Erysiphe necator',
      modelo:'Gubler-Thomas: índice DSV acumulado en la temporada (horas de humedad alta y temperatura media).'},
-    {id:'mildiu', ic:'🍃', nombre:'Mildiu', tipo:'Hongo', agente:'Plasmopara viticola',
+    {id:'mildiu', ic:'🍃', nombre:'Mildiu', corto:'Mildiu vid', modeloCorto:'10-10-10 + EPI', tipo:'Hongo', agente:'Plasmopara viticola',
      modelo:'Regla 10-10-10 (Tmin > 10 °C, ≥ 10 mm de lluvia) y periodo de incubación según la temperatura.'},
     {nombre:'Botrytis (podredumbre gris)', tipo:'Hongo', prox:true},
     {nombre:'Polilla del racimo (Lobesia botrana)', tipo:'Plaga', prox:true}]},
-  {id:'lechuga', ic:'🥬', nombre:'Lechuga y hoja', riesgos:[
-    {nombre:'Mildiu de la lechuga (Bremia lactucae)', tipo:'Hongo', prox:true}]},
-  {id:'brasicas', ic:'🥦', nombre:'Brócoli y coliflor', riesgos:[
-    {nombre:'Mildiu de las crucíferas', tipo:'Hongo', prox:true},
-    {nombre:'Alternaria', tipo:'Hongo', prox:true}]},
+  {id:'lechuga', ic:'🥬', nombre:'Lechuga iceberg', riesgos:[
+    {id:'bremia', ic:'🥬', nombre:'Mildiu (Bremia)', corto:'Mildiu lechuga', tipo:'Hongo', agente:'Bremia lactucae',
+     modeloCorto:'HR ≥ 90 % 4 h · 5-20 °C',
+     modelo:'Día favorable: hoja mojada (HR ≥ 90 %) al menos 4 h con 5-20 °C. Nivel por los días favorables de la última semana (alto con 4 o más, o los dos últimos seguidos). Modelo de reglas, a contrastar en campo.'},
+    {nombre:'Esclerotinia', tipo:'Hongo', prox:true},
+    {nombre:'Botrytis', tipo:'Hongo', prox:true}]},
+  {id:'brasicas', ic:'🥦', nombre:'Brócoli', riesgos:[
+    {id:'mildiu_cruc', ic:'🥦', nombre:'Mildiu de las crucíferas', corto:'Mildiu crucíferas', tipo:'Hongo', agente:'Hyaloperonospora parasitica',
+     modeloCorto:'HR ≥ 90 % 6 h · 5-20 °C',
+     modelo:'Día favorable: hoja mojada (HR ≥ 90 %) al menos 6 h con 5-20 °C. Nivel por los días favorables de la última semana (alto con 4 o más, o los dos últimos seguidos). Modelo de reglas, a contrastar en campo.'},
+    {id:'alternaria', ic:'🟤', nombre:'Alternaria', corto:'Alternaria', tipo:'Hongo', agente:'Alternaria brassicicola / brassicae',
+     modeloCorto:'HR ≥ 90 % 9 h · 18-30 °C',
+     modelo:'Día favorable: hoja mojada (HR ≥ 90 %) al menos 9 h con 18-30 °C. Nivel por los días favorables de la última semana (alto con 4 o más, o los dos últimos seguidos). Modelo de reglas, a contrastar en campo.'},
+    {nombre:'Polilla de las crucíferas (Plutella)', tipo:'Plaga', prox:true}]},
   {id:'almendro', ic:'🌰', nombre:'Almendro', riesgos:[
     {nombre:'Helada en floración', tipo:'Clima', prox:true},
     {nombre:'Mancha ocre (Polystigma)', tipo:'Hongo', prox:true}]},
@@ -3211,12 +3344,59 @@ var CULTIVOS_RIESGO=[
     {nombre:'Mosca de la fruta (Ceratitis capitata)', tipo:'Plaga', prox:true},
     {nombre:'Aguado (Phytophthora)', tipo:'Hongo', prox:true}]}
 ];
+// Ficha de un riesgo por su id (con el nombre de su cultivo).
+function infoRiesgo(id){
+  for(var i=0;i<CULTIVOS_RIESGO.length;i++){
+    var c=CULTIVOS_RIESGO[i];
+    for(var j=0;j<c.riesgos.length;j++) if(c.riesgos[j].id===id){ var r=Object.assign({},c.riesgos[j]); r.cultivo=c.nombre; r.cultivoId=c.id; return r; }
+  }
+  return null;
+}
+
+// ── Mis cultivos ────────────────────────────────────────────
+// Cada usuario elige lo que cultiva (se guarda en su navegador); Riesgos
+// enseña solo esos cultivos y Mi zona avisa solo de sus riesgos. Sin
+// elegir nada (null) Riesgos enseña todos y Mi zona invita a elegirlos.
+function misCultivos(){
+  try{ var v=JSON.parse(localStorage.getItem('meteo_mis_cultivos')); return Array.isArray(v)?v:null; }catch(e){ return null; }
+}
+function cultivosVisibles(){
+  var m=misCultivos();
+  var l=m&&m.length?CULTIVOS_RIESGO.filter(function(c){ return m.indexOf(c.id)>=0; }):[];
+  return l.length?l:CULTIVOS_RIESGO;
+}
+function abrirMisCultivos(){
+  var m=misCultivos()||[];
+  document.getElementById('mc-lista').innerHTML=CULTIVOS_RIESGO.map(function(c){
+    var n=c.riesgos.filter(function(r){return !r.prox;}).length;
+    return '<label class="mc-op"><input type="checkbox" value="'+c.id+'"'+(m.indexOf(c.id)>=0?' checked':'')+'>'
+      +'<span class="mc-ic">'+c.ic+'</span><span><b>'+c.nombre+'</b><small>'
+      +(n?c.riesgos.filter(function(r){return !r.prox;}).map(function(r){return r.nombre;}).join(' · '):'Riesgos en preparación')
+      +'</small></span></label>';
+  }).join('');
+  document.getElementById('mc').classList.add('open');
+}
+function cerrarMisCultivos(){ document.getElementById('mc').classList.remove('open'); }
+function guardarMisCultivos(){
+  var sel=[].slice.call(document.querySelectorAll('#mc-lista input:checked')).map(function(i){ return i.value; });
+  try{ localStorage.setItem('meteo_mis_cultivos',JSON.stringify(sel)); }catch(e){}
+  cerrarMisCultivos();
+  if(sel.length&&sel.indexOf(riesgoCultivo)<0) elegirCultivoRiesgo(sel[0]);
+  if(vistaActual==='riesgos') pintarBarraRiesgos();
+  if(vistaActual==='zona') renderZona();
+}
+// Desde Mi zona: abre Riesgos con ese cultivo y riesgo.
+function verRiesgo(cultivo,riesgo){
+  riesgoCultivo=cultivo; riesgoElegido=riesgo;
+  try{ localStorage.setItem('meteo_riesgo_cultivo',cultivo); localStorage.setItem('meteo_riesgo',riesgo); }catch(e){}
+  irA('riesgos');
+}
+
 var riesgoCultivo=(function(){ try{ return localStorage.getItem('meteo_riesgo_cultivo')||'vid'; }catch(e){ return 'vid'; } })();
 var riesgoElegido=(function(){ try{ return localStorage.getItem('meteo_riesgo')||'oidio'; }catch(e){ return 'oidio'; } })();
 var paramMeteo='temp';   // lo que se veía en el Mapa, para volver a ello
 
-function esParamRiesgo(v){ return v==='oidio'||v==='mildiu'; }
-function cultivoRiesgo(id){ for(var i=0;i<CULTIVOS_RIESGO.length;i++) if(CULTIVOS_RIESGO[i].id===id) return CULTIVOS_RIESGO[i]; return CULTIVOS_RIESGO[0]; }
+function cultivoRiesgo(id){ var l=cultivosVisibles(); for(var i=0;i<l.length;i++) if(l[i].id===id) return l[i]; return l[0]; }
 
 function entrarRiesgos(){
   var actual=document.getElementById('ps').value;
@@ -3239,9 +3419,14 @@ function elegirRiesgo(id){
 }
 function pintarBarraRiesgos(){
   var c=cultivoRiesgo(riesgoCultivo), disp=c.riesgos.filter(function(r){return !r.prox;});
-  document.getElementById('rg-cultivos').innerHTML=CULTIVOS_RIESGO.map(function(o){
-    return '<button type="button" class="chip-r'+(o.id===c.id?' active':'')+'" onclick="elegirCultivoRiesgo(\''+o.id+'\')">'+o.ic+' '+o.nombre+'</button>';
-  }).join('');
+  riesgoCultivo=c.id;
+  if(disp.length&&!disp.some(function(r){return r.id===riesgoElegido;})) riesgoElegido=disp[0].id;
+  var m=misCultivos();
+  document.getElementById('rg-cultivos').innerHTML=
+    '<button type="button" class="chip-r chip-mis" onclick="abrirMisCultivos()">🌱 '+(m&&m.length?'Mis cultivos ✎':'Elegir mis cultivos')+'</button>'
+    +cultivosVisibles().map(function(o){
+      return '<button type="button" class="chip-r'+(o.id===c.id?' active':'')+'" onclick="elegirCultivoRiesgo(\''+o.id+'\')">'+o.ic+' '+o.nombre+'</button>';
+    }).join('');
   document.getElementById('rg-riesgos').innerHTML=c.riesgos.map(function(r){
     if(r.prox) return '<span class="chip-r prox" title="En preparación">'+r.nombre+' <small>próximamente</small></span>';
     return '<button type="button" class="chip-r'+(r.id===riesgoElegido?' active':'')+'" onclick="elegirRiesgo(\''+r.id+'\')">'+r.ic+' '+r.nombre+'</button>';
@@ -3530,11 +3715,17 @@ function avisosZona(d,est){
       else if(ps>=10) av.push({n:1,ic:'🌧',t:nom+': lluvia de '+Math.round(ps)+' mm'});
     }
   }
-  var r=est&&riesgoData[est.stationID];
-  if(r&&r.datos_ok){
+  // Riesgos de enfermedades: solo los de mis cultivos, nivel medio o alto.
+  var r=est&&riesgoData[est.stationID], m=misCultivos();
+  if(r&&m&&m.length){
     var nv=['','bajo','medio','ALTO'];
-    if(r.oidio>=2) av.push({n:r.oidio>=3?2:1,ic:'🍇',t:'Riesgo de oídio '+nv[r.oidio]+' (DSV '+r.dsv_temporada+')'});
-    if(r.mildiu>=2) av.push({n:r.mildiu>=3?2:1,ic:'🍃',t:'Riesgo de mildiu '+nv[r.mildiu]});
+    CULTIVOS_RIESGO.forEach(function(c){
+      if(m.indexOf(c.id)<0) return;
+      c.riesgos.forEach(function(x){
+        if(x.prox||r[x.id]==null||r[x.id]<2) return;
+        av.push({n:r[x.id]>=3?2:1,ic:x.ic,t:x.nombre+' ('+c.nombre.toLowerCase()+'): riesgo '+nv[r[x.id]]});
+      });
+    });
   }
   av.sort(function(a,b){ return b.n-a.n; });
   return av;
@@ -3578,6 +3769,30 @@ function tratarZona(h){
   return {n:n,txt:txt,sub:sub,tira:tira};
 }
 
+function htmlMisCultivosZona(est){
+  var m=misCultivos();
+  if(!m||!m.length){
+    return '<div class="vz-tarjeta"><div class="vz-tit">🌱 Riesgos de mis cultivos</div>'
+      +'<div class="vz-sub">Elige lo que cultivas y aquí verás el riesgo de sus enfermedades en tu zona, y solo te avisaremos de esas.</div>'
+      +'<button type="button" class="vz-boton" onclick="abrirMisCultivos()">🌱 Elegir mis cultivos</button></div>';
+  }
+  var e=est&&(est.e||est), r=e&&riesgoData[e.stationID];
+  var filas=CULTIVOS_RIESGO.filter(function(c){ return m.indexOf(c.id)>=0; }).map(function(c){
+    var disp=c.riesgos.filter(function(x){return !x.prox;});
+    if(!disp.length) return '<div class="vz-rg"><span class="vz-rg-c">'+c.ic+' '+c.nombre+'</span><span class="vz-rg-n vz-rg-sin">sin modelos aún</span></div>';
+    return disp.map(function(x,k){
+      var nv=r?r[x.id]:null, sin=(nv==null||nv<0);
+      return '<button type="button" class="vz-rg" onclick="verRiesgo(\''+c.id+'\',\''+x.id+'\')">'
+        +'<span class="vz-rg-c">'+(k===0?c.ic+' ':'<span style="visibility:hidden">'+c.ic+'</span> ')+x.nombre+'</span>'
+        +'<span class="vz-rg-n" style="background:'+(sin?'#94a3b8':RC[nv])+'">'+(sin?'sin datos':RL[nv].replace('Riesgo ','').replace('Sin riesgo','Sin riesgo'))+'</span></button>';
+    }).join('');
+  }).join('');
+  return '<div class="vz-tarjeta"><div class="vz-tit">🌱 Riesgos de mis cultivos'
+    +(e?' <small>· '+nombreEstacion(e)+'</small>':'')+'</div>'
+    +(r?filas:'<div class="vz-nota">Sin datos de riesgo para la estación más cercana.</div>')
+    +'<button type="button" class="vz-enlace" onclick="abrirMisCultivos()">✎ Cambiar mis cultivos</button></div>';
+}
+
 function htmlZona(z,cerca,d,cargando,error){
   var html='';
   var est=cerca[0]&&cerca[0].km<=25?cerca[0]:null;
@@ -3605,6 +3820,9 @@ function htmlZona(z,cerca,d,cargando,error){
       +'<div class="vz-nota">Viento entre 2 y 12 km/h, sin lluvia ni en las 2 h siguientes, menos de 25 °C y humedad por encima del 50 %.</div>'
       +'</div>';
   }
+
+  // 2b. Mis cultivos: el nivel de cada uno de sus riesgos en la estación más cercana
+  html+=htmlMisCultivosZona(est);
 
   // 3. Ahora, en la estación más cercana
   if(est){
@@ -4427,6 +4645,29 @@ HTML_BASE = """<!DOCTYPE html>
       #dp{max-height:52dvh!important}
     }
 
+    /* ── Mis cultivos ── */
+    #mc{display:none;position:fixed;inset:0;z-index:6000;background:rgba(2,6,23,.5);align-items:flex-end;justify-content:center}
+    #mc.open{display:flex}
+    #mc-caja{background:#fff;color:#0f172a;width:min(100%,520px);max-height:88dvh;overflow-y:auto;border-radius:18px 18px 0 0;
+      padding:14px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+    @media(min-width:769px){ #mc{align-items:center} #mc-caja{border-radius:18px} }
+    #mc-cab{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:1.15rem;margin-bottom:6px}
+    #mc-cab button{background:none;border:none;font-size:1.1rem;color:#64748b;cursor:pointer;padding:6px}
+    #mc-texto{font-size:.9rem;color:#475569;line-height:1.45;margin-bottom:10px}
+    .mc-op{display:flex;align-items:center;gap:12px;padding:12px 10px;border:1px solid rgba(15,23,42,.1);border-radius:12px;margin-bottom:8px;cursor:pointer;min-height:56px}
+    .mc-op input{width:24px;height:24px;accent-color:#16a34a;flex-shrink:0}
+    .mc-op:has(input:checked){border-color:#16a34a;background:#f0fdf4}
+    .mc-ic{font-size:1.6rem}
+    .mc-op b{display:block;font-size:1rem}
+    .mc-op small{display:block;color:#64748b;font-size:.8rem;margin-top:2px}
+    #mc-guardar{width:100%;min-height:50px;border:none;border-radius:12px;background:#16a34a;color:#fff;font-size:1.05rem;font-weight:800;font-family:inherit;cursor:pointer;margin-top:4px}
+    .chip-mis{border-style:dashed!important;color:#86efac!important}
+    .vz-rg{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:10px 0;border:none;border-bottom:1px solid rgba(15,23,42,.07);
+      background:none;font-family:inherit;font-size:1rem;color:#0f172a;text-align:left;cursor:pointer}
+    .vz-rg-c{font-weight:600}
+    .vz-rg-n{flex-shrink:0;color:#fff;font-weight:800;font-size:.85rem;padding:5px 10px;border-radius:8px}
+    .vz-rg-sin{background:#e2e8f0;color:#64748b}
+
     /* ── Pestañas de abajo (móvil) ── */
     #tabs{display:none}
     @media(max-width:768px){
@@ -4516,6 +4757,9 @@ HTML_BASE = """<!DOCTYPE html>
       <option value="wind">💨 Viento (km/h)</option>
       <option value="oidio">🍇 Riesgo Oídio</option>
       <option value="mildiu">🍃 Riesgo Mildiu</option>
+      <option value="bremia">🥬 Mildiu de la lechuga</option>
+      <option value="mildiu_cruc">🥦 Mildiu de las crucíferas</option>
+      <option value="alternaria">🥦 Alternaria</option>
     </select>
   </div>
   <div id="chips-param" role="tablist" aria-label="Qué ver en el mapa">
@@ -4681,6 +4925,16 @@ HTML_BASE = """<!DOCTYPE html>
   <div id="vz-cuerpo"></div>
 </div>
 
+<!-- Mis cultivos: qué cultiva cada usuario (Riesgos y avisos de Mi zona) -->
+<div id="mc" onclick="if(event.target===this) cerrarMisCultivos()">
+  <div id="mc-caja" role="dialog" aria-label="Mis cultivos">
+    <div id="mc-cab">🌱 Mis cultivos <button type="button" onclick="cerrarMisCultivos()" aria-label="Cerrar">✕</button></div>
+    <div id="mc-texto">Marca lo que cultivas. En Riesgos verás solo esos cultivos y en Mi zona solo te avisaremos de sus enfermedades. Se guarda en este móvil.</div>
+    <div id="mc-lista"></div>
+    <button type="button" id="mc-guardar" onclick="guardarMisCultivos()">Guardar</button>
+  </div>
+</div>
+
 <!-- Pestañas de abajo (solo en el móvil) -->
 <nav id="tabs" aria-label="Secciones">
   <a href="#zona" class="tab" data-vista="zona" onclick="irA('zona');return false;"><span>📍</span>Mi zona</a>
@@ -4785,14 +5039,22 @@ def principal():
     if not datos_wu:
         print("  ❌ Ninguna estación con datos actuales."); return
 
+    # Minutos que suma esta pasada al historial agrícola: el tiempo desde la
+    # pasada anterior. Antes se medía desde la última instantánea de
+    # history_24h, que solo se guarda cada 15 min: con el cron cada 5 min
+    # cada cuarto de hora se contaba dos veces (5+10+15) y salían días con
+    # más de 24 h de humedad alta (oct 2026).
     minutos = 15
-    if h_prev:
-        try:
-            t_prev = datetime.fromisoformat(h_prev[-1]['timestamp'])
-            if t_prev.tzinfo is None: t_prev = t_prev.replace(tzinfo=ahora.tzinfo)
-            minutos = min(60, max(1, round((ahora - t_prev).total_seconds() / 60)))
-        except Exception:
-            pass
+    t_prev = None
+    try:
+        t_prev = datetime.fromisoformat(leer(F_ESTADO_AGRI, {}).get('ultima', ''))
+    except Exception:
+        if h_prev:
+            try: t_prev = datetime.fromisoformat(h_prev[-1]['timestamp'])
+            except Exception: pass
+    if t_prev is not None:
+        if t_prev.tzinfo is None: t_prev = t_prev.replace(tzinfo=ahora.tzinfo)
+        minutos = min(60, max(1, round((ahora - t_prev).total_seconds() / 60)))
 
     print("\n📚 Historial 24h...")
     h24 = hist24(datos_wu, ahora)
@@ -4808,11 +5070,13 @@ def principal():
 
     print(f"\n🌾 Historial agrícola... (+{minutos} min)")
     hagri = hist_agri(datos_wu, ahora, minutos)
+    guardar(F_ESTADO_AGRI, {'ultima': ahora.isoformat()})
     dias_acum = len(hagri)
     # El historial agrícola guardado aún puede traer días de una estación ya
     # desactivada: para el riesgo no cuenta (ni como vecina de otra).
-    hagri = {f: {s: v for s, v in d.items() if s.upper() not in DESACTIVADAS}
+    hagri = {f: {s: dict(v) for s, v in d.items() if s.upper() not in DESACTIVADAS}
              for f, d in hagri.items()}
+    anotar_contadores_3h(hagri)
 
     if dias_acum < MIN_DIAS:
         falt = MIN_DIAS - dias_acum
