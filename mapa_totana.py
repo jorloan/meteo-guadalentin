@@ -1448,7 +1448,22 @@ var MG_VARS='temperature_2m,apparent_temperature,precipitation,precipitation_pro
   +'cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,wind_speed_10m,'
   +'wind_gusts_10m,wind_direction_10m,relative_humidity_2m,et0_fao_evapotranspiration,is_day';
 var MG_PLAZOS=[3,7,14];
-var pronDias=(function(){ try{ var v=+localStorage.getItem('meteo_pron_dias'); return MG_PLAZOS.indexOf(v)>=0?v:7; }catch(e){ return 7; } })();
+var pronDias=(function(){
+  var def=esMovil()?3:7;   // en el móvil caben 3 días sin deslizar
+  try{ var v=+localStorage.getItem('meteo_pron_dias'); return MG_PLAZOS.indexOf(v)>=0?v:def; }catch(e){ return def; }
+})();
+// Paneles plegados (se recuerdan). En el móvil, de entrada, ET0 y viento:
+// la pantalla es corta y lo primero es temperatura, lluvia y si se puede tratar.
+function mgPlegados(){
+  try{ var v=JSON.parse(localStorage.getItem('meteo_mg_plegados')); if(Array.isArray(v)) return v; }catch(e){}
+  return esMovil()?['et0','viento']:[];
+}
+function plegarPanel(id){
+  var l=mgPlegados(), i=l.indexOf(id);
+  if(i>=0) l.splice(i,1); else l.push(id);
+  try{ localStorage.setItem('meteo_mg_plegados',JSON.stringify(l)); }catch(e){}
+  document.querySelectorAll('.mg-panel[data-id="'+id+'"]').forEach(function(el){ el.classList.toggle('plegado',i<0); });
+}
 
 function cargarPronostico(loc,sub){
   var base='https://api.open-meteo.com/v1/forecast?latitude='+loc.latitude+'&longitude='+loc.longitude
@@ -1515,10 +1530,15 @@ function renderPronostico(dias){
   var n=Math.min(pronDias*24, h.time.length);
 
   // ── Geometría común: todos los paneles comparten el eje X ──
-  var pxh=pronDias<=3?10:(pronDias<=7?5:3.4);
-  var mL=40, mR=40, W=Math.round(mL+mR+n*pxh);
+  var mL=40, mR=40, pxh;
+  if(esMovil()){
+    // En el móvil, el ancho de la pantalla; si no cabe a 3 px por hora, se desliza.
+    var cont=document.getElementById('vp-contenido'), disp=(cont?cont.clientWidth:360)-24;
+    pxh=Math.max(3,(disp-mL-mR)/n);
+  } else pxh=pronDias<=3?10:(pronDias<=7?5:3.4);
+  var W=Math.round(mL+mR+n*pxh);
   function X(i){ return mL+i*pxh; }
-  var conHoras=pxh*6>=24;   // sitio para 06 12 18 bajo cada día
+  var conHoras=pxh*6>=22;   // sitio para 06 12 18 bajo cada día
 
   // Índice de la hora actual (línea discontinua "ahora")
   var ahoraTs=Date.now(), iAhora=-1;
@@ -1569,17 +1589,33 @@ function renderPronostico(dias){
     }
     return d;
   }
+  // Las cifras de los ejes van aparte (_ejes), en dos columnas fijas a los
+  // lados del panel (.mg-eje, position:sticky): al deslizar el gráfico de
+  // lado en el móvil, la escala sigue a la vista. En el gráfico quedan
+  // solo las líneas de la rejilla.
+  var _ejes={izq:'',der:''};
   function ejeY(vals,Y,lado,fmt,col){
     var s='';
     vals.forEach(function(v){
       var y=Y(v).toFixed(1);
-      s+='<text x="'+(lado==='izq'?mL-5:W-mR+5)+'" y="'+(+y+3.5)+'" font-size="10" fill="'+(col||'#475569')+'" text-anchor="'+(lado==='izq'?'end':'start')+'">'+fmt(v)+'</text>';
+      _ejes[lado]+='<text x="'+(lado==='izq'?mL-5:5)+'" y="'+(+y+3.5)+'" font-size="10" fill="'+(col||'#475569')+'" text-anchor="'+(lado==='izq'?'end':'start')+'">'+fmt(v)+'</text>';
       if(lado==='izq') s+='<line x1="'+mL+'" y1="'+y+'" x2="'+(W-mR)+'" y2="'+y+'" stroke="rgba(15,23,42,.07)"/>';
     });
     return s;
   }
+  // Un panel: título que lo pliega, columnas de los ejes y el gráfico.
+  function panel(id,tit,alto,cuerpo){
+    var plegado=mgPlegados().indexOf(id)>=0;
+    var r='<div class="mg-panel'+(plegado?' plegado':'')+'" data-id="'+id+'">'
+      +'<button type="button" class="mg-tit" onclick="plegarPanel(\''+id+'\')"><span class="mg-flecha">▾</span> '+tit+'</button>'
+      +'<div class="mg-cuerpo">'
+      +'<div class="mg-eje mg-eje-izq"><svg width="'+mL+'" height="'+alto+'"><rect width="'+mL+'" height="'+alto+'" fill="#fff" opacity=".92"/>'+_ejes.izq+'</svg></div>'
+      +(_ejes.der?'<div class="mg-eje mg-eje-der"><svg width="'+mR+'" height="'+alto+'"><rect width="'+mR+'" height="'+alto+'" fill="#fff" opacity=".92"/>'+_ejes.der+'</svg></div>':'')
+      +svg(alto,cuerpo)+'</div></div>';
+    _ejes={izq:'',der:''};
+    return r;
+  }
   function marco(top,alto){ return '<rect x="'+mL+'" y="'+top+'" width="'+(W-mL-mR)+'" height="'+alto+'" fill="none" stroke="#cbd5e1"/>'; }
-  function titulo(t){ return '<div class="mg-tit">'+t+'</div>'; }
   function maxDe(a){ var m=-Infinity; for(var i=0;i<n;i++) if(a&&a[i]!=null&&a[i]>m) m=a[i]; return m; }
   function minDe(a){ var m=Infinity; for(var i=0;i<n;i++) if(a&&a[i]!=null&&a[i]<m) m=a[i]; return m; }
   function pasos(lo,hi,objetivo){
@@ -1627,7 +1663,7 @@ function renderPronostico(dias){
       s+='<text x="'+X(i+0.5)+'" y="'+Math.max(cab+12,Y(T[i])-20)+'" font-size="'+(pxh>=5?14:11)+'" text-anchor="middle">'+ic+'</text>';
     }
     s+=marco(cab,alto)+ejeX(cab+alto+13);
-    paneles+=titulo('🌡 Temperatura (°C)')+svg(AH,s);
+    paneles+=panel('temp','🌡 Temperatura (°C)',AH,s);
   })();
 
   // ── 2. Precipitación, probabilidad y nubes ────────────────
@@ -1646,7 +1682,7 @@ function renderPronostico(dias){
       }
     });
     s+='<line x1="'+mL+'" y1="'+y0+'" x2="'+(W-mR)+'" y2="'+y0+'" stroke="#cbd5e1"/>';
-    s+='<text x="'+(mL-5)+'" y="'+(top+filaN-1)+'" font-size="8" fill="#64748b" text-anchor="end">alta</text>'
+    _ejes.izq+='<text x="'+(mL-5)+'" y="'+(top+filaN-1)+'" font-size="8" fill="#64748b" text-anchor="end">alta</text>'
       +'<text x="'+(mL-5)+'" y="'+(top+3*filaN-1)+'" font-size="8" fill="#64748b" text-anchor="end">baja</text>';
     s+=ejeY(pasos(0,pMax,4),Y,'izq',function(v){return v;});
     s+=ejeY([0,50,100],Yp,'der',function(v){return v+'%';},'#9333ea');
@@ -1663,7 +1699,7 @@ function renderPronostico(dias){
       s+='<text x="'+((X(dd.i0)+X(dd.i1+1))/2)+'" y="'+(y0+14)+'" font-size="11" font-weight="700" fill="'+(t>=0.1?'#1d4ed8':'#94a3b8')+'" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">'+t.toFixed(1)+'</text>';
     });
     s+=marco(top,nubes+alto)+ejeX(top+nubes+alto+13);
-    paneles+=titulo('🌧 Precipitación (mm/h) · <span style="color:#9333ea">probabilidad (%)</span> · nubes por alturas · <span style="color:#1d4ed8">total del día</span>')+svg(AH,s);
+    paneles+=panel('lluvia','🌧 Precipitación (mm/h) · <span style="color:#9333ea">probabilidad (%)</span> · nubes por alturas · <span style="color:#1d4ed8">total del día</span>',AH,s);
   })();
 
   // ── 3. Condiciones para pulverizar ────────────────────────
@@ -1676,9 +1712,8 @@ function renderPronostico(dias){
     for(var i=0;i<n;i++) if(+h.time[i].slice(11,13)===0) s+='<line x1="'+X(i)+'" y1="0" x2="'+X(i)+'" y2="'+alto+'" stroke="#fff" stroke-width="1.5"/>';
     if(iAhora>=0) s+='<line x1="'+X(iAhora+0.5)+'" y1="0" x2="'+X(iAhora+0.5)+'" y2="'+alto+'" stroke="#0f172a" stroke-width="1.2" stroke-dasharray="4,3"/>';
     s+=marco(0,alto)+ejeX(alto+13);
-    paneles+=titulo('🚜 Condiciones para pulverizar '
-      +MG_PULV_TXT.map(function(t,k){return '<span class="mg-ley"><i style="background:'+MG_PULV_COL[k]+'"></i>'+t+'</span>';}).join(''))
-      +svg(AH,s);
+    paneles+=panel('tratar','🚜 Condiciones para pulverizar '
+      +MG_PULV_TXT.map(function(t,k){return '<span class="mg-ley"><i style="background:'+MG_PULV_COL[k]+'"></i>'+t+'</span>';}).join(''),AH,s);
   })();
 
   // ── 4. Evapotranspiración (ET0) y humedad ──────────────────
@@ -1701,7 +1736,7 @@ function renderPronostico(dias){
       s+='<text x="'+((X(dd.i0)+X(dd.i1+1))/2)+'" y="'+(top+13)+'" font-size="11" font-weight="700" fill="#4d7c0f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">'+t.toFixed(1)+'</text>';
     });
     s+=marco(top,alto)+ejeX(top+alto+13);
-    paneles+=titulo('<span style="color:#4d7c0f">💧 ET0 FAO (mm/h, total del día arriba)</span> · <span style="color:#2563eb">humedad relativa (%)</span>')+svg(AH,s);
+    paneles+=panel('et0','<span style="color:#4d7c0f">💧 ET0 FAO (mm/h, total del día arriba)</span> · <span style="color:#2563eb">humedad relativa (%)</span>',AH,s);
   })();
 
   // ── 5. Viento ──────────────────────────────────────────────
@@ -1721,7 +1756,7 @@ function renderPronostico(dias){
       s+='<g transform="translate('+cx.toFixed(1)+','+cy+') rotate('+((D[i]+180)%360)+')"><path d="M0,-7 L3.5,2 L0,0 L-3.5,2 Z M0,0 L0,7" fill="#0f172a" stroke="#0f172a" stroke-width="1.2"/></g>';
     }
     s+=marco(top,alto)+ejeX(top+alto+13);
-    paneles+=titulo('<span style="color:#2563eb">💨 Viento (km/h)</span> · <span style="color:#0d9488">rachas</span> · flechas: hacia dónde sopla')+svg(AH,s);
+    paneles+=panel('viento','<span style="color:#2563eb">💨 Viento (km/h)</span> · <span style="color:#0d9488">rachas</span> · flechas: hacia dónde sopla',AH,s);
   })();
 
   // ── 6. Comparativa de modelos ──────────────────────────────
@@ -1739,7 +1774,7 @@ function renderPronostico(dias){
         var d=serie(a,Y); if(d) s+='<path d="'+d+'" fill="none" stroke="'+COL_MODELO[m.id]+'" stroke-width="'+(m.estrella?2.2:1.5)+'"/>';
       });
       s+=marco(top,alto)+ejeX(top+alto+13);
-      comparativa+=titulo('🌡 Temperatura según cada modelo')+svg(AH,s);
+      comparativa+=panel('mod-temp','🌡 Temperatura según cada modelo',AH,s);
 
       // Lluvia acumulada desde el inicio: se ve cuánto y cuándo llueve en cada modelo
       var acum={}, pMax=1;
@@ -1757,7 +1792,7 @@ function renderPronostico(dias){
         var d=serie(acum[m.id],Yl); if(d) s2+='<path d="'+d+'" fill="none" stroke="'+COL_MODELO[m.id]+'" stroke-width="'+(m.estrella?2.2:1.5)+'"/>';
       });
       s2+=marco(top,alto)+ejeX(top+alto+13);
-      comparativa+=titulo('🌧 Lluvia acumulada según cada modelo (mm)')+svg(AH,s2);
+      comparativa+=panel('mod-lluvia','🌧 Lluvia acumulada según cada modelo (mm)',AH,s2);
     })();
   }
 
@@ -1773,7 +1808,7 @@ function renderPronostico(dias){
     +'<div class="mg-plazos">'+MG_PLAZOS.map(function(d){
       return '<button type="button" class="fc-tab'+(d===pronDias?' active':'')+'" onclick="renderPronostico('+d+')">'+d+' días</button>';
     }).join('')+'</div></div>'
-    +'<div class="mg-ayuda">Pasa el dedo o el ratón por el gráfico para ver los datos de cada hora. La franja clara es de día y la línea discontinua, la hora actual.</div>'
+    +'<div class="mg-ayuda">Pasa el dedo o el ratón por el gráfico para ver los datos de cada hora'+(W>((document.getElementById('vp-contenido')||{}).clientWidth||9999)?' y deslízalo de lado para ver más días':'')+'. La franja clara es de día y la línea discontinua, la hora actual. Toca un título para plegar o abrir su gráfico.</div>'
     +'<div class="mg-caja"><div class="mg-scroll"><div class="mg-inner" id="mg-inner" style="width:'+W+'px">'
     +paneles
     +'<div class="mg-cursor" id="mg-cursor"></div><div class="mg-tip" id="mg-tip"></div>'
@@ -1786,8 +1821,20 @@ function renderPronostico(dias){
 
   pintarVistaPronostico(html);
   mgActivarCursor(n,pxh,mL,W);
+  mgColocarEjes(mR);
   inicializarMapaPronostico(loc);
 }
+
+// La columna del eje derecho se fija al borde visible del gráfico: su
+// posición sticky depende del ancho del recuadro, que solo se sabe ya pintado.
+var _mgR=40;
+function mgColocarEjes(mR){
+  if(mR) _mgR=mR;
+  document.querySelectorAll('#vp .mg-scroll').forEach(function(sc){
+    var inner=sc.querySelector('.mg-inner'); if(inner) inner.style.setProperty('--mg-der',(sc.clientWidth-_mgR)+'px');
+  });
+}
+window.addEventListener('resize',function(){ mgColocarEjes(); });
 
 // Cursor vertical común a todos los paneles + cuadro con los datos de esa hora.
 function mgActivarCursor(n,pxh,mL,W){
@@ -1796,6 +1843,7 @@ function mgActivarCursor(n,pxh,mL,W){
   var h=pronData.h, mod=pronData.mod;
   function fmt(v,d,u){ return v==null?'—':(+v).toFixed(d)+u; }
   function mover(ev){
+    if(ev.target&&ev.target.closest&&ev.target.closest('.mg-tit')) return;
     var r=inner.getBoundingClientRect();
     var x=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left;
     var i=Math.floor((x-mL)/pxh);
@@ -2391,6 +2439,8 @@ map.on('zoomend',pintarMarcadores);
 // ── Render principal ───────────────────────────────────────
 function render(){
   var p=document.getElementById('ps').value;
+  // En la pestaña Riesgos solo se pintan riesgos (un cultivo sin modelo deja el mapa vacío).
+  if(typeof vistaActual!=='undefined'&&vistaActual==='riesgos'&&!esParamRiesgo(p)){ mLG.clearLayers(); hLG.clearLayers(); return; }
   var isR=p==='oidio'||p==='mildiu';
   var pRender=p;
   leg.upd(p);
@@ -3029,8 +3079,6 @@ if(radarChk){
   var btnLabel=document.getElementById('ps-btn-label');
   var menu=document.getElementById('ps-menu');
   var sel=document.getElementById('ps');
-  var riesgoHdr=document.getElementById('ps-riesgo-hdr');
-  var riesgoSub=document.getElementById('ps-riesgo-sub');
   var opts=menu.querySelectorAll('.ps-opt');
 
   function etiquetaDe(v){
@@ -3042,8 +3090,6 @@ if(radarChk){
   }
   function cerrarMenu(){
     menu.classList.remove('open');
-    riesgoSub.classList.remove('open'); // se pliega de nuevo al cerrar
-    riesgoHdr.querySelector('.ps-caret').textContent='▸';
   }
   function abrirMenu(){
     marcarActiva(sel.value);
@@ -3052,11 +3098,6 @@ if(radarChk){
   btn.addEventListener('click', function(e){
     e.stopPropagation();
     if(menu.classList.contains('open')) cerrarMenu(); else abrirMenu();
-  });
-  riesgoHdr.addEventListener('click', function(e){
-    e.stopPropagation();
-    var abierto=riesgoSub.classList.toggle('open');
-    riesgoHdr.querySelector('.ps-caret').textContent=abierto?'▾':'▸';
   });
   for(var i=0;i<opts.length;i++){
     opts[i].addEventListener('click', function(e){
@@ -3138,6 +3179,94 @@ window.matchMedia('(max-width:768px)').addEventListener('change',colocarControle
   // El toque ya lo ha resuelto touchend: el clic que lo sigue no debe deshacerlo.
   asa.addEventListener('click',function(){ if(Date.now()-tTactil>600) dp.classList.toggle('alto'); });
 })();
+
+// ── Riesgos agrícolas ──────────────────────────────────────
+// Pestaña propia, fuera de los datos meteorológicos: se elige el cultivo y
+// después el riesgo (enfermedad o plaga). Reutiliza el mismo mapa en
+// "modo riesgo" (máquina del tiempo por días, mapa de calor, leyenda y
+// ficha de estación ya sabían pintar oídio y mildiu), con su propia barra
+// arriba en vez de la de datos meteorológicos.
+// Para añadir un riesgo: calcularlo por estación en mapa_totana.py (como
+// calcular_riesgo con oídio/mildiu, guardado en riesgoData e
+// historial_riesgo.json), darle color/raw/leyenda/ficha como a oídio en el
+// JS, y quitarle aquí el `prox`. Los marcados `prox` aún no tienen modelo:
+// se enseñan como "en preparación" para que se vea el plan por cultivo.
+var CULTIVOS_RIESGO=[
+  {id:'vid', ic:'🍇', nombre:'Vid y uva de mesa', riesgos:[
+    {id:'oidio', ic:'🍇', nombre:'Oídio', tipo:'Hongo', agente:'Erysiphe necator',
+     modelo:'Gubler-Thomas: índice DSV acumulado en la temporada (horas de humedad alta y temperatura media).'},
+    {id:'mildiu', ic:'🍃', nombre:'Mildiu', tipo:'Hongo', agente:'Plasmopara viticola',
+     modelo:'Regla 10-10-10 (Tmin > 10 °C, ≥ 10 mm de lluvia) y periodo de incubación según la temperatura.'},
+    {nombre:'Botrytis (podredumbre gris)', tipo:'Hongo', prox:true},
+    {nombre:'Polilla del racimo (Lobesia botrana)', tipo:'Plaga', prox:true}]},
+  {id:'lechuga', ic:'🥬', nombre:'Lechuga y hoja', riesgos:[
+    {nombre:'Mildiu de la lechuga (Bremia lactucae)', tipo:'Hongo', prox:true}]},
+  {id:'brasicas', ic:'🥦', nombre:'Brócoli y coliflor', riesgos:[
+    {nombre:'Mildiu de las crucíferas', tipo:'Hongo', prox:true},
+    {nombre:'Alternaria', tipo:'Hongo', prox:true}]},
+  {id:'almendro', ic:'🌰', nombre:'Almendro', riesgos:[
+    {nombre:'Helada en floración', tipo:'Clima', prox:true},
+    {nombre:'Mancha ocre (Polystigma)', tipo:'Hongo', prox:true}]},
+  {id:'citricos', ic:'🍊', nombre:'Cítricos', riesgos:[
+    {nombre:'Mosca de la fruta (Ceratitis capitata)', tipo:'Plaga', prox:true},
+    {nombre:'Aguado (Phytophthora)', tipo:'Hongo', prox:true}]}
+];
+var riesgoCultivo=(function(){ try{ return localStorage.getItem('meteo_riesgo_cultivo')||'vid'; }catch(e){ return 'vid'; } })();
+var riesgoElegido=(function(){ try{ return localStorage.getItem('meteo_riesgo')||'oidio'; }catch(e){ return 'oidio'; } })();
+var paramMeteo='temp';   // lo que se veía en el Mapa, para volver a ello
+
+function esParamRiesgo(v){ return v==='oidio'||v==='mildiu'; }
+function cultivoRiesgo(id){ for(var i=0;i<CULTIVOS_RIESGO.length;i++) if(CULTIVOS_RIESGO[i].id===id) return CULTIVOS_RIESGO[i]; return CULTIVOS_RIESGO[0]; }
+
+function entrarRiesgos(){
+  var actual=document.getElementById('ps').value;
+  if(!esParamRiesgo(actual)) paramMeteo=actual;
+  pintarBarraRiesgos();
+}
+function salirRiesgos(){
+  if(esParamRiesgo(document.getElementById('ps').value)) elegirParam(paramMeteo);
+  document.getElementById('rg-vacio').style.display='none';
+}
+function elegirCultivoRiesgo(id){
+  riesgoCultivo=id; try{ localStorage.setItem('meteo_riesgo_cultivo',id); }catch(e){}
+  var c=cultivoRiesgo(id), disp=c.riesgos.filter(function(r){return !r.prox;});
+  if(disp.length&&!disp.some(function(r){return r.id===riesgoElegido;})) riesgoElegido=disp[0].id;
+  pintarBarraRiesgos();
+}
+function elegirRiesgo(id){
+  riesgoElegido=id; try{ localStorage.setItem('meteo_riesgo',id); }catch(e){}
+  pintarBarraRiesgos();
+}
+function pintarBarraRiesgos(){
+  var c=cultivoRiesgo(riesgoCultivo), disp=c.riesgos.filter(function(r){return !r.prox;});
+  document.getElementById('rg-cultivos').innerHTML=CULTIVOS_RIESGO.map(function(o){
+    return '<button type="button" class="chip-r'+(o.id===c.id?' active':'')+'" onclick="elegirCultivoRiesgo(\''+o.id+'\')">'+o.ic+' '+o.nombre+'</button>';
+  }).join('');
+  document.getElementById('rg-riesgos').innerHTML=c.riesgos.map(function(r){
+    if(r.prox) return '<span class="chip-r prox" title="En preparación">'+r.nombre+' <small>próximamente</small></span>';
+    return '<button type="button" class="chip-r'+(r.id===riesgoElegido?' active':'')+'" onclick="elegirRiesgo(\''+r.id+'\')">'+r.ic+' '+r.nombre+'</button>';
+  }).join('');
+  var r=disp.filter(function(x){return x.id===riesgoElegido;})[0];
+  document.getElementById('rg-info').innerHTML=r
+    ?'<b>'+r.nombre+'</b> <i>('+r.agente+')</i> · '+r.modelo+' Toca una estación para ver el detalle.'
+    :'';
+  var vacio=document.getElementById('rg-vacio');
+  if(!disp.length){
+    vacio.innerHTML='<div class="rg-vacio-tit">'+c.ic+' '+c.nombre+'</div>'
+      +'<div>Todavía no hay ningún modelo de riesgo calculado para este cultivo.</div>'
+      +'<div class="rg-vacio-lista">En preparación:<br>'+c.riesgos.map(function(x){return '• '+x.nombre+' <small>('+x.tipo+')</small>';}).join('<br>')+'</div>';
+    vacio.style.display='block';
+    document.body.classList.add('rg-sin-modelo');
+    if(esParamRiesgo(document.getElementById('ps').value)) elegirParam(paramMeteo); else render();
+    return;
+  }
+  vacio.style.display='none';
+  document.body.classList.remove('rg-sin-modelo');
+  if(document.getElementById('ps').value!==riesgoElegido) elegirParam(riesgoElegido);
+  else render();
+}
+// Ver días anteriores: la máquina del tiempo, que en modo riesgo va por días.
+function riesgosDiasAnteriores(){ var c=document.getElementById('tm-chk'); if(c) c.click(); }
 
 // ── Mi zona ─────────────────────────────────────────────────
 // La pantalla de inicio en el móvil: la respuesta directa para un sitio
@@ -3466,7 +3595,7 @@ function mostrarVistaZona(){
 // La pantalla abierta va en la URL (#pronostico, #lluvia): el botón
 // "atrás" del navegador o del móvil vuelve a la anterior, y un enlace
 // con #pronostico abre directamente el pronóstico.
-var VISTAS=['mapa','zona','pronostico','lluvia'];
+var VISTAS=['mapa','zona','riesgos','pronostico','lluvia'];
 // En el móvil se abre en «Mi zona» (la respuesta directa para el
 // agricultor); en el ordenador, en el mapa. "#mapa" fuerza el mapa.
 function esMovil(){ return window.matchMedia('(max-width:768px)').matches; }
@@ -3478,12 +3607,15 @@ function aplicarVista(v){
   if(v!=='lluvia')     document.getElementById('vl').classList.remove('open');
   if(v!=='zona')       document.getElementById('vz').classList.remove('open');
   if(v==='zona')       mostrarVistaZona();
+  // Mapa y Riesgos comparten el mapa: cambia la barra de arriba y lo que se pinta.
+  if(v==='riesgos')    entrarRiesgos();
+  else if(v==='mapa')  salirRiesgos();
   if(v==='pronostico') mostrarVistaPronostico();
   if(v==='lluvia')     mostrarVistaLluvia();
   vistaActual=v;
   actualizarPronBtn(v);
   cerrarNav();
-  if(v==='mapa') setTimeout(function(){ map.invalidateSize(); },50);
+  if(v==='mapa'||v==='riesgos') setTimeout(function(){ map.invalidateSize(); },50);
 }
 function irA(v){
   if(v===vistaActual){ cerrarNav(); if(v==='zona'&&zonaBuscando){ zonaBuscando=false; renderZona(); } return; }
@@ -3528,13 +3660,16 @@ function asegurarHistoria24hCompleta(cb){
   });
 }
 
-// La cinta se ve siempre en modo riesgo (ahí sirve para filtrar por
-// fechas, no es la misma barra que la del slider en vivo) y además
-// cuando el usuario la ha activado explícitamente.
+// La cinta solo se ve cuando el usuario la abre (casilla «Máquina del
+// tiempo» o, en Riesgos, «📅 Días anteriores», donde va por fechas).
 function actualizarVisibilidadTM(){
   var bar=document.getElementById('tm-bar');
-  var on=(modoRiesgo||tmVisible);
+  // Desde que los riesgos tienen su pestaña, la cinta por días también se
+  // abre a mano (botón «📅 Días anteriores»): siempre abierta tapaba medio
+  // mapa en el móvil.
+  var on=tmVisible;
   if(bar) bar.style.display=on?'':'none';
+  var bd=document.getElementById('rg-dias'); if(bd) bd.classList.toggle('active',on);
   // La leyenda (y el zoom) van pegados abajo del todo; solo suben para
   // dejar hueco cuando la cinta de tiempo está a la vista.
   document.body.classList.toggle('tm-on', on);
@@ -3642,14 +3777,6 @@ HTML_BASE = """<!DOCTYPE html>
     .ps-opt{padding:7px 10px;border-radius:6px;font-size:.8rem;color:#e6edf3;cursor:pointer;white-space:nowrap}
     .ps-opt:hover{background:rgba(255,255,255,0.08)}
     .ps-opt.active{background:rgba(59,130,246,.28)}
-    .ps-sep{height:1px;background:rgba(255,255,255,0.1);margin:4px 2px}
-    .ps-grp-hdr{
-      padding:7px 10px;border-radius:6px;font-size:.72rem;font-weight:700;color:#9aa7bd;
-      cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;
-    }
-    .ps-grp-hdr:hover{background:rgba(255,255,255,0.06)}
-    .ps-sub{display:none;padding-left:4px}
-    .ps-sub.open{display:block}
 
     /* Selector único de "Pronóstico" (antes dos botones sueltos —
        Pronóstico / Lluvia prevista — que no dejaban claro cuál de las
@@ -4166,6 +4293,48 @@ HTML_BASE = """<!DOCTYPE html>
       #dc table{font-size:15px!important}
     }
 
+    /* ── Pestaña Riesgos ── */
+    #topbar-riesgos,#rg-vacio{display:none}
+    body[data-vista=riesgos] #topbar,body[data-vista=riesgos] #ctrl-precip{display:none!important}
+    body[data-vista=riesgos] #topbar-riesgos{
+      display:flex;flex-direction:column;gap:7px;position:fixed;top:12px;left:12px;right:12px;z-index:1000;
+      padding:9px 12px;background:rgba(13,17,23,0.86);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.09);border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.5);color:#e2e8f0}
+    .rg-fila{display:flex;align-items:center;gap:10px;min-width:0}
+    .rg-tit{font-weight:800;font-size:.95rem;color:#fff;flex-shrink:0}
+    .rg-chips{display:flex;gap:6px;overflow-x:auto;min-width:0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .rg-chips::-webkit-scrollbar{display:none}
+    .chip-r{flex-shrink:0;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.07);color:#e2e8f0;font-size:.84rem;font-weight:700;font-family:inherit;cursor:pointer;
+      white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+    .chip-r.active{background:#16a34a;border-color:#16a34a;color:#fff}
+    #rg-cultivos .chip-r.active{background:#2563eb;border-color:#2563eb}
+    .chip-r.prox{opacity:.5;cursor:default;border-style:dashed}
+    .chip-r small{font-weight:500;font-size:.68rem;opacity:.85}
+    .rg-pie{display:flex;align-items:center;gap:10px}
+    #rg-info{flex:1;font-size:.72rem;color:#9fb0c8;line-height:1.4;min-width:0}
+    #rg-dias.active{background:#2563eb;border-color:#2563eb;color:#fff}
+    #rg-dias{flex-shrink:0;min-height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);
+      color:#e2e8f0;font-size:.78rem;font-weight:700;font-family:inherit;cursor:pointer;padding:0 10px}
+    body[data-vista=riesgos] #rg-vacio[style*="block"]{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1001;
+      width:min(88vw,380px);background:#fff;color:#0f172a;border-radius:16px;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.35);
+      font-size:.95rem;line-height:1.5}
+    body.rg-sin-modelo[data-vista=riesgos] .legend{display:none}
+    .rg-vacio-tit{font-weight:800;font-size:1.1rem;margin-bottom:6px}
+    .rg-vacio-lista{margin-top:10px;color:#475569;font-size:.9rem}
+    @media(max-width:768px){
+      body[data-vista=riesgos] #topbar-riesgos{top:6px;left:6px;right:6px;padding:8px;border-radius:14px}
+      .rg-fila .nav-btn{display:none}
+      .rg-fila{flex-direction:column;align-items:stretch;gap:6px}
+      .rg-tit{display:none}
+      .rg-chips{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:20px}
+      .chip-r{min-height:40px;font-size:.88rem}
+      /* La descripción del modelo, en 2 líneas; tocándola se lee entera */
+      #rg-info{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.76rem;cursor:pointer}
+      #rg-info.abierto{display:block}
+      #dp{max-height:52dvh!important}
+    }
+
     /* ── Pestañas de abajo (móvil) ── */
     #tabs{display:none}
     @media(max-width:768px){
@@ -4200,7 +4369,22 @@ HTML_BASE = """<!DOCTYPE html>
     .mg-caja{background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(15,23,42,.08);padding:8px 0 4px;margin-bottom:16px}
     .mg-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
     .mg-inner{position:relative;margin:0 auto}
-    .mg-tit{font-size:.72rem;font-weight:700;color:#334155;padding:8px 0 2px 40px;position:sticky;left:0;width:max-content}
+    .mg-tit{font-size:.72rem;font-weight:700;color:#334155;padding:8px 8px 4px 12px;position:sticky;left:0;width:max-content;
+      max-width:calc(100vw - 40px);background:none;border:none;font-family:inherit;text-align:left;cursor:pointer;display:block;line-height:1.5}
+    .mg-flecha{display:inline-block;transition:transform .15s;color:#64748b}
+    .mg-panel.plegado .mg-flecha{transform:rotate(-90deg)}
+    .mg-panel.plegado .mg-cuerpo{display:none}
+    .mg-panel.plegado{border-bottom:1px solid rgba(15,23,42,.06)}
+    .mg-cuerpo{position:relative}
+    .mg-eje{position:sticky;left:0;width:40px;height:0;z-index:2;pointer-events:none}
+    .mg-eje svg{position:absolute;top:0;left:0;display:block}
+    .mg-eje-der{left:var(--mg-der,0px)}
+    @media(max-width:768px){
+      .mg-tit{font-size:.82rem;padding:10px 8px 4px 10px}
+      #vp-contenido{padding:12px 12px 30px}
+      .mg-cabecera>div:first-child>div:first-child{font-size:20px!important}
+      .fc-tab{min-height:40px;padding:0 14px;font-size:.85rem}
+    }
     .mg-ley{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:600;color:#475569;margin-left:10px}
     .mg-ley i{display:inline-block;width:11px;height:11px;border-radius:3px}
     .mg-leyendas{margin:0 0 8px -10px}
@@ -4232,12 +4416,6 @@ HTML_BASE = """<!DOCTYPE html>
       <div class="ps-opt" data-v="precip">🌧 Precipitación (mm)</div>
       <div class="ps-opt" data-v="humidity">💧 Humedad (%)</div>
       <div class="ps-opt" data-v="wind">💨 Viento (km/h)</div>
-      <div class="ps-sep"></div>
-      <div class="ps-grp-hdr" id="ps-riesgo-hdr"><span>🌿 Riesgos agrícolas</span><span class="ps-caret">▸</span></div>
-      <div class="ps-sub" id="ps-riesgo-sub">
-        <div class="ps-opt" data-v="oidio">🍇 Riesgo Oídio</div>
-        <div class="ps-opt" data-v="mildiu">🍃 Riesgo Mildiu</div>
-      </div>
     </div>
     <select id="ps" onchange="onParamChange()" style="display:none">
       <option value="temp" selected>🌡 Temperatura (°C)</option>
@@ -4253,8 +4431,6 @@ HTML_BASE = """<!DOCTYPE html>
     <button type="button" class="chip-p" data-v="precip">🌧 Lluvia</button>
     <button type="button" class="chip-p" data-v="humidity">💧 Humedad</button>
     <button type="button" class="chip-p" data-v="wind">💨 Viento</button>
-    <button type="button" class="chip-p" data-v="oidio">🍇 Oídio</button>
-    <button type="button" class="chip-p" data-v="mildiu">🍃 Mildiu</button>
   </div>
   <button type="button" id="btn-capas" onclick="abrirCapas()" aria-label="Capas">🧰</button>
   <div id="ctrl-precip" style="display:none"></div>
@@ -4274,6 +4450,21 @@ HTML_BASE = """<!DOCTYPE html>
   </div>
   <button id="btn-loc" title="Mi ubicación" onclick="locateMe()">🎯</button>
 </div>
+
+<!-- Barra de la pestaña Riesgos (sustituye a la de datos meteorológicos) -->
+<div id="topbar-riesgos">
+  <div class="rg-fila">
+    <button type="button" class="nav-btn" onclick="abrirNav()" title="Menú" aria-label="Menú">☰</button>
+    <div class="rg-tit">🌿 Riesgos</div>
+    <div id="rg-cultivos" class="rg-chips"></div>
+  </div>
+  <div id="rg-riesgos" class="rg-chips"></div>
+  <div class="rg-pie">
+    <div id="rg-info" onclick="this.classList.toggle('abierto')"></div>
+    <button type="button" id="rg-dias" onclick="riesgosDiasAnteriores()">📅 Días anteriores</button>
+  </div>
+</div>
+<div id="rg-vacio"></div>
 
 <!-- Máquina del tiempo ─────────────────────────────────────── -->
 <div id="tm-bar">
@@ -4402,6 +4593,7 @@ HTML_BASE = """<!DOCTYPE html>
 <nav id="tabs" aria-label="Secciones">
   <a href="#zona" class="tab" data-vista="zona" onclick="irA('zona');return false;"><span>📍</span>Mi zona</a>
   <a href="#mapa" class="tab" data-vista="mapa" onclick="irA('mapa');return false;"><span>🗺</span>Mapa</a>
+  <a href="#riesgos" class="tab" data-vista="riesgos" onclick="irA('riesgos');return false;"><span>🌿</span>Riesgos</a>
   <a href="#pronostico" class="tab" data-vista="pronostico" onclick="irA('pronostico');return false;"><span>📈</span>Pronóstico</a>
   <a href="#lluvia" class="tab" data-vista="lluvia" onclick="irA('lluvia');return false;"><span>🌧</span>Lluvia</a>
 </nav>
@@ -4414,7 +4606,8 @@ HTML_BASE = """<!DOCTYPE html>
     <button type="button" id="nav-cerrar" onclick="cerrarNav()" aria-label="Cerrar">✕</button>
   </div>
   <a href="#zona" class="nav-op" data-vista="zona" onclick="irA('zona');return false;">📍<span>Mi zona<small>Avisos, tratar y tiempo en tu finca</small></span></a>
-  <a href="#mapa" class="nav-op active" data-vista="mapa" onclick="irA('mapa');return false;">🗺<span>Mapa de estaciones<small>Datos en tiempo real y riesgos</small></span></a>
+  <a href="#riesgos" class="nav-op" data-vista="riesgos" onclick="irA('riesgos');return false;">🌿<span>Riesgos agrícolas<small>Enfermedades y plagas por cultivo</small></span></a>
+  <a href="#mapa" class="nav-op active" data-vista="mapa" onclick="irA('mapa');return false;">🗺<span>Mapa de estaciones<small>Datos meteorológicos en tiempo real</small></span></a>
   <a href="#pronostico" class="nav-op" data-vista="pronostico" onclick="irA('pronostico');return false;">🔮<span>Pronóstico por población<small>Meteograma de varios días</small></span></a>
   <a href="#lluvia" class="nav-op" data-vista="lluvia" onclick="irA('lluvia');return false;">🌧<span>Lluvia prevista<small>Precipitación acumulada en la Región</small></span></a>
 </nav>
