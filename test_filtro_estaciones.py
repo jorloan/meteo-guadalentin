@@ -57,6 +57,13 @@ class Filtro(unittest.TestCase):
         self.assertIsNone(e['humidity'])
         self.assertIsNone(e['metric']['dewpt'])
 
+    def test_humedad_del_uno_por_ciento(self):
+        # IHELLN10 (oct 2026): 1 % de noche en otoño, sensor roto
+        e = est('IMALA', hum=1.0)
+        filtrar_lecturas([e], [], AHORA)
+        self.assertIsNone(e['humidity'])
+        self.assertIsNone(e['metric']['dewpt'])
+
     def test_lectura_vieja_se_quita_entera(self):
         quedan, desc = filtrar_lecturas([est('IVIEJA', hace_min=5 * 60)], [], AHORA)
         self.assertEqual(quedan, [])

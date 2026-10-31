@@ -42,7 +42,7 @@ def leer_desactivadas(ruta):
 RANGOS = {
     'temp':           (-15, 50),     # °C
     'dewpt':          (-35, 35),     # °C
-    'humidity':       (1, 100),      # % — 0 exacto es el fallo típico del sensor
+    'humidity':       (3, 100),      # % — 0-2 es el fallo típico del sensor (nunca baja tanto aquí)
     'pressure':       (900, 1070),   # hPa (algunas en altura dan la de la estación, ~940)
     'windSpeed':      (0, 150),      # km/h
     'windGust':       (0, 200),      # km/h
