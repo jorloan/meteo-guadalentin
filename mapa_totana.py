@@ -1175,6 +1175,20 @@ var precipVentana=parseFloat(llRecordado('meteo_precip_ventana','1'))||1;
 // fracción del peso — para no obligar a descargar varios MB (con la
 // consiguiente espera notable en conexiones lentas) solo por elegir la
 // ventana de 48h sin haber abierto nunca la máquina del tiempo.
+// render() llama a getPrecipVentana() (y por tanto a esto) una vez por
+// estación (~175) en el mismo repintado. Antes, mientras la descarga
+// estaba en curso, CADA estación programaba su propio setTimeout(250ms)
+// para reintentar — así que al llegar el dato se disparaban ~175
+// reintentos casi a la vez, cada uno con su propio render() completo
+// (limpiar y reconstruir ~175 marcadores + el mapa de calor con
+// turf.interpolate, ~200-300ms cada uno): ese aluvión de repintados
+// bloqueaba el hilo principal el tiempo suficiente para que el
+// navegador diera la pestaña por colgada. Ahora solo la PRIMERA llamada
+// (la que de verdad inicia el fetch) se queda con el aviso de "repinta
+// cuando llegue"; las demás, mientras esa descarga está en curso, no
+// hacen nada — ese único render() posterior ya vuelve a procesar las
+// ~175 estaciones de una vez, así que no hace falta que cada una pida
+// su propio aviso.
 var precip2dPidiendo=false;
 function datosParaPrecip(horas, tsRef, cb){
   if(horas<=24){
@@ -1184,7 +1198,7 @@ function datosParaPrecip(horas, tsRef, cb){
   }
   if(extData['2d']){ cb(extData['2d']); return; }
   if(extData['2d_precip']){ cb(extData['2d_precip']); return; }
-  if(precip2dPidiendo){ setTimeout(function(){datosParaPrecip(horas,tsRef,cb);},250); return; }
+  if(precip2dPidiendo) return;
   precip2dPidiendo=true;
   fetch('history_2d_precip.json?v='+Date.now()).then(function(r){return r.json();})
     .then(function(datos){ extData['2d_precip']=(datos&&datos.length)?sinDesactivadas(datos):[]; })
