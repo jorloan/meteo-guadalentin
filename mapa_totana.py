@@ -22,6 +22,7 @@ REPO_DIR = _repo()
 DIR_PUB  = os.path.join(REPO_DIR, 'public')
 F_H24    = os.path.join(REPO_DIR, 'history_24h.json')
 F_H2D    = os.path.join(REPO_DIR, 'history_2d.json')
+F_H2D_PRECIP = os.path.join(REPO_DIR, 'history_2d_precip.json')
 F_H7D    = os.path.join(REPO_DIR, 'history_7d.json')
 F_AGRI   = os.path.join(REPO_DIR, 'historial_agricola.json')
 F_DSV    = os.path.join(REPO_DIR, 'historial_dsv.json')
@@ -116,6 +117,26 @@ def _recortar_estacion(est):
     # Campos anulados por el filtro automático, con el motivo (panel de la estación).
     if est.get('descartado'): r['descartado'] = est['descartado']
     return r
+
+# Proyección mínima de un historial ya recortado (_recortar_estacion), con
+# solo lo que necesita el selector de ventana de precipitación del mapa
+# (1h/12h/24h/48h): stationID y metric.precipTotal. El selector solo
+# necesita esto para acumular lluvia, pero para ventanas >24h usa
+# history_2d.json (temperatura, viento, presión... de cada estación cada
+# 30 min durante 2 días), que pesa varios MB — de ahí lo de "tarda en
+# cargar lluvia" al elegir 48h sin haber abierto nunca la máquina del
+# tiempo (que sí necesita el archivo completo, para los demás parámetros).
+def _proyectar_precip(historial):
+    out = []
+    for e in historial:
+        ests = []
+        for est in (e.get('stations') or []):
+            if not est: continue
+            p = (est.get('metric') or {}).get('precipTotal')
+            if p is None: continue
+            ests.append({'stationID': est.get('stationID'), 'metric': {'precipTotal': p}})
+        out.append({'timestamp': e.get('timestamp'), 'stations': ests})
+    return out
 
 def hist24(nuevos, ahora, minutos_intervalo=15):
     h   = leer(F_H24, [])
@@ -1145,10 +1166,15 @@ var precipVentana=parseFloat(llRecordado('meteo_precip_ventana','1'))||1;
 // Si la cinta está en un periodo más largo (2 días/semana) y el momento
 // mostrado es más antiguo, se usa el dataset de ese periodo (activeData).
 // Una ventana de 48h necesita más profundidad de la que historyData
-// ofrece incluso para el momento actual, así que siempre se apoya en el
-// histórico de 2 días (30 min de resolución), compartiendo la misma
-// caché (extData) que usa el selector de periodos de la cinta, para no
-// descargarlo dos veces si el usuario ya cambió a "2 días".
+// ofrece incluso para el momento actual, así que se apoya en el
+// histórico de 2 días. Si la máquina del tiempo ya descargó el
+// history_2d.json completo (temperatura, viento, presión... de cada
+// estación, varios MB) se reutiliza sin pedir nada más. Si no, basta con
+// la lluvia: se pide history_2d_precip.json, una proyección del mismo
+// histórico con solo stationID + metric.precipTotal por estación — una
+// fracción del peso — para no obligar a descargar varios MB (con la
+// consiguiente espera notable en conexiones lentas) solo por elegir la
+// ventana de 48h sin haber abierto nunca la máquina del tiempo.
 var precip2dPidiendo=false;
 function datosParaPrecip(horas, tsRef, cb){
   if(horas<=24){
@@ -1157,12 +1183,13 @@ function datosParaPrecip(horas, tsRef, cb){
     cb(activeData); return;
   }
   if(extData['2d']){ cb(extData['2d']); return; }
+  if(extData['2d_precip']){ cb(extData['2d_precip']); return; }
   if(precip2dPidiendo){ setTimeout(function(){datosParaPrecip(horas,tsRef,cb);},250); return; }
   precip2dPidiendo=true;
-  fetch('history_2d.json?v='+Date.now()).then(function(r){return r.json();})
-    .then(function(datos){ extData['2d']=(datos&&datos.length)?sinDesactivadas(datos):[]; })
-    .catch(function(){ extData['2d']=[]; })
-    .then(function(){ precip2dPidiendo=false; cb(extData['2d']); });
+  fetch('history_2d_precip.json?v='+Date.now()).then(function(r){return r.json();})
+    .then(function(datos){ extData['2d_precip']=(datos&&datos.length)?sinDesactivadas(datos):[]; })
+    .catch(function(){ extData['2d_precip']=[]; })
+    .then(function(){ precip2dPidiendo=false; cb(extData['2d']||extData['2d_precip']); });
 }
 
 // Suma la lluvia de una estación en las `horas` anteriores al momento
@@ -1242,6 +1269,7 @@ function getPrecipVentana(sid, tsRef, horas){
     return acumularPrecip(sid, tsRef, horas, datos);
   }
   if(extData['2d']) return acumularPrecip(sid, tsRef, horas, extData['2d']);
+  if(extData['2d_precip']) return acumularPrecip(sid, tsRef, horas, extData['2d_precip']);
   datosParaPrecip(horas, tsRef, function(){ render(); }); // repinta en cuanto llegue
   return null;
 }
@@ -5105,7 +5133,8 @@ def principal():
     h24 = hist24(datos_wu, ahora)
 
     print("\n📚 Historial 2 días (resolución 30 min)...")
-    hist_extendido(datos_wu, ahora, F_H2D, horas_retencion=48, minutos_intervalo=30)
+    h2d = hist_extendido(datos_wu, ahora, F_H2D, horas_retencion=48, minutos_intervalo=30)
+    guardar(F_H2D_PRECIP, _proyectar_precip(h2d))
 
     print("\n📚 Historial 7 días (resolución 3 h)...")
     hist_extendido(datos_wu, ahora, F_H7D, horas_retencion=24*7, minutos_intervalo=180)
