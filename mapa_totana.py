@@ -1448,7 +1448,22 @@ var MG_VARS='temperature_2m,apparent_temperature,precipitation,precipitation_pro
   +'cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,wind_speed_10m,'
   +'wind_gusts_10m,wind_direction_10m,relative_humidity_2m,et0_fao_evapotranspiration,is_day';
 var MG_PLAZOS=[3,7,14];
-var pronDias=(function(){ try{ var v=+localStorage.getItem('meteo_pron_dias'); return MG_PLAZOS.indexOf(v)>=0?v:7; }catch(e){ return 7; } })();
+var pronDias=(function(){
+  var def=esMovil()?3:7;   // en el móvil caben 3 días sin deslizar
+  try{ var v=+localStorage.getItem('meteo_pron_dias'); return MG_PLAZOS.indexOf(v)>=0?v:def; }catch(e){ return def; }
+})();
+// Paneles plegados (se recuerdan). En el móvil, de entrada, ET0 y viento:
+// la pantalla es corta y lo primero es temperatura, lluvia y si se puede tratar.
+function mgPlegados(){
+  try{ var v=JSON.parse(localStorage.getItem('meteo_mg_plegados')); if(Array.isArray(v)) return v; }catch(e){}
+  return esMovil()?['et0','viento']:[];
+}
+function plegarPanel(id){
+  var l=mgPlegados(), i=l.indexOf(id);
+  if(i>=0) l.splice(i,1); else l.push(id);
+  try{ localStorage.setItem('meteo_mg_plegados',JSON.stringify(l)); }catch(e){}
+  document.querySelectorAll('.mg-panel[data-id="'+id+'"]').forEach(function(el){ el.classList.toggle('plegado',i<0); });
+}
 
 function cargarPronostico(loc,sub){
   var base='https://api.open-meteo.com/v1/forecast?latitude='+loc.latitude+'&longitude='+loc.longitude
@@ -1515,10 +1530,15 @@ function renderPronostico(dias){
   var n=Math.min(pronDias*24, h.time.length);
 
   // ── Geometría común: todos los paneles comparten el eje X ──
-  var pxh=pronDias<=3?10:(pronDias<=7?5:3.4);
-  var mL=40, mR=40, W=Math.round(mL+mR+n*pxh);
+  var mL=40, mR=40, pxh;
+  if(esMovil()){
+    // En el móvil, el ancho de la pantalla; si no cabe a 3 px por hora, se desliza.
+    var cont=document.getElementById('vp-contenido'), disp=(cont?cont.clientWidth:360)-24;
+    pxh=Math.max(3,(disp-mL-mR)/n);
+  } else pxh=pronDias<=3?10:(pronDias<=7?5:3.4);
+  var W=Math.round(mL+mR+n*pxh);
   function X(i){ return mL+i*pxh; }
-  var conHoras=pxh*6>=24;   // sitio para 06 12 18 bajo cada día
+  var conHoras=pxh*6>=22;   // sitio para 06 12 18 bajo cada día
 
   // Índice de la hora actual (línea discontinua "ahora")
   var ahoraTs=Date.now(), iAhora=-1;
@@ -1569,17 +1589,33 @@ function renderPronostico(dias){
     }
     return d;
   }
+  // Las cifras de los ejes van aparte (_ejes), en dos columnas fijas a los
+  // lados del panel (.mg-eje, position:sticky): al deslizar el gráfico de
+  // lado en el móvil, la escala sigue a la vista. En el gráfico quedan
+  // solo las líneas de la rejilla.
+  var _ejes={izq:'',der:''};
   function ejeY(vals,Y,lado,fmt,col){
     var s='';
     vals.forEach(function(v){
       var y=Y(v).toFixed(1);
-      s+='<text x="'+(lado==='izq'?mL-5:W-mR+5)+'" y="'+(+y+3.5)+'" font-size="10" fill="'+(col||'#475569')+'" text-anchor="'+(lado==='izq'?'end':'start')+'">'+fmt(v)+'</text>';
+      _ejes[lado]+='<text x="'+(lado==='izq'?mL-5:5)+'" y="'+(+y+3.5)+'" font-size="10" fill="'+(col||'#475569')+'" text-anchor="'+(lado==='izq'?'end':'start')+'">'+fmt(v)+'</text>';
       if(lado==='izq') s+='<line x1="'+mL+'" y1="'+y+'" x2="'+(W-mR)+'" y2="'+y+'" stroke="rgba(15,23,42,.07)"/>';
     });
     return s;
   }
+  // Un panel: título que lo pliega, columnas de los ejes y el gráfico.
+  function panel(id,tit,alto,cuerpo){
+    var plegado=mgPlegados().indexOf(id)>=0;
+    var r='<div class="mg-panel'+(plegado?' plegado':'')+'" data-id="'+id+'">'
+      +'<button type="button" class="mg-tit" onclick="plegarPanel(\''+id+'\')"><span class="mg-flecha">▾</span> '+tit+'</button>'
+      +'<div class="mg-cuerpo">'
+      +'<div class="mg-eje mg-eje-izq"><svg width="'+mL+'" height="'+alto+'"><rect width="'+mL+'" height="'+alto+'" fill="#fff" opacity=".92"/>'+_ejes.izq+'</svg></div>'
+      +(_ejes.der?'<div class="mg-eje mg-eje-der"><svg width="'+mR+'" height="'+alto+'"><rect width="'+mR+'" height="'+alto+'" fill="#fff" opacity=".92"/>'+_ejes.der+'</svg></div>':'')
+      +svg(alto,cuerpo)+'</div></div>';
+    _ejes={izq:'',der:''};
+    return r;
+  }
   function marco(top,alto){ return '<rect x="'+mL+'" y="'+top+'" width="'+(W-mL-mR)+'" height="'+alto+'" fill="none" stroke="#cbd5e1"/>'; }
-  function titulo(t){ return '<div class="mg-tit">'+t+'</div>'; }
   function maxDe(a){ var m=-Infinity; for(var i=0;i<n;i++) if(a&&a[i]!=null&&a[i]>m) m=a[i]; return m; }
   function minDe(a){ var m=Infinity; for(var i=0;i<n;i++) if(a&&a[i]!=null&&a[i]<m) m=a[i]; return m; }
   function pasos(lo,hi,objetivo){
@@ -1627,7 +1663,7 @@ function renderPronostico(dias){
       s+='<text x="'+X(i+0.5)+'" y="'+Math.max(cab+12,Y(T[i])-20)+'" font-size="'+(pxh>=5?14:11)+'" text-anchor="middle">'+ic+'</text>';
     }
     s+=marco(cab,alto)+ejeX(cab+alto+13);
-    paneles+=titulo('🌡 Temperatura (°C)')+svg(AH,s);
+    paneles+=panel('temp','🌡 Temperatura (°C)',AH,s);
   })();
 
   // ── 2. Precipitación, probabilidad y nubes ────────────────
@@ -1646,7 +1682,7 @@ function renderPronostico(dias){
       }
     });
     s+='<line x1="'+mL+'" y1="'+y0+'" x2="'+(W-mR)+'" y2="'+y0+'" stroke="#cbd5e1"/>';
-    s+='<text x="'+(mL-5)+'" y="'+(top+filaN-1)+'" font-size="8" fill="#64748b" text-anchor="end">alta</text>'
+    _ejes.izq+='<text x="'+(mL-5)+'" y="'+(top+filaN-1)+'" font-size="8" fill="#64748b" text-anchor="end">alta</text>'
       +'<text x="'+(mL-5)+'" y="'+(top+3*filaN-1)+'" font-size="8" fill="#64748b" text-anchor="end">baja</text>';
     s+=ejeY(pasos(0,pMax,4),Y,'izq',function(v){return v;});
     s+=ejeY([0,50,100],Yp,'der',function(v){return v+'%';},'#9333ea');
@@ -1663,7 +1699,7 @@ function renderPronostico(dias){
       s+='<text x="'+((X(dd.i0)+X(dd.i1+1))/2)+'" y="'+(y0+14)+'" font-size="11" font-weight="700" fill="'+(t>=0.1?'#1d4ed8':'#94a3b8')+'" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">'+t.toFixed(1)+'</text>';
     });
     s+=marco(top,nubes+alto)+ejeX(top+nubes+alto+13);
-    paneles+=titulo('🌧 Precipitación (mm/h) · <span style="color:#9333ea">probabilidad (%)</span> · nubes por alturas · <span style="color:#1d4ed8">total del día</span>')+svg(AH,s);
+    paneles+=panel('lluvia','🌧 Precipitación (mm/h) · <span style="color:#9333ea">probabilidad (%)</span> · nubes por alturas · <span style="color:#1d4ed8">total del día</span>',AH,s);
   })();
 
   // ── 3. Condiciones para pulverizar ────────────────────────
@@ -1676,9 +1712,8 @@ function renderPronostico(dias){
     for(var i=0;i<n;i++) if(+h.time[i].slice(11,13)===0) s+='<line x1="'+X(i)+'" y1="0" x2="'+X(i)+'" y2="'+alto+'" stroke="#fff" stroke-width="1.5"/>';
     if(iAhora>=0) s+='<line x1="'+X(iAhora+0.5)+'" y1="0" x2="'+X(iAhora+0.5)+'" y2="'+alto+'" stroke="#0f172a" stroke-width="1.2" stroke-dasharray="4,3"/>';
     s+=marco(0,alto)+ejeX(alto+13);
-    paneles+=titulo('🚜 Condiciones para pulverizar '
-      +MG_PULV_TXT.map(function(t,k){return '<span class="mg-ley"><i style="background:'+MG_PULV_COL[k]+'"></i>'+t+'</span>';}).join(''))
-      +svg(AH,s);
+    paneles+=panel('tratar','🚜 Condiciones para pulverizar '
+      +MG_PULV_TXT.map(function(t,k){return '<span class="mg-ley"><i style="background:'+MG_PULV_COL[k]+'"></i>'+t+'</span>';}).join(''),AH,s);
   })();
 
   // ── 4. Evapotranspiración (ET0) y humedad ──────────────────
@@ -1701,7 +1736,7 @@ function renderPronostico(dias){
       s+='<text x="'+((X(dd.i0)+X(dd.i1+1))/2)+'" y="'+(top+13)+'" font-size="11" font-weight="700" fill="#4d7c0f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">'+t.toFixed(1)+'</text>';
     });
     s+=marco(top,alto)+ejeX(top+alto+13);
-    paneles+=titulo('<span style="color:#4d7c0f">💧 ET0 FAO (mm/h, total del día arriba)</span> · <span style="color:#2563eb">humedad relativa (%)</span>')+svg(AH,s);
+    paneles+=panel('et0','<span style="color:#4d7c0f">💧 ET0 FAO (mm/h, total del día arriba)</span> · <span style="color:#2563eb">humedad relativa (%)</span>',AH,s);
   })();
 
   // ── 5. Viento ──────────────────────────────────────────────
@@ -1721,7 +1756,7 @@ function renderPronostico(dias){
       s+='<g transform="translate('+cx.toFixed(1)+','+cy+') rotate('+((D[i]+180)%360)+')"><path d="M0,-7 L3.5,2 L0,0 L-3.5,2 Z M0,0 L0,7" fill="#0f172a" stroke="#0f172a" stroke-width="1.2"/></g>';
     }
     s+=marco(top,alto)+ejeX(top+alto+13);
-    paneles+=titulo('<span style="color:#2563eb">💨 Viento (km/h)</span> · <span style="color:#0d9488">rachas</span> · flechas: hacia dónde sopla')+svg(AH,s);
+    paneles+=panel('viento','<span style="color:#2563eb">💨 Viento (km/h)</span> · <span style="color:#0d9488">rachas</span> · flechas: hacia dónde sopla',AH,s);
   })();
 
   // ── 6. Comparativa de modelos ──────────────────────────────
@@ -1739,7 +1774,7 @@ function renderPronostico(dias){
         var d=serie(a,Y); if(d) s+='<path d="'+d+'" fill="none" stroke="'+COL_MODELO[m.id]+'" stroke-width="'+(m.estrella?2.2:1.5)+'"/>';
       });
       s+=marco(top,alto)+ejeX(top+alto+13);
-      comparativa+=titulo('🌡 Temperatura según cada modelo')+svg(AH,s);
+      comparativa+=panel('mod-temp','🌡 Temperatura según cada modelo',AH,s);
 
       // Lluvia acumulada desde el inicio: se ve cuánto y cuándo llueve en cada modelo
       var acum={}, pMax=1;
@@ -1757,7 +1792,7 @@ function renderPronostico(dias){
         var d=serie(acum[m.id],Yl); if(d) s2+='<path d="'+d+'" fill="none" stroke="'+COL_MODELO[m.id]+'" stroke-width="'+(m.estrella?2.2:1.5)+'"/>';
       });
       s2+=marco(top,alto)+ejeX(top+alto+13);
-      comparativa+=titulo('🌧 Lluvia acumulada según cada modelo (mm)')+svg(AH,s2);
+      comparativa+=panel('mod-lluvia','🌧 Lluvia acumulada según cada modelo (mm)',AH,s2);
     })();
   }
 
@@ -1773,7 +1808,7 @@ function renderPronostico(dias){
     +'<div class="mg-plazos">'+MG_PLAZOS.map(function(d){
       return '<button type="button" class="fc-tab'+(d===pronDias?' active':'')+'" onclick="renderPronostico('+d+')">'+d+' días</button>';
     }).join('')+'</div></div>'
-    +'<div class="mg-ayuda">Pasa el dedo o el ratón por el gráfico para ver los datos de cada hora. La franja clara es de día y la línea discontinua, la hora actual.</div>'
+    +'<div class="mg-ayuda">Pasa el dedo o el ratón por el gráfico para ver los datos de cada hora'+(W>((document.getElementById('vp-contenido')||{}).clientWidth||9999)?' y deslízalo de lado para ver más días':'')+'. La franja clara es de día y la línea discontinua, la hora actual. Toca un título para plegar o abrir su gráfico.</div>'
     +'<div class="mg-caja"><div class="mg-scroll"><div class="mg-inner" id="mg-inner" style="width:'+W+'px">'
     +paneles
     +'<div class="mg-cursor" id="mg-cursor"></div><div class="mg-tip" id="mg-tip"></div>'
@@ -1786,8 +1821,20 @@ function renderPronostico(dias){
 
   pintarVistaPronostico(html);
   mgActivarCursor(n,pxh,mL,W);
+  mgColocarEjes(mR);
   inicializarMapaPronostico(loc);
 }
+
+// La columna del eje derecho se fija al borde visible del gráfico: su
+// posición sticky depende del ancho del recuadro, que solo se sabe ya pintado.
+var _mgR=40;
+function mgColocarEjes(mR){
+  if(mR) _mgR=mR;
+  document.querySelectorAll('#vp .mg-scroll').forEach(function(sc){
+    var inner=sc.querySelector('.mg-inner'); if(inner) inner.style.setProperty('--mg-der',(sc.clientWidth-_mgR)+'px');
+  });
+}
+window.addEventListener('resize',function(){ mgColocarEjes(); });
 
 // Cursor vertical común a todos los paneles + cuadro con los datos de esa hora.
 function mgActivarCursor(n,pxh,mL,W){
@@ -1796,6 +1843,7 @@ function mgActivarCursor(n,pxh,mL,W){
   var h=pronData.h, mod=pronData.mod;
   function fmt(v,d,u){ return v==null?'—':(+v).toFixed(d)+u; }
   function mover(ev){
+    if(ev.target&&ev.target.closest&&ev.target.closest('.mg-tit')) return;
     var r=inner.getBoundingClientRect();
     var x=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left;
     var i=Math.floor((x-mL)/pxh);
@@ -4200,7 +4248,22 @@ HTML_BASE = """<!DOCTYPE html>
     .mg-caja{background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(15,23,42,.08);padding:8px 0 4px;margin-bottom:16px}
     .mg-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
     .mg-inner{position:relative;margin:0 auto}
-    .mg-tit{font-size:.72rem;font-weight:700;color:#334155;padding:8px 0 2px 40px;position:sticky;left:0;width:max-content}
+    .mg-tit{font-size:.72rem;font-weight:700;color:#334155;padding:8px 8px 4px 12px;position:sticky;left:0;width:max-content;
+      max-width:calc(100vw - 40px);background:none;border:none;font-family:inherit;text-align:left;cursor:pointer;display:block;line-height:1.5}
+    .mg-flecha{display:inline-block;transition:transform .15s;color:#64748b}
+    .mg-panel.plegado .mg-flecha{transform:rotate(-90deg)}
+    .mg-panel.plegado .mg-cuerpo{display:none}
+    .mg-panel.plegado{border-bottom:1px solid rgba(15,23,42,.06)}
+    .mg-cuerpo{position:relative}
+    .mg-eje{position:sticky;left:0;width:40px;height:0;z-index:2;pointer-events:none}
+    .mg-eje svg{position:absolute;top:0;left:0;display:block}
+    .mg-eje-der{left:var(--mg-der,0px)}
+    @media(max-width:768px){
+      .mg-tit{font-size:.82rem;padding:10px 8px 4px 10px}
+      #vp-contenido{padding:12px 12px 30px}
+      .mg-cabecera>div:first-child>div:first-child{font-size:20px!important}
+      .fc-tab{min-height:40px;padding:0 14px;font-size:.85rem}
+    }
     .mg-ley{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:600;color:#475569;margin-left:10px}
     .mg-ley i{display:inline-block;width:11px;height:11px;border-radius:3px}
     .mg-leyendas{margin:0 0 8px -10px}
