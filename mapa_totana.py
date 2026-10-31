@@ -1170,35 +1170,61 @@ function datosParaPrecip(horas, tsRef, cb){
 // (ver datosParaPrecip). No es asíncrona: si el dataset con suficiente
 // profundidad aún no ha llegado, devuelve null y el llamante repinta
 // cuando datosParaPrecip complete su callback.
-function acumularPrecip(sid, tsRef, horas, datos){
-  if(!datos || !datos.length) return null;
-  var refT=new Date(tsRef).getTime();
+//
+// render() llama a esto UNA VEZ POR ESTACIÓN (~175) para pintar la capa
+// de precipitación, y las llamadas comparten exactamente el mismo
+// (datos, tsRef, horas) — vienen del mismo snap.timestamp. La versión
+// original recorría el histórico entero buscando esa única estación en
+// cada llamada (búsqueda lineal por snapshot, encima), así que acababa
+// repitiendo ese mismo barrido completo una vez por estación: con la
+// máquina del tiempo ya cargada eso son varios millones de iteraciones
+// en un solo repintado, y es la causa de que cambiar a "Lluvia" se
+// notara mucho más lento que a Temperatura (que es O(1) por estación:
+// solo lee m.temp). calcularPrecipTodas() hace esa pasada una sola vez
+// para todas las estaciones a la vez, cacheada por esa misma clave
+// (datos, tsRef, horas), y acumularPrecip() pasa a ser una simple
+// consulta a ese resultado ya calculado.
+var _precipCache={datos:null, tsRef:null, horas:null, mapa:null};
+function calcularPrecipTodas(datos, refT, horas){
+  if(_precipCache.datos===datos && _precipCache.tsRef===refT && _precipCache.horas===horas){
+    return _precipCache.mapa;
+  }
   var inicioT=refT-horas*3600*1000;
-  var serie=[];
+  var series={}; // stationID -> [{t,p}], una sola pasada por todo "datos"
   for(var i=0;i<datos.length;i++){
     var snap=datos[i];
     var t=new Date(snap.timestamp).getTime();
     if(t>refT) break;
     var ests=snap.stations||[];
     for(var j=0;j<ests.length;j++){
-      if(ests[j] && ests[j].stationID===sid){
-        var p=ests[j].metric&&ests[j].metric.precipTotal!=null?ests[j].metric.precipTotal:null;
-        if(p!=null) serie.push({t:t,p:p});
-        break;
-      }
+      var e=ests[j]; if(!e) continue;
+      var p=e.metric&&e.metric.precipTotal!=null?e.metric.precipTotal:null;
+      if(p==null) continue;
+      (series[e.stationID]=series[e.stationID]||[]).push({t:t,p:p});
     }
   }
-  if(!serie.length) return null;
-  var desde=0;
-  for(var k=serie.length-1;k>=0;k--){ if(serie[k].t<inicioT){ desde=k; break; } }
-  var ventana=serie.slice(desde);
-  if(ventana.length<2) return Math.round(ventana[0].p*10)/10; // aún sin margen para calcular un incremento
-  var suma=0;
-  for(var m=1;m<ventana.length;m++){
-    var delta=ventana[m].p-ventana[m-1].p;
-    suma += delta>=0 ? delta : ventana[m].p; // valor menor que el anterior = reinicio de medianoche
+  var mapa={};
+  for(var sid in series){
+    var serie=series[sid];
+    var desde=0;
+    for(var k=serie.length-1;k>=0;k--){ if(serie[k].t<inicioT){ desde=k; break; } }
+    var ventana=serie.slice(desde);
+    if(ventana.length<2){ mapa[sid]=Math.round(ventana[0].p*10)/10; continue; } // sin margen para un incremento
+    var suma=0;
+    for(var m=1;m<ventana.length;m++){
+      var delta=ventana[m].p-ventana[m-1].p;
+      suma += delta>=0 ? delta : ventana[m].p; // valor menor que el anterior = reinicio de medianoche
+    }
+    mapa[sid]=Math.round(suma*10)/10;
   }
-  return Math.round(suma*10)/10;
+  _precipCache={datos:datos, tsRef:refT, horas:horas, mapa:mapa};
+  return mapa;
+}
+function acumularPrecip(sid, tsRef, horas, datos){
+  if(!datos || !datos.length) return null;
+  var refT=new Date(tsRef).getTime();
+  var mapa=calcularPrecipTodas(datos, refT, horas);
+  return Object.prototype.hasOwnProperty.call(mapa,sid) ? mapa[sid] : null;
 }
 
 // Punto de entrada usado por raw()/panel de estación: mantiene la firma
@@ -1398,7 +1424,9 @@ function graficoEstacion12h(sid){
 // ── Panel lateral fijo ─────────────────────────────────────
 var PS=null;
 function showPanel(sid,html,titulo){
-  document.getElementById('dc').innerHTML=html;
+  // La gráfica de 12h se añade aquí, al mostrar el panel, no antes: ver
+  // el comentario en el punto donde se construye "fh" para el motivo.
+  document.getElementById('dc').innerHTML=html+graficoEstacion12h(sid);
   document.getElementById('dh-title').textContent=titulo||'Detalle de estación';
   document.getElementById('dp').style.display='flex';
   PS=sid;
@@ -2782,8 +2810,15 @@ function render(){
     }
 
     var fh='<div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:4px;">'+nm+'</div>'
-      +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+est.stationID+'</div>'+ph
-      +graficoEstacion12h(est.stationID);
+      +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+est.stationID+'</div>'+ph;
+    // graficoEstacion12h(est.stationID) NO se añade aquí: este bloque se
+    // ejecuta para las ~175 estaciones en CADA repintado del mapa
+    // (cualquier parámetro, no solo al pinchar), así que construirla ya
+    // para todas —doce llamadas a acumularPrecip por estación, cada una
+    // con una hora de referencia distinta— multiplicaba por 175 un
+    // trabajo que como mucho se ve una vez (la del panel abierto). Medido:
+    // ~1,4 s de un cambio de parámetro de ~1,8 s. Se añade al vuelo en
+    // showPanel(), solo para la estación realmente pinchada.
 
     (function(id,h){mk.on('click',function(){showPanel(id,h);});})(est.stationID,fh);
     mk.bindTooltip('<b>'+nm+'</b>'+(estiado?' ⏱':''),{direction:'top',offset:[0,-16],opacity:0.9});
@@ -3970,7 +4005,12 @@ function actualizarVisibilidadTM(){
   // abre a mano (botón «📅 Días anteriores»): siempre abierta tapaba medio
   // mapa en el móvil.
   var on=tmVisible;
-  if(bar) bar.style.display=on?'':'none';
+  // 'flex' explícito, no '': el CSS de #tm-bar pasa a arrancar en
+  // display:none (ver ese bloque) para que no haya ni un parpadeo visible
+  // al cargar antes de que este script llegue a ejecutarse — con el CSS
+  // en 'none' por defecto, un '' aquí heredaría ese 'none' en vez de
+  // recuperar el layout en flex.
+  if(bar) bar.style.display=on?'flex':'none';
   var bd=document.getElementById('rg-dias'); if(bd) bd.classList.toggle('active',on);
   // La leyenda (y el zoom) van pegados abajo del todo; solo suben para
   // dejar hueco cuando la cinta de tiempo está a la vista.
@@ -4228,12 +4268,17 @@ HTML_BASE = """<!DOCTYPE html>
 
     /* ── Máquina del tiempo (formato tipo radarspain.es) ───────── */
     #tm-bar{
+      /* Oculta por defecto en el propio CSS (no solo por JS): así no
+         hay parpadeo al cargar la página, ni riesgo de que se quede
+         visible si algo falla antes de que actualizarVisibilidadTM()
+         llegue a ejecutarse. JS la muestra (display:flex) solo al
+         activar el toggle o al entrar en riesgos con filtro por días. */
       position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:999;
       width:min(720px,94vw);
       background:rgba(13,17,23,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
       border:1px solid rgba(255,255,255,0.09);border-radius:16px;
       box-shadow:0 8px 32px rgba(0,0,0,.5);
-      padding:10px 14px 12px;display:flex;flex-direction:column;gap:7px;
+      padding:10px 14px 12px;display:none;flex-direction:column;gap:7px;
     }
     #tm-row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .tm-play{
