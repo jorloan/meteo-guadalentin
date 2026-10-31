@@ -1,0 +1,13 @@
+# Estaciones desactivadas a mano: las que están dando datos erróneos.
+#
+# Una por línea: el ID de WU y, detrás de un #, el motivo y la fecha.
+# En la siguiente actualización (cada 5 min) deja de descargarse y el mapa
+# la quita también de la máquina del tiempo, la lluvia acumulada y el
+# riesgo de oídio/mildiu. Los históricos no se borran: para reactivarla,
+# quita su línea (o ponle un # delante) y vuelve con todo su historial.
+#
+# Antes de desactivar una, mira filtro_estaciones.json: ahí sale lo que el
+# filtro automático le ha ido descartando en los últimos 7 días.
+#
+# Ejemplo:
+# ILORCA45   # 31-10-2026: temperatura 10 °C por encima de las vecinas

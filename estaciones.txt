@@ -220,3 +220,27 @@ ICARAV6     # Caravaca de la Cruz
 # se ha encontrado ninguna estación WU real (búsquedas repetidas, todas
 # "No PWS"). Solo Albox tiene una confirmada. Mismo aviso de arriba.
 IALMERIA1   # Albox
+
+# Alhama de Murcia, petición del usuario (31-10-2026, comprobada con datos).
+IALHAM35
+# Huecos del mapa (31-10-2026): rejilla de ~5 km sobre la Región de Murcia y
+# su borde, puntos a más de 10 km de cualquier estación con datos, y para
+# cada uno las estaciones WU cercanas activas (qcStatus 1, actualizadas en
+# las últimas 2 h) a más de 6 km de las que ya había; todas comprobadas con
+# una lectura real y el filtro automático. De cada pareja en el mismo sitio
+# (Orihuela/Jacarilla, Elda/Monòver, Cehegín ×2) solo una. IMORAT91 no daba
+# datos. IHELLN10 marca humedad 1 % (sensor roto: el filtro la anula) pero
+# su temperatura y su lluvia tapan un hueco de 36 km en Hellín.
+IYESTE5
+IHELLN10
+ICOMUNID154
+IELDA33
+IORIHU66
+IOLULA9
+IYECLA66
+ICEHER7
+IMORAT75
+IBULLA79
+ICREVI1
+IGUILA23
+IALGUE13

@@ -44,6 +44,14 @@ if not os.path.exists(F_EST):
 
 ESTACIONES = [l.split('#')[0].strip() for l in open(F_EST) if l.split('#')[0].strip()]
 
+# Estaciones que fallan, apagadas a mano (ver filtro_estaciones.py): no se
+# descargan y el mapa las quita también de los históricos ya guardados.
+from filtro_estaciones import leer_desactivadas, filtrar_lecturas, anotar_descartes
+F_DESACT = os.path.join(BASE_DIR, 'estaciones_desactivadas.txt')
+F_FILTRO = os.path.join(REPO_DIR, 'filtro_estaciones.json')
+DESACTIVADAS = leer_desactivadas(F_DESACT)
+ESTACIONES = [e for e in ESTACIONES if e.upper() not in DESACTIVADAS]
+
 # ── Utilidades ────────────────────────────────────────────────
 def leer(ruta, default):
     if os.path.exists(ruta):
@@ -86,7 +94,7 @@ def wu(sid):
 def _recortar_estacion(est):
     if not est: return est
     m = est.get('metric') or {}
-    return {
+    r = {
         'stationID': est.get('stationID'),
         'lat': est.get('lat'), 'lon': est.get('lon'),
         'neighborhood': est.get('neighborhood'),
@@ -103,6 +111,9 @@ def _recortar_estacion(est):
             'windGust': m.get('windGust'), 'precipTotal': m.get('precipTotal'),
         },
     }
+    # Campos anulados por el filtro automático, con el motivo (panel de la estación).
+    if est.get('descartado'): r['descartado'] = est['descartado']
+    return r
 
 def hist24(nuevos, ahora, minutos_intervalo=15):
     h   = leer(F_H24, [])
@@ -750,9 +761,13 @@ def generar_html(historial, riesgo_data, ahora, dias_acum):
     # descarga aparte (fetch) justo después de cargar la página. Sin esto,
     # con el cron ahora disparando cada 5 min de verdad, history_24h.json
     # llega a ~25MB/día y se embebía entero dentro del HTML.
+    semilla = [{**s, 'stations': [e for e in (s.get('stations') or [])
+                                  if e and (e.get('stationID') or '').upper() not in DESACTIVADAS]}
+               for s in historial[-1:]]
     js = ("var NOMBRES="+json.dumps(NOMBRES, ensure_ascii=False)+";\n"
+         +"var DESACTIVADAS="+json.dumps(sorted(DESACTIVADAS))+";\n"
          +"var WEBCAMS_DATA="+json.dumps(WEBCAMS, ensure_ascii=False)+";\n"
-         +"var historyData="+json.dumps(historial[-1:], ensure_ascii=False)+";\n"
+         +"var historyData="+json.dumps(semilla, ensure_ascii=False)+";\n"
          +"var riesgoData="+json.dumps(riesgo_data, ensure_ascii=False)+";\n"
          +"var riesgoHistData={};\n"
          +"var AVISO_DIAS="+json.dumps(aviso_dias)+";\n"
@@ -768,6 +783,26 @@ def generar_html(historial, riesgo_data, ahora, dias_acum):
     return ruta_pub
 
 JS_LOGICA = r"""
+// Estaciones desactivadas a mano (estaciones_desactivadas.txt): ya no se
+// descargan, pero los históricos guardados aún traen sus lecturas de antes.
+// Se quitan al cargarlos, sin tocar los archivos: al reactivarla vuelve todo.
+var _DESACT={}; DESACTIVADAS.forEach(function(s){_DESACT[s]=1;});
+function esDesactivada(sid){ return !!(sid && _DESACT[String(sid).toUpperCase()]); }
+function sinDesactivadas(snaps){
+  if(!DESACTIVADAS.length || !snaps || !snaps.map) return snaps;
+  return snaps.map(function(s){
+    if(!s || !s.stations) return s;
+    var c={}; for(var k in s) c[k]=s[k];
+    c.stations=s.stations.filter(function(e){ return e && !esDesactivada(e.stationID); });
+    return c;
+  });
+}
+function riesgoSinDesactivadas(d){        // {fecha: {stationID: {...}}}
+  if(!DESACTIVADAS.length || !d) return d;
+  var r={};
+  for(var f in d){ r[f]={}; for(var sid in d[f]) if(!esDesactivada(sid)) r[f][sid]=d[f][sid]; }
+  return r;
+}
 var RC=['#27ae60','#f39c12','#e67e22','#c0392b'];
 var RL=['Sin riesgo','Riesgo bajo','Riesgo medio','Riesgo ALTO'];
 var CI=historyData.length-1;
@@ -1016,7 +1051,7 @@ function datosParaPrecip(horas, tsRef, cb){
   if(precip2dPidiendo){ setTimeout(function(){datosParaPrecip(horas,tsRef,cb);},250); return; }
   precip2dPidiendo=true;
   fetch('history_2d.json?v='+Date.now()).then(function(r){return r.json();})
-    .then(function(datos){ extData['2d']=(datos&&datos.length)?datos:[]; })
+    .then(function(datos){ extData['2d']=(datos&&datos.length)?sinDesactivadas(datos):[]; })
     .catch(function(){ extData['2d']=[]; })
     .then(function(){ precip2dPidiendo=false; cb(extData['2d']); });
 }
@@ -1082,6 +1117,7 @@ function raw(est,p,tsRef){
   if(p==='precip'){
     var acum=getPrecipVentana(est.stationID, tsRef||new Date(), precipVentana);
     if(acum!=null) return acum;
+    if(est.descartado && est.descartado.precipTotal) return null;  // anulada por el filtro: no es 0 mm
     return precipVentana<=24 && m.precipTotal!=null ? m.precipTotal : 0;
   }
   if(p==='temp')     return m.temp;
@@ -1327,10 +1363,6 @@ function mostrarVistaPronostico(){
     if(i) i.focus();
   },50);
 }
-function mostrarVistaMapa(){
-  document.getElementById('vp').classList.remove('open');
-  actualizarPronBtn(null);
-}
 
 // Recuerda la última población consultada (localStorage, por navegador)
 // para que al volver a abrir el pronóstico no haga falta buscarla de nuevo.
@@ -1395,179 +1427,404 @@ function seleccionarPoblacion(loc){
   cargarPronostico(loc,sub);
 }
 
+var MESES_LARGO=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+var DIAS_LARGO=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+// ── Meteograma de varios días ───────────────────────────────
+// Sustituye a las tarjetas por día: un eje de tiempo continuo, hora a
+// hora, con varios paneles alineados (temperatura, lluvia y nubes,
+// condiciones para pulverizar, ET0 y humedad, viento), para ver cómo
+// evoluciona el tiempo a lo largo de los días en vez de leer etiquetas
+// sueltas. Debajo, la comparativa de modelos sobre el mismo eje.
+// El meteograma usa el modelo "best_match" de Open-Meteo (elige para el
+// sitio el de más resolución: AROME/ICON los primeros días, luego
+// ECMWF/GFS), que además da probabilidad de lluvia, nubes por alturas y
+// ET0, que no da ningún modelo suelto.
+var MG_VARS='temperature_2m,apparent_temperature,precipitation,precipitation_probability,'
+  +'cloud_cover_low,cloud_cover_mid,cloud_cover_high,weather_code,wind_speed_10m,'
+  +'wind_gusts_10m,wind_direction_10m,relative_humidity_2m,et0_fao_evapotranspiration,is_day';
+var MG_PLAZOS=[3,7,14];
+var pronDias=(function(){ try{ var v=+localStorage.getItem('meteo_pron_dias'); return MG_PLAZOS.indexOf(v)>=0?v:7; }catch(e){ return 7; } })();
+
 function cargarPronostico(loc,sub){
-  var vars='weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max';
+  var base='https://api.open-meteo.com/v1/forecast?latitude='+loc.latitude+'&longitude='+loc.longitude
+    +'&forecast_days=16&timezone=auto';
   var models=MODELOS_PRON.map(function(m){return m.id;}).join(',');
-  var url='https://api.open-meteo.com/v1/forecast?latitude='+loc.latitude+'&longitude='+loc.longitude
-    +'&daily='+vars+'&models='+models+'&forecast_days=16&timezone=auto';
-  fetch(url).then(function(r){return r.json();}).then(function(d){
-    if(!d||!d.daily) throw new Error('sin datos');
-    pronData={loc:loc,sub:sub,daily:d.daily};
-    renderPronostico(5);
-  }).catch(function(){
-    pintarVistaPronostico('<div style="text-align:center;color:#999;font-size:13px;line-height:1.7;padding:60px 10px;">⚠ No se pudo obtener el pronóstico para esta ubicación.</div>');
+  function json(r){ return r.json(); }
+  Promise.all([
+    fetch(base+'&hourly='+MG_VARS).then(json),
+    // La comparativa es un extra: si falla, el meteograma sale igual.
+    fetch(base+'&hourly=temperature_2m,precipitation&models='+models).then(json).catch(function(){ return null; })
+  ]).then(function(r){
+    var d=r[0];
+    if(!d||!d.hourly||!d.hourly.time) throw new Error((d&&d.reason)||'sin datos');
+    pronData={loc:loc,sub:sub,h:d.hourly,elev:d.elevation,mod:(r[1]&&r[1].hourly)||null};
+    renderPronostico();
+  }).catch(function(e){
+    pintarVistaPronostico('<div style="text-align:center;color:#999;font-size:13px;line-height:1.7;padding:60px 10px;">'
+      +'⚠ No se pudo obtener el pronóstico para esta ubicación.'
+      +(e&&/limit/i.test(e.message)?'<br><small>Open-Meteo: límite de consultas superado, prueba más tarde.</small>':'')+'</div>');
   });
 }
 
-function valModelo(daily,campo,modelo,i){
-  var arr=daily[campo+'_'+modelo];
-  if(!arr) return null;
-  var v=arr[i];
-  return (v===undefined)?null:v;
+function mgIcono(code,dia){
+  if(code==null) return '';
+  if(!dia){
+    if(code<=1) return '🌙';
+    if(code===2) return '☁️';
+  }
+  return wxInfo(code).ic;
 }
 
-// Etiqueta corta "5/9" a partir de la fecha, para el eje X de los gráficos
-function fmtEjeX(iso){ return fmtDiaCorto(iso).split(' ')[1]; }
+// Color de la temperatura (relleno bajo la curva), de frío a calor.
+var MG_ESCALA_T=[[-5,'#6d28d9'],[0,'#2563eb'],[5,'#0ea5e9'],[10,'#14b8a6'],[15,'#22c55e'],
+  [20,'#a3e635'],[25,'#facc15'],[30,'#f97316'],[35,'#dc2626'],[40,'#7f1d1d']];
 
-// Construye el <path> de una serie, cortando el trazo cuando faltan datos
-// (para que un modelo de corto alcance -p.ej. AROME- no dibuje una línea
-// recta hasta cero al acabarse sus días).
-function trazarSerie(daily,campo,modeloId,n,xAt,yAt){
-  var d='',enCurso=false;
-  for(var i=0;i<n;i++){
-    var v=valModelo(daily,campo,modeloId,i);
-    if(v==null){enCurso=false;continue;}
-    d+=(enCurso?'L':'M')+xAt(i).toFixed(1)+','+yAt(v).toFixed(1)+' ';
-    enCurso=true;
-  }
-  return d;
+// Condiciones para pulverizar, hora a hora. Criterios habituales de las
+// guías de aplicación de fitosanitarios: sin lluvia que lave el caldo
+// (ni en las 2 h siguientes), viento entre 2 y 12 km/h (más, deriva;
+// casi en calma, posible inversión térmica), sin calor ni aire seco que
+// evaporen la gota.
+function mgPulverizar(h,i){
+  var pr=h.precipitation[i]||0, pp=h.precipitation_probability?h.precipitation_probability[i]:null;
+  var v=h.wind_speed_10m[i], r=h.wind_gusts_10m?h.wind_gusts_10m[i]:null;
+  var t=h.temperature_2m[i], hr=h.relative_humidity_2m[i];
+  var prox=(h.precipitation[i+1]||0)+(h.precipitation[i+2]||0);
+  var malo=[],regular=[];
+  if(pr>=0.2) malo.push('lluvia'); else if(pr>0||prox>0) regular.push('lluvia cerca');
+  if(pp!=null){ if(pp>=60) malo.push('prob. lluvia '+pp+'%'); else if(pp>=30) regular.push('prob. lluvia '+pp+'%'); }
+  if(v!=null){ if(v>=18) malo.push('viento '+Math.round(v)+' km/h'); else if(v>=12) regular.push('viento '+Math.round(v)+' km/h'); else if(v<2) regular.push('calma (inversión)'); }
+  if(r!=null && r>=30) malo.push('rachas '+Math.round(r)+' km/h');
+  if(t!=null){ if(t>=30) malo.push(Math.round(t)+' °C'); else if(t>=25) regular.push(Math.round(t)+' °C'); else if(t<5) regular.push(Math.round(t)+' °C'); }
+  if(hr!=null){ if(hr<35) malo.push('HR '+hr+'%'); else if(hr<50) regular.push('HR '+hr+'%'); }
+  if(malo.length) return {n:2,txt:malo.concat(regular).join(', ')};
+  if(regular.length) return {n:1,txt:regular.join(', ')};
+  return {n:0,txt:'adecuado'};
 }
+var MG_PULV_COL=['#4ade80','#facc15','#ef4444'];
+var MG_PULV_TXT=['Adecuado','Regular','Inadecuado'];
 
-function construirGraficoTemp(daily,tiempos,n){
-  var W=272,H=140,mL=24,mR=6,mT=10,mB=16;
-  var pw=W-mL-mR,ph=H-mT-mB;
-
-  var vals=[];
-  MODELOS_PRON.forEach(function(m){
-    for(var i=0;i<n;i++){
-      var vx=valModelo(daily,'temperature_2m_max',m.id,i); if(vx!=null) vals.push(vx);
-      var vn=valModelo(daily,'temperature_2m_min',m.id,i); if(vn!=null) vals.push(vn);
-    }
-  });
-  if(!vals.length) return '';
-  var vMin=Math.min.apply(null,vals)-2,vMax=Math.max.apply(null,vals)+2;
-  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
-  function yAt(v){ return mT+ph-((v-vMin)/(vMax-vMin))*ph; }
-
-  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
-  [vMin,(vMin+vMax)/2,vMax].forEach(function(v){
-    var y=yAt(v);
-    svg+='<line x1="'+mL+'" y1="'+y.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(15,23,42,0.08)"/>';
-    svg+='<text x="1" y="'+(y+3).toFixed(1)+'" font-size="8" fill="#64748b">'+Math.round(v)+'°</text>';
-  });
-  MODELOS_PRON.forEach(function(m){
-    var col=COL_MODELO[m.id];
-    var dMax=trazarSerie(daily,'temperature_2m_max',m.id,n,xAt,yAt);
-    if(dMax) svg+='<path d="'+dMax+'" fill="none" stroke="'+col+'" stroke-width="2"/>';
-    var dMin=trazarSerie(daily,'temperature_2m_min',m.id,n,xAt,yAt);
-    if(dMin) svg+='<path d="'+dMin+'" fill="none" stroke="'+col+'" stroke-width="1.2" stroke-dasharray="3,2" opacity="0.55"/>';
-  });
-  for(var i=0;i<n;i++){
-    var vRef=valModelo(daily,'temperature_2m_max',MODELOS_PRON[0].id,i);
-    if(vRef==null) continue;
-    svg+='<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(vRef).toFixed(1)+'" r="3.5" fill="'+COL_MODELO[MODELOS_PRON[0].id]+'" stroke="#fff" stroke-width="1" style="cursor:pointer" onclick="abrirDetalleDia(\''+tiempos[i]+'\')"><title>Ver detalle del '+fmtEjeX(tiempos[i])+'</title></circle>';
-  }
-  var paso=n>8?3:1;
-  for(var i=0;i<n;i+=paso){
-    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#64748b" text-anchor="middle">'+fmtEjeX(tiempos[i])+'</text>';
-  }
-  svg+='</svg>';
-
-  var leyenda='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:2px;">'
-    +MODELOS_PRON.map(function(m){
-      return '<span style="font-size:9px;color:#64748b;display:inline-flex;align-items:center;gap:3px;">'
-        +'<span style="width:8px;height:8px;border-radius:2px;background:'+COL_MODELO[m.id]+';display:inline-block;"></span>'+m.nombre+'</span>';
-    }).join('')
-    +'</div>';
-
-  return '<div style="background:#f8f8f8;border-radius:8px;padding:8px 6px 4px;margin-bottom:10px;">'
-    +'<div style="font-size:10px;color:#888;margin-bottom:2px;padding-left:4px;">🌡 Máx/mín por modelo (línea continua=máx, discontinua=mín)</div>'
-    +svg+leyenda+'</div>';
-}
-
-function construirGraficoLluvia(daily,tiempos,n){
-  var refId=MODELOS_PRON[0].id;
-  var vals=[];
-  for(var i=0;i<n;i++){ var v=valModelo(daily,'precipitation_sum',refId,i); vals.push(v==null?0:v); }
-  var vMax=Math.max(2,Math.max.apply(null,vals));
-  var W=272,H=64,mL=24,mR=6,mT=6,mB=16;
-  var pw=W-mL-mR,ph=H-mT-mB;
-  var bw=Math.max(3,(pw/n)*0.6);
-  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
-
-  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
-  svg+='<line x1="'+mL+'" y1="'+(mT+ph)+'" x2="'+(W-mR)+'" y2="'+(mT+ph)+'" stroke="rgba(15,23,42,0.14)"/>';
-  for(var i=0;i<n;i++){
-    var h=(vals[i]/vMax)*ph,x=xAt(i)-bw/2,y=mT+ph-h;
-    svg+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="1.5" fill="#3b82f6" opacity="'+(vals[i]>0?0.85:0.22)+'" style="cursor:pointer" onclick="abrirDetalleDia(\''+tiempos[i]+'\')"><title>Ver detalle del '+fmtEjeX(tiempos[i])+'</title></rect>';
-  }
-  var paso=n>8?3:1;
-  for(var i=0;i<n;i+=paso){
-    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#64748b" text-anchor="middle">'+fmtEjeX(tiempos[i])+'</text>';
-  }
-  svg+='</svg>';
-
-  return '<div style="background:#f8f8f8;border-radius:8px;padding:8px 6px 4px;margin-bottom:10px;">'
-    +'<div style="font-size:10px;color:#888;margin-bottom:2px;padding-left:4px;">🌧 Lluvia prevista — ⭐ ECMWF (mm/día)</div>'
-    +svg+'</div>';
-}
-
-function renderPronostico(numDias){
+function renderPronostico(dias){
   if(!pronData) return;
-  var loc=pronData.loc,sub=pronData.sub,daily=pronData.daily;
-  var tiempos=daily.time||[];
-  var n=Math.min(numDias,tiempos.length);
+  if(dias){ pronDias=dias; try{ localStorage.setItem('meteo_pron_dias',dias); }catch(e){} }
+  var loc=pronData.loc, h=pronData.h, mod=pronData.mod;
+  var n=Math.min(pronDias*24, h.time.length);
 
-  var filas='';
+  // ── Geometría común: todos los paneles comparten el eje X ──
+  var pxh=pronDias<=3?10:(pronDias<=7?5:3.4);
+  var mL=40, mR=40, W=Math.round(mL+mR+n*pxh);
+  function X(i){ return mL+i*pxh; }
+  var conHoras=pxh*6>=24;   // sitio para 06 12 18 bajo cada día
+
+  // Índice de la hora actual (línea discontinua "ahora")
+  var ahoraTs=Date.now(), iAhora=-1;
+  for(var k=0;k<n;k++){ if(new Date(h.time[k]).getTime()<=ahoraTs) iAhora=k; }
+
+  var dias_=[];   // {i0, i1, fecha}
   for(var i=0;i<n;i++){
-    var wx=wxInfo(valModelo(daily,'weather_code',MODELOS_PRON[0].id,i));
-    filas+='<div class="vp-day-card" style="background:#f8f8f8;border-radius:10px;padding:12px 14px;" onclick="abrirDetalleDia(\''+tiempos[i]+'\')">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-      +'<span style="font-weight:700;font-size:14px;color:#2c3e50;text-transform:capitalize;">'+fmtDiaCorto(tiempos[i])+'</span>'
-      +'<span style="font-size:22px;">'+wx.ic+'</span>'
-      +'</div>'
-      +'<table style="width:100%;font-size:12px;border-collapse:collapse;">'
-      +'<tr style="background:#dce8f5;"><td style="padding:3px 5px;font-weight:bold;">Modelo</td>'
-      +'<td style="padding:3px 5px;text-align:center;font-weight:bold;">Máx/Mín</td>'
-      +'<td style="padding:3px 5px;text-align:center;font-weight:bold;">Lluvia</td></tr>'
-      +MODELOS_PRON.map(function(m,mi){
-        var tmax=valModelo(daily,'temperature_2m_max',m.id,i);
-        var tmin=valModelo(daily,'temperature_2m_min',m.id,i);
-        var pr=valModelo(daily,'precipitation_sum',m.id,i);
-        var pp=valModelo(daily,'precipitation_probability_max',m.id,i);
-        var tTxt=(tmax!=null&&tmin!=null)?(Math.round(tmax)+'°/'+Math.round(tmin)+'°'):'—';
-        var lTxt=(pr!=null)?((pp!=null?pp+'% · ':'')+pr.toFixed(1)+'mm'):'—';
-        return '<tr'+(mi%2?' style="background:#f5f5f5;"':'')+'>'
-          +'<td style="padding:3px 5px;">'+(m.estrella?'⭐ ':'')+m.nombre+'</td>'
-          +'<td style="text-align:center;padding:3px 5px;font-weight:700;">'+tTxt+'</td>'
-          +'<td style="text-align:center;padding:3px 5px;">'+lTxt+'</td></tr>';
-      }).join('')
-      +'</table></div>';
+    var f=h.time[i].slice(0,10);
+    if(!dias_.length||dias_[dias_.length-1].fecha!==f) dias_.push({i0:i,i1:i,fecha:f});
+    dias_[dias_.length-1].i1=i;
   }
 
-  var html='<div style="font-size:24px;font-weight:700;color:#0f172a;margin-bottom:2px;">📍 '+loc.name+'</div>'
-    +'<div style="font-size:13px;color:#64748b;margin-bottom:16px;">'+(sub||'')+'</div>'
-    +'<div style="display:flex;gap:8px;margin-bottom:14px;">'
-    +'<button type="button" class="fc-tab'+(numDias===5?' active':'')+'" onclick="renderPronostico(5)">📅 4-5 días</button>'
-    +'<button type="button" class="fc-tab'+(numDias===16?' active':'')+'" onclick="renderPronostico(16)">📆 16 días</button>'
-    +'</div>'
-    +'<div style="background:#f0f7ff;border-left:3px solid #3498db;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#444;margin-bottom:16px;line-height:1.6;">'
-    +'⭐ <b style="color:#2c3e50;">ECMWF (IFS-HRES)</b> se toma como referencia — el de mayor precisión global según verificaciones independientes — comparado con ICON (DWD), GFS (NOAA) y AROME/ARPEGE (Météo-France). '
-    +(numDias>7?'Más allá de 4-7 días solo ECMWF y GFS ofrecen datos; ICON y AROME tienen alcance corto.':'')
-    +' Toca un día (tarjeta o punto del gráfico) para ver su detalle horario.'
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:16px;">'
-    +'<div id="vp-mapa"></div>'
-    +construirGraficoTemp(daily,tiempos,n)
-    +construirGraficoLluvia(daily,tiempos,n)
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">'
-    +filas
-    +'</div>'
-    +'<div style="font-size:11px;color:#6b7280;margin-top:16px;">Fuente: Open-Meteo (datos abiertos ECMWF/DWD/NOAA/Météo-France)</div>';
+  function fondo(alto,top){
+    // Día (amarillo verdoso suave) y noche, separadores de día y de 6 h, "ahora".
+    var s='';
+    for(var i=0;i<n;i++){
+      if(h.is_day&&h.is_day[i]) s+='<rect x="'+X(i).toFixed(1)+'" y="'+top+'" width="'+(pxh+0.4).toFixed(1)+'" height="'+alto+'" fill="#f4f9d8"/>';
+    }
+    for(var i=0;i<=n;i++){
+      var hh=i<n?+h.time[i].slice(11,13):0;
+      if(hh===0) s+='<line x1="'+X(i)+'" y1="'+top+'" x2="'+X(i)+'" y2="'+(top+alto)+'" stroke="#94a3b8" stroke-width="1"/>';
+      else if(hh%6===0&&conHoras) s+='<line x1="'+X(i)+'" y1="'+top+'" x2="'+X(i)+'" y2="'+(top+alto)+'" stroke="#e2e8f0" stroke-width="0.7"/>';
+    }
+    if(iAhora>=0) s+='<line x1="'+X(iAhora+0.5)+'" y1="'+top+'" x2="'+X(iAhora+0.5)+'" y2="'+(top+alto)+'" stroke="#0f172a" stroke-width="1.2" stroke-dasharray="4,3"/>';
+    return s;
+  }
+  function ejeX(y){
+    var s='';
+    for(var i=0;i<n;i++){
+      var hh=+h.time[i].slice(11,13);
+      if(hh===0&&!conHoras){
+        var d=new Date(h.time[i].slice(0,10)+'T00:00:00');
+        s+='<text x="'+X(i+12)+'" y="'+y+'" font-size="10" fill="#475569" text-anchor="middle">'+DIAS_SEM[d.getDay()]+'</text>';
+      } else if(conHoras&&hh%6===0&&hh>0){
+        s+='<text x="'+X(i)+'" y="'+y+'" font-size="10" fill="#475569" text-anchor="middle">'+(hh<10?'0':'')+hh+'</text>';
+      }
+    }
+    return s;
+  }
+  function svg(alto,cuerpo){
+    return '<svg viewBox="0 0 '+W+' '+alto+'" width="'+W+'" height="'+alto+'" style="display:block">'+cuerpo+'</svg>';
+  }
+  function serie(vals,Y){
+    var d='',en=false;
+    for(var i=0;i<n;i++){
+      var v=vals[i]; if(v==null){en=false;continue;}
+      d+=(en?'L':'M')+X(i+0.5).toFixed(1)+','+Y(v).toFixed(1)+' '; en=true;
+    }
+    return d;
+  }
+  function ejeY(vals,Y,lado,fmt,col){
+    var s='';
+    vals.forEach(function(v){
+      var y=Y(v).toFixed(1);
+      s+='<text x="'+(lado==='izq'?mL-5:W-mR+5)+'" y="'+(+y+3.5)+'" font-size="10" fill="'+(col||'#475569')+'" text-anchor="'+(lado==='izq'?'end':'start')+'">'+fmt(v)+'</text>';
+      if(lado==='izq') s+='<line x1="'+mL+'" y1="'+y+'" x2="'+(W-mR)+'" y2="'+y+'" stroke="rgba(15,23,42,.07)"/>';
+    });
+    return s;
+  }
+  function marco(top,alto){ return '<rect x="'+mL+'" y="'+top+'" width="'+(W-mL-mR)+'" height="'+alto+'" fill="none" stroke="#cbd5e1"/>'; }
+  function titulo(t){ return '<div class="mg-tit">'+t+'</div>'; }
+  function maxDe(a){ var m=-Infinity; for(var i=0;i<n;i++) if(a&&a[i]!=null&&a[i]>m) m=a[i]; return m; }
+  function minDe(a){ var m=Infinity; for(var i=0;i<n;i++) if(a&&a[i]!=null&&a[i]<m) m=a[i]; return m; }
+  function pasos(lo,hi,objetivo){
+    var bruto=(hi-lo)/objetivo, p=[1,2,5,10,20,25,50,100].filter(function(x){return x>=bruto;})[0]||100, r=[];
+    for(var v=Math.ceil(lo/p)*p; v<=hi+1e-9; v+=p) r.push(+v.toFixed(3));
+    return r;
+  }
+  var paneles='';
+
+  // ── 1. Temperatura ─────────────────────────────────────────
+  (function(){
+    var T=h.temperature_2m, cab=34, alto=170, AH=cab+alto+18;
+    var lo=Math.floor(minDe(T))-3, hi=Math.ceil(maxDe(T))+5;
+    function Y(v){ return cab+alto-(v-lo)/(hi-lo)*alto; }
+    var s='<defs><linearGradient id="mg-gt" gradientUnits="userSpaceOnUse" x1="0" y1="'+Y(lo)+'" x2="0" y2="'+Y(hi)+'">'
+      +MG_ESCALA_T.map(function(e){ return '<stop offset="'+Math.max(0,Math.min(1,(e[0]-lo)/(hi-lo))).toFixed(3)+'" stop-color="'+e[1]+'"/>'; }).join('')
+      +'</linearGradient></defs>';
+    s+=fondo(alto,cab);
+    // Cabecera: nombre del día (fin de semana en rojo)
+    dias_.forEach(function(d){
+      var dt=new Date(d.fecha+'T00:00:00'), finde=dt.getDay()===0||dt.getDay()===6;
+      var xm=(X(d.i0)+X(d.i1+1))/2, col=finde?'#dc2626':'#334155';
+      if(d.i1-d.i0<5) return;
+      s+='<text x="'+xm+'" y="13" font-size="'+(pxh>=5?12:10)+'" font-weight="700" fill="'+col+'" text-anchor="middle">'+(pxh>=5?DIAS_LARGO[dt.getDay()]:DIAS_SEM[dt.getDay()])+'</text>'
+        +'<text x="'+xm+'" y="27" font-size="10.5" fill="'+col+'" text-anchor="middle">'+dt.getDate()+'.'+(dt.getMonth()+1)+'</text>';
+    });
+    s+=ejeY(pasos(lo,hi,5),Y,'izq',function(v){return v+'°';});
+    var d=serie(T,Y);
+    if(d){
+      s+='<path d="'+d+'L'+X(n-0.5)+','+(cab+alto)+' L'+X(0.5)+','+(cab+alto)+' Z" fill="url(#mg-gt)" opacity="0.55"/>';
+      s+='<path d="'+d+'" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linejoin="round"/>';
+    }
+    // Máxima y mínima de cada día sobre la curva
+    dias_.forEach(function(dd){
+      var iMx=-1,iMn=-1;
+      for(var i=dd.i0;i<=dd.i1;i++){ if(T[i]==null) continue; if(iMx<0||T[i]>T[iMx]) iMx=i; if(iMn<0||T[i]<T[iMn]) iMn=i; }
+      if(iMx<0||dd.i1-dd.i0<12) return;
+      s+='<text x="'+X(iMx+0.5)+'" y="'+(Y(T[iMx])-7)+'" font-size="11" font-weight="800" fill="#7f1d1d" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">'+Math.round(T[iMx])+'</text>';
+      s+='<text x="'+X(iMn+0.5)+'" y="'+(Y(T[iMn])+15)+'" font-size="11" font-weight="800" fill="#1e3a8a" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">'+Math.round(T[iMn])+'</text>';
+    });
+    // Iconos del tiempo cada 3 h (cada 6 h si no caben)
+    var cada=pxh*3>=18?3:6;
+    for(var i=1;i<n;i+=cada){
+      var ic=mgIcono(h.weather_code[i],h.is_day?h.is_day[i]:1); if(!ic||T[i]==null) continue;
+      s+='<text x="'+X(i+0.5)+'" y="'+Math.max(cab+12,Y(T[i])-20)+'" font-size="'+(pxh>=5?14:11)+'" text-anchor="middle">'+ic+'</text>';
+    }
+    s+=marco(cab,alto)+ejeX(cab+alto+13);
+    paneles+=titulo('🌡 Temperatura (°C)')+svg(AH,s);
+  })();
+
+  // ── 2. Precipitación, probabilidad y nubes ────────────────
+  (function(){
+    var P=h.precipitation, PP=h.precipitation_probability, top=4, filaN=9, nubes=filaN*3, alto=110, AH=top+nubes+alto+18;
+    var y0=top+nubes, pMax=Math.max(2,Math.ceil(maxDe(P)));
+    function Y(v){ return y0+alto-v/pMax*alto; }
+    function Yp(v){ return y0+alto-v/100*alto; }
+    var s=fondo(nubes+alto,top);
+    // Nubes por alturas: alta arriba, baja abajo (gris más oscuro = más cubierto)
+    [['cloud_cover_high',0],['cloud_cover_mid',1],['cloud_cover_low',2]].forEach(function(c){
+      var a=h[c[0]]; if(!a) return;
+      for(var i=0;i<n;i++){
+        var v=a[i]; if(!v||v<5) continue;
+        s+='<rect x="'+X(i).toFixed(1)+'" y="'+(top+c[1]*filaN)+'" width="'+(pxh+0.4).toFixed(1)+'" height="'+filaN+'" fill="#475569" opacity="'+(v/100*0.75).toFixed(2)+'"/>';
+      }
+    });
+    s+='<line x1="'+mL+'" y1="'+y0+'" x2="'+(W-mR)+'" y2="'+y0+'" stroke="#cbd5e1"/>';
+    s+='<text x="'+(mL-5)+'" y="'+(top+filaN-1)+'" font-size="8" fill="#64748b" text-anchor="end">alta</text>'
+      +'<text x="'+(mL-5)+'" y="'+(top+3*filaN-1)+'" font-size="8" fill="#64748b" text-anchor="end">baja</text>';
+    s+=ejeY(pasos(0,pMax,4),Y,'izq',function(v){return v;});
+    s+=ejeY([0,50,100],Yp,'der',function(v){return v+'%';},'#9333ea');
+    for(var i=0;i<n;i++){
+      var v=P[i]; if(!v) continue;
+      var y=Y(Math.min(v,pMax));
+      s+='<rect x="'+(X(i)+pxh*0.12).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+(pxh*0.76).toFixed(1)+'" height="'+(y0+alto-y).toFixed(1)+'" fill="#2563eb"/>';
+    }
+    if(PP){ var d=serie(PP,Yp); if(d) s+='<path d="'+d+'" fill="none" stroke="#9333ea" stroke-width="1.4"/>'; }
+    // Total del día
+    dias_.forEach(function(dd){
+      if(dd.i1-dd.i0<12) return;
+      var t=0; for(var i=dd.i0;i<=dd.i1;i++) t+=P[i]||0;
+      s+='<text x="'+((X(dd.i0)+X(dd.i1+1))/2)+'" y="'+(y0+14)+'" font-size="11" font-weight="700" fill="'+(t>=0.1?'#1d4ed8':'#94a3b8')+'" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">'+t.toFixed(1)+'</text>';
+    });
+    s+=marco(top,nubes+alto)+ejeX(top+nubes+alto+13);
+    paneles+=titulo('🌧 Precipitación (mm/h) · <span style="color:#9333ea">probabilidad (%)</span> · nubes por alturas · <span style="color:#1d4ed8">total del día</span>')+svg(AH,s);
+  })();
+
+  // ── 3. Condiciones para pulverizar ────────────────────────
+  (function(){
+    var alto=22, AH=alto+18, s='';
+    for(var i=0;i<n;i++){
+      var c=mgPulverizar(h,i);
+      s+='<rect x="'+X(i).toFixed(1)+'" y="0" width="'+(pxh+0.4).toFixed(1)+'" height="'+alto+'" fill="'+MG_PULV_COL[c.n]+'"/>';
+    }
+    for(var i=0;i<n;i++) if(+h.time[i].slice(11,13)===0) s+='<line x1="'+X(i)+'" y1="0" x2="'+X(i)+'" y2="'+alto+'" stroke="#fff" stroke-width="1.5"/>';
+    if(iAhora>=0) s+='<line x1="'+X(iAhora+0.5)+'" y1="0" x2="'+X(iAhora+0.5)+'" y2="'+alto+'" stroke="#0f172a" stroke-width="1.2" stroke-dasharray="4,3"/>';
+    s+=marco(0,alto)+ejeX(alto+13);
+    paneles+=titulo('🚜 Condiciones para pulverizar '
+      +MG_PULV_TXT.map(function(t,k){return '<span class="mg-ley"><i style="background:'+MG_PULV_COL[k]+'"></i>'+t+'</span>';}).join(''))
+      +svg(AH,s);
+  })();
+
+  // ── 4. Evapotranspiración (ET0) y humedad ──────────────────
+  (function(){
+    var E=h.et0_fao_evapotranspiration, RH=h.relative_humidity_2m, top=4, alto=100, AH=top+alto+18;
+    var eMax=Math.max(0.4,Math.ceil(maxDe(E)*10)/10);
+    function Y(v){ return top+alto-v/eMax*alto; }
+    function Yh(v){ return top+alto-v/100*alto; }
+    var s=fondo(alto,top);
+    s+=ejeY(pasos(0,eMax,4),Y,'izq',function(v){return v;});
+    s+=ejeY([0,50,100],Yh,'der',function(v){return v+'%';},'#2563eb');
+    if(E) for(var i=0;i<n;i++){
+      var v=E[i]; if(!v) continue;
+      s+='<rect x="'+(X(i)+pxh*0.12).toFixed(1)+'" y="'+Y(v).toFixed(1)+'" width="'+(pxh*0.76).toFixed(1)+'" height="'+(top+alto-Y(v)).toFixed(1)+'" fill="#84cc16"/>';
+    }
+    var d=serie(RH,Yh); if(d) s+='<path d="'+d+'" fill="none" stroke="#2563eb" stroke-width="1.6"/>';
+    if(E) dias_.forEach(function(dd){
+      if(dd.i1-dd.i0<12) return;
+      var t=0; for(var i=dd.i0;i<=dd.i1;i++) t+=E[i]||0;
+      s+='<text x="'+((X(dd.i0)+X(dd.i1+1))/2)+'" y="'+(top+13)+'" font-size="11" font-weight="700" fill="#4d7c0f" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">'+t.toFixed(1)+'</text>';
+    });
+    s+=marco(top,alto)+ejeX(top+alto+13);
+    paneles+=titulo('<span style="color:#4d7c0f">💧 ET0 FAO (mm/h, total del día arriba)</span> · <span style="color:#2563eb">humedad relativa (%)</span>')+svg(AH,s);
+  })();
+
+  // ── 5. Viento ──────────────────────────────────────────────
+  (function(){
+    var V=h.wind_speed_10m, R=h.wind_gusts_10m, D=h.wind_direction_10m, flechas=20, top=flechas, alto=110, AH=top+alto+18;
+    var vMax=Math.max(20,Math.ceil(Math.max(maxDe(V),maxDe(R))/10)*10);
+    function Y(v){ return top+alto-v/vMax*alto; }
+    var s=fondo(alto,top);
+    s+=ejeY(pasos(0,vMax,4),Y,'izq',function(v){return v;});
+    var dr=serie(R,Y); if(dr) s+='<path d="'+dr+'" fill="none" stroke="#0d9488" stroke-width="1.4"/>';
+    var dv=serie(V,Y); if(dv) s+='<path d="'+dv+'" fill="none" stroke="#2563eb" stroke-width="2"/>';
+    // Flechas: hacia dónde sopla (la dirección meteorológica es de dónde viene)
+    var cada=pxh*3>=14?3:6;
+    for(var i=1;i<n;i+=cada){
+      if(D[i]==null) continue;
+      var cx=X(i+0.5), cy=10;
+      s+='<g transform="translate('+cx.toFixed(1)+','+cy+') rotate('+((D[i]+180)%360)+')"><path d="M0,-7 L3.5,2 L0,0 L-3.5,2 Z M0,0 L0,7" fill="#0f172a" stroke="#0f172a" stroke-width="1.2"/></g>';
+    }
+    s+=marco(top,alto)+ejeX(top+alto+13);
+    paneles+=titulo('<span style="color:#2563eb">💨 Viento (km/h)</span> · <span style="color:#0d9488">rachas</span> · flechas: hacia dónde sopla')+svg(AH,s);
+  })();
+
+  // ── 6. Comparativa de modelos ──────────────────────────────
+  var comparativa='';
+  if(mod){
+    (function(){
+      var top=6, alto=150, AH=top+alto+18, vals=[];
+      MODELOS_PRON.forEach(function(m){ var a=mod['temperature_2m_'+m.id]; if(a) for(var i=0;i<n;i++) if(a[i]!=null) vals.push(a[i]); });
+      if(!vals.length) return;
+      var lo=Math.floor(Math.min.apply(null,vals))-2, hi=Math.ceil(Math.max.apply(null,vals))+2;
+      function Y(v){ return top+alto-(v-lo)/(hi-lo)*alto; }
+      var s=fondo(alto,top)+ejeY(pasos(lo,hi,5),Y,'izq',function(v){return v+'°';});
+      MODELOS_PRON.slice().reverse().forEach(function(m){
+        var a=mod['temperature_2m_'+m.id]; if(!a) return;
+        var d=serie(a,Y); if(d) s+='<path d="'+d+'" fill="none" stroke="'+COL_MODELO[m.id]+'" stroke-width="'+(m.estrella?2.2:1.5)+'"/>';
+      });
+      s+=marco(top,alto)+ejeX(top+alto+13);
+      comparativa+=titulo('🌡 Temperatura según cada modelo')+svg(AH,s);
+
+      // Lluvia acumulada desde el inicio: se ve cuánto y cuándo llueve en cada modelo
+      var acum={}, pMax=1;
+      MODELOS_PRON.forEach(function(m){
+        var a=mod['precipitation_'+m.id]; if(!a) return;
+        var t=0, r=[];
+        for(var i=0;i<n;i++){ if(a[i]==null){ r.push(null); continue; } t+=a[i]; r.push(t); }
+        acum[m.id]=r; pMax=Math.max(pMax,t);
+      });
+      pMax=Math.ceil(pMax);
+      function Yl(v){ return top+alto-v/pMax*alto; }
+      var s2=fondo(alto,top)+ejeY(pasos(0,pMax,4),Yl,'izq',function(v){return v;});
+      MODELOS_PRON.slice().reverse().forEach(function(m){
+        if(!acum[m.id]) return;
+        var d=serie(acum[m.id],Yl); if(d) s2+='<path d="'+d+'" fill="none" stroke="'+COL_MODELO[m.id]+'" stroke-width="'+(m.estrella?2.2:1.5)+'"/>';
+      });
+      s2+=marco(top,alto)+ejeX(top+alto+13);
+      comparativa+=titulo('🌧 Lluvia acumulada según cada modelo (mm)')+svg(AH,s2);
+    })();
+  }
+
+  var leyMod='<div class="mg-leyendas">'+MODELOS_PRON.map(function(m){
+      return '<span class="mg-ley"><i style="background:'+COL_MODELO[m.id]+'"></i>'+(m.estrella?'⭐ ':'')+m.nombre+'</span>';
+    }).join('')+'</div>';
+
+  var html='<div class="mg-cabecera"><div>'
+    +'<div style="font-size:24px;font-weight:700;color:#0f172a;">📍 '+loc.name+'</div>'
+    +'<div style="font-size:13px;color:#64748b;">'+(pronData.sub||'')+' · '
+    +Math.abs(loc.latitude).toFixed(2)+'°'+(loc.latitude>=0?'N':'S')+', '+Math.abs(loc.longitude).toFixed(2)+'°'+(loc.longitude>=0?'E':'O')
+    +(pronData.elev!=null?' ('+Math.round(pronData.elev)+' m)':'')+'</div></div>'
+    +'<div class="mg-plazos">'+MG_PLAZOS.map(function(d){
+      return '<button type="button" class="fc-tab'+(d===pronDias?' active':'')+'" onclick="renderPronostico('+d+')">'+d+' días</button>';
+    }).join('')+'</div></div>'
+    +'<div class="mg-ayuda">Pasa el dedo o el ratón por el gráfico para ver los datos de cada hora. La franja clara es de día y la línea discontinua, la hora actual.</div>'
+    +'<div class="mg-caja"><div class="mg-scroll"><div class="mg-inner" id="mg-inner" style="width:'+W+'px">'
+    +paneles
+    +'<div class="mg-cursor" id="mg-cursor"></div><div class="mg-tip" id="mg-tip"></div>'
+    +'</div></div></div>'
+    +(comparativa?'<div class="mg-sec">Comparativa de modelos</div>'
+      +'<div class="mg-ayuda">⭐ ECMWF (IFS) es la referencia; ICON y AROME tienen menos alcance y sus líneas se acaban antes.</div>'
+      +leyMod+'<div class="mg-caja"><div class="mg-scroll"><div class="mg-inner" style="width:'+W+'px">'+comparativa+'</div></div></div>':'')
+    +'<div class="mg-sec">Ubicación</div><div id="vp-mapa"></div>'
+    +'<div style="font-size:11px;color:#6b7280;margin-top:16px;">Fuente: Open-Meteo (modelo de mayor resolución disponible en cada plazo; comparativa con ECMWF/DWD/NOAA/Météo-France).</div>';
 
   pintarVistaPronostico(html);
+  mgActivarCursor(n,pxh,mL,W);
   inicializarMapaPronostico(loc);
+}
+
+// Cursor vertical común a todos los paneles + cuadro con los datos de esa hora.
+function mgActivarCursor(n,pxh,mL,W){
+  var inner=document.getElementById('mg-inner'); if(!inner) return;
+  var cur=document.getElementById('mg-cursor'), tip=document.getElementById('mg-tip');
+  var h=pronData.h, mod=pronData.mod;
+  function fmt(v,d,u){ return v==null?'—':(+v).toFixed(d)+u; }
+  function mover(ev){
+    var r=inner.getBoundingClientRect();
+    var x=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left;
+    var i=Math.floor((x-mL)/pxh);
+    if(i<0||i>=n){ ocultar(); return; }
+    cur.style.left=(mL+(i+0.5)*pxh)+'px'; cur.style.display='block';
+    var t=h.time[i], d=new Date(t.slice(0,10)+'T00:00:00'), c=mgPulverizar(h,i);
+    var pp=h.precipitation_probability?h.precipitation_probability[i]:null;
+    var mods='';
+    if(mod) MODELOS_PRON.forEach(function(m){
+      var v=mod['temperature_2m_'+m.id]; v=v?v[i]:null;
+      if(v!=null) mods+='<span style="color:'+COL_MODELO[m.id]+'">'+m.nombre+' '+v.toFixed(1)+'°</span> ';
+    });
+    tip.innerHTML='<b>'+DIAS_LARGO[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1)+' · '+t.slice(11,16)+'</b> '
+      +mgIcono(h.weather_code[i],h.is_day?h.is_day[i]:1)
+      +'<div>🌡 '+fmt(h.temperature_2m[i],1,' °C')+(h.apparent_temperature?' <small>(sensación '+fmt(h.apparent_temperature[i],0,'°')+')</small>':'')+'</div>'
+      +'<div>🌧 '+fmt(h.precipitation[i],1,' mm')+(pp!=null?' · '+pp+'%':'')+'</div>'
+      +'<div>☁️ nubes baja/media/alta: '+[h.cloud_cover_low,h.cloud_cover_mid,h.cloud_cover_high].map(function(a){return a?fmt(a[i],0,'%'):'—';}).join(' / ')+'</div>'
+      +'<div>💨 '+fmt(h.wind_speed_10m[i],0,' km/h')+' '+wdL(h.wind_direction_10m[i])+' · rachas '+fmt(h.wind_gusts_10m?h.wind_gusts_10m[i]:null,0,'')+'</div>'
+      +'<div>💧 HR '+fmt(h.relative_humidity_2m[i],0,'%')+' · ET0 '+fmt(h.et0_fao_evapotranspiration?h.et0_fao_evapotranspiration[i]:null,2,' mm')+'</div>'
+      +'<div>🚜 <span style="color:'+['#15803d','#a16207','#b91c1c'][c.n]+';font-weight:700">'+MG_PULV_TXT[c.n]+'</span>'+(c.n?' <small>('+c.txt+')</small>':'')+'</div>'
+      +(mods?'<div class="mg-tip-mod">'+mods+'</div>':'');
+    tip.style.display='block';
+    // El cuadro va al lado contrario del cursor dentro de la parte visible
+    var sc=inner.parentNode, visIzq=sc.scrollLeft, visDer=visIzq+sc.clientWidth, cx=mL+(i+0.5)*pxh;
+    var ancho=tip.offsetWidth;
+    var izq=(cx+14+ancho<=visDer)?cx+14:cx-14-ancho;
+    tip.style.left=Math.max(visIzq+4,izq)+'px';
+  }
+  function ocultar(){ cur.style.display='none'; tip.style.display='none'; }
+  inner.addEventListener('mousemove',mover);
+  inner.addEventListener('mouseleave',ocultar);
+  inner.addEventListener('touchstart',mover,{passive:true});
+  inner.addEventListener('touchmove',mover,{passive:true});
 }
 
 // Mapa de localización de la pantalla de pronóstico. Se (re)crea en cada
@@ -1585,98 +1842,6 @@ function inicializarMapaPronostico(loc){
     html:'<div style="background:#e6474c;border:2px solid #fff;border-radius:50% 50% 50% 0;width:22px;height:22px;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,.35);"></div>',
     iconSize:[22,22],iconAnchor:[11,22]
   })}).addTo(mapaPron);
-}
-
-// ── Detalle horario de un día concreto ──────────────────────
-var MESES_LARGO=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-var DIAS_LARGO=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-function fmtDiaLargo(iso){
-  var d=new Date(iso+'T00:00:00');
-  var s=DIAS_LARGO[d.getDay()]+' '+d.getDate()+' de '+MESES_LARGO[d.getMonth()];
-  return s.charAt(0).toUpperCase()+s.slice(1);
-}
-
-function construirGraficoTempHoraria(hourly){
-  var horas=hourly.time||[],temps=hourly.temperature_2m||[];
-  var n=horas.length;
-  var vals=temps.filter(function(v){return v!=null;});
-  if(!n||!vals.length) return '';
-  var W=560,H=150,mL=28,mR=10,mT=12,mB=20;
-  var pw=W-mL-mR,ph=H-mT-mB;
-  var vMin=Math.min.apply(null,vals)-1,vMax=Math.max.apply(null,vals)+1;
-  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
-  function yAt(v){ return mT+ph-((v-vMin)/(vMax-vMin))*ph; }
-
-  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
-  [vMin,(vMin+vMax)/2,vMax].forEach(function(v){
-    var y=yAt(v);
-    svg+='<line x1="'+mL+'" y1="'+y.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(15,23,42,0.08)"/>';
-    svg+='<text x="1" y="'+(y+3).toFixed(1)+'" font-size="10" fill="#64748b">'+Math.round(v)+'°</text>';
-  });
-  var d='',en=false;
-  for(var i=0;i<n;i++){
-    var v=temps[i]; if(v==null){en=false;continue;}
-    d+=(en?'L':'M')+xAt(i).toFixed(1)+','+yAt(v).toFixed(1)+' '; en=true;
-  }
-  if(d) svg+='<path d="'+d+'" fill="none" stroke="#3b82f6" stroke-width="2.2"/>';
-  var paso=n>12?3:(n>6?2:1);
-  for(var i=0;i<n;i+=paso){
-    if(temps[i]!=null) svg+='<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(temps[i]).toFixed(1)+'" r="2" fill="#3b82f6"/>';
-    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="9" fill="#64748b" text-anchor="middle">'+horas[i].slice(11,16)+'</text>';
-  }
-  svg+='</svg>';
-  return svg;
-}
-
-function construirGraficoLluviaHoraria(hourly){
-  var horas=hourly.time||[],precs=hourly.precipitation||[];
-  var n=horas.length;
-  if(!n) return '';
-  var vMax=Math.max(1,Math.max.apply(null,precs.map(function(v){return v==null?0:v;})));
-  var W=560,H=90,mL=28,mR=10,mT=6,mB=20;
-  var pw=W-mL-mR,ph=H-mT-mB;
-  var bw=Math.max(2,(pw/n)*0.6);
-  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
-
-  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
-  svg+='<line x1="'+mL+'" y1="'+(mT+ph)+'" x2="'+(W-mR)+'" y2="'+(mT+ph)+'" stroke="rgba(15,23,42,0.14)"/>';
-  var paso=n>12?3:(n>6?2:1);
-  for(var i=0;i<n;i++){
-    var v=precs[i]==null?0:precs[i];
-    var h=(v/vMax)*ph,x=xAt(i)-bw/2,y=mT+ph-h;
-    svg+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="1.5" fill="#3b82f6" opacity="'+(v>0?0.85:0.18)+'"/>';
-    if(i%paso===0) svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="9" fill="#64748b" text-anchor="middle">'+horas[i].slice(11,16)+'</text>';
-  }
-  svg+='</svg>';
-  return svg;
-}
-
-function abrirDetalleDia(fechaISO){
-  if(!pronData) return;
-  var modal=document.getElementById('vp-detalle-dia');
-  var body=document.getElementById('vpd-body');
-  document.getElementById('vpd-titulo').textContent=fmtDiaLargo(fechaISO);
-  body.innerHTML='<div style="text-align:center;padding:40px 10px;color:#64748b;font-size:13px;">⏳ Cargando detalle horario…</div>';
-  modal.classList.add('open');
-
-  var loc=pronData.loc;
-  var url='https://api.open-meteo.com/v1/forecast?latitude='+loc.latitude+'&longitude='+loc.longitude
-    +'&hourly=temperature_2m,precipitation&models=ecmwf_ifs025'
-    +'&start_date='+fechaISO+'&end_date='+fechaISO+'&timezone=auto';
-  fetch(url).then(function(r){return r.json();}).then(function(d){
-    if(!d||!d.hourly) throw new Error('sin datos');
-    body.innerHTML=
-      '<div style="font-size:11px;color:#64748b;margin-bottom:12px;">⭐ Detalle horario — ECMWF (IFS-HRES)</div>'
-      +'<div style="font-size:11px;font-weight:700;color:#2c3e50;margin-bottom:4px;">🌡 Temperatura por hora</div>'
-      +construirGraficoTempHoraria(d.hourly)
-      +'<div style="font-size:11px;font-weight:700;color:#2c3e50;margin:16px 0 4px;">🌧 Precipitación por hora (mm)</div>'
-      +construirGraficoLluviaHoraria(d.hourly);
-  }).catch(function(){
-    body.innerHTML='<div style="text-align:center;color:#999;font-size:13px;padding:40px 10px;">⚠ No se pudo cargar el detalle horario.</div>';
-  });
-}
-function cerrarDetalleDia(){
-  document.getElementById('vp-detalle-dia').classList.remove('open');
 }
 
 // ── Mapa de precipitación acumulada prevista (multi-modelo) ──
@@ -1892,10 +2057,6 @@ function mostrarVistaLluvia(){
     if(!llAjustado){ llMapa.fitBounds(LL_LIMITES); llAjustado=true; }
   },60);
   llRender();
-}
-function ocultarVistaLluvia(){
-  document.getElementById('vl').classList.remove('open');
-  actualizarPronBtn(null);
 }
 
 function llInitMapa(){
@@ -2351,7 +2512,21 @@ function render(){
         +'padding:6px 10px;margin-bottom:10px;font-size:11px;color:#856404;">'
         +'⏱ Sin actualizar desde hace <b>'+minutos_sin_datos+' min</b> — dato antiguo</div>':'';
       var sensacion=m.heatIndex!=null&&m.heatIndex!==m.temp?m.heatIndex:(m.windChill!=null&&m.windChill!==m.temp?m.windChill:null);
-      ph=avisoEstiado
+      var avisoFiltro='';
+      if(est.descartado){
+        var NOMC={temp:'Temperatura',dewpt:'Pto. rocío',humidity:'Humedad',pressure:'Presión',
+          windSpeed:'Viento',windGust:'Racha',precipTotal:'Precipitación',solarRadiation:'Radiación',
+          uv:'Índice UV',heatIndex:'Sensación',windChill:'Sensación'};
+        var lis=[];
+        for(var cmp in est.descartado){
+          if(/^depende de /.test(est.descartado[cmp])) continue;
+          lis.push('<b>'+(NOMC[cmp]||cmp)+'</b>: '+est.descartado[cmp]);
+        }
+        if(lis.length) avisoFiltro='<div style="background:#fdecea;border:1px solid #f5c2c0;border-radius:6px;'
+          +'padding:6px 10px;margin-bottom:10px;font-size:11px;color:#8a1c14;">'
+          +'🧹 Lectura descartada por el filtro automático (no se pinta):<br>'+lis.join('<br>')+'</div>';
+      }
+      ph=avisoEstiado+avisoFiltro
         +'<table style="width:100%;font-size:13px;border-collapse:collapse;line-height:2;">'
         +'<tr><td style="color:#888">🌡 Temperatura</td>'
         +'<td style="font-weight:700">'+(m.temp!=null?m.temp.toFixed(1)+'°C':'—')+'</td></tr>'
@@ -2522,7 +2697,7 @@ function cargarPeriodo(p, cb){
   fetch(PERIODOS[p].archivo+'?v='+Date.now())
     .then(function(r){return r.json();})
     .then(function(datos){
-      extData[p]=(datos&&datos.length)?datos:historyData;
+      extData[p]=(datos&&datos.length)?sinDesactivadas(datos):historyData;
       activeData=extData[p];
       sl.disabled=false;
       cb();
@@ -2733,7 +2908,7 @@ function cargarRiesgoHistorico(cb){
   fetch('historial_riesgo.json?v='+Date.now())
     .then(function(r){return r.json();})
     .then(function(datos){
-      riesgoHistData=datos||{};
+      riesgoHistData=riesgoSinDesactivadas(datos||{});
       riesgoHistCargado=true;
       if(cb) cb();
     })
@@ -2845,42 +3020,45 @@ if(radarChk){
   });
 })();
 
-// ── Selector único "Pronóstico" ─────────────────────────────────
-// Antes había dos botones sueltos (Pronóstico / Lluvia prevista) sin
-// forma de saber cuál de las dos pantallas estaba abierta. Un solo
-// desplegable, con la etiqueta y la opción activa reflejando la
-// pantalla realmente abierta (o "🔮 Pronóstico" a secas si no hay
-// ninguna, es decir, si se está viendo el mapa).
-var PRON_ETIQ={poblacion:'📅 Por población', lluvia:'🌧 Lluvia prevista'};
+// ── Menú principal lateral ──────────────────────────────────────
+// Una sola forma de moverse entre las tres pantallas (mapa de
+// estaciones, pronóstico por población y lluvia prevista): el botón ☰
+// arriba a la izquierda de cada una. Antes se volvía con botones
+// "← Mapa" distintos en cada pantalla y un desplegable en el mapa, y no
+// quedaba claro dónde se estaba ni cómo volver al inicio.
+// La pantalla abierta va en la URL (#pronostico, #lluvia): el botón
+// "atrás" del navegador o del móvil vuelve a la anterior, y un enlace
+// con #pronostico abre directamente el pronóstico.
+var VISTAS=['mapa','pronostico','lluvia'];
+function vistaDeHash(){ var v=(location.hash||'').replace('#',''); return VISTAS.indexOf(v)>0?v:'mapa'; }
+var vistaActual='mapa';
+function aplicarVista(v){
+  if(v!=='pronostico') document.getElementById('vp').classList.remove('open');
+  if(v!=='lluvia')     document.getElementById('vl').classList.remove('open');
+  if(v==='pronostico') mostrarVistaPronostico();
+  if(v==='lluvia')     mostrarVistaLluvia();
+  vistaActual=v;
+  actualizarPronBtn(v);
+  cerrarNav();
+}
+function irA(v){
+  if(v===vistaActual){ cerrarNav(); return; }
+  try{ history.pushState({vista:v},'',v==='mapa'?location.pathname+location.search:'#'+v); }catch(e){}
+  aplicarVista(v);
+}
+window.addEventListener('popstate',function(){ aplicarVista(vistaDeHash()); });
+function abrirNav(){ document.getElementById('nav').classList.add('open'); document.getElementById('nav-velo').classList.add('open'); }
+function cerrarNav(){ var n=document.getElementById('nav'); if(!n) return; n.classList.remove('open'); document.getElementById('nav-velo').classList.remove('open'); }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') cerrarNav(); });
+// Marca en el menú la pantalla abierta (la llaman también las funciones
+// que abren cada pantalla).
 function actualizarPronBtn(activo){
-  var lbl=document.getElementById('pron-btn-label');
-  var menu=document.getElementById('pron-menu');
-  if(!lbl||!menu) return;
-  lbl.textContent=activo?PRON_ETIQ[activo]:'🔮 Pronóstico';
-  menu.querySelectorAll('.ps-opt').forEach(function(o){
-    o.classList.toggle('active', o.getAttribute('data-v')===activo);
+  var v=activo==='poblacion'?'pronostico':(activo||'mapa');
+  document.querySelectorAll('#nav .nav-op').forEach(function(o){
+    o.classList.toggle('active', o.getAttribute('data-vista')===v);
   });
 }
-(function(){
-  var btn=document.getElementById('pron-btn');
-  var menu=document.getElementById('pron-menu');
-  function cerrarMenu(){ menu.classList.remove('open'); }
-  btn.addEventListener('click', function(e){
-    e.stopPropagation();
-    if(menu.classList.contains('open')) cerrarMenu(); else menu.classList.add('open');
-  });
-  menu.querySelectorAll('.ps-opt').forEach(function(o){
-    o.addEventListener('click', function(e){
-      e.stopPropagation();
-      cerrarMenu();
-      if(this.getAttribute('data-v')==='poblacion') mostrarVistaPronostico();
-      else mostrarVistaLluvia();
-    });
-  });
-  document.addEventListener('click', function(){
-    if(menu.classList.contains('open')) cerrarMenu();
-  });
-})();
+if(vistaDeHash()!=='mapa') setTimeout(function(){ aplicarVista(vistaDeHash()); },0);
 
 // ── Máquina del tiempo: oculta por defecto ──────────────────────
 // history_24h.json (el histórico completo de 24h que alimenta la cinta
@@ -2943,7 +3121,7 @@ function cargarHistoria24hInicial(cb){
     .then(function(r){return r.json();})
     .then(function(datos){
       if(datos && datos.length){
-        historyData=datos;
+        historyData=sinDesactivadas(datos);
         construirDiaIdx();
         if(!PERIODOS[periodoActivo].archivo) activeData=datosLocales();
       }
@@ -3030,19 +3208,6 @@ HTML_BASE = """<!DOCTYPE html>
     /* Selector único de "Pronóstico" (antes dos botones sueltos —
        Pronóstico / Lluvia prevista — que no dejaban claro cuál de las
        dos pantallas estaba abierta). Mismo patrón visual que #ps-wrap. */
-    #pron-wrap{position:relative}
-    #pron-btn{
-      background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.4);
-      border-radius:8px;color:#93c5fd;font-size:.8rem;font-weight:700;padding:7px 10px;
-      cursor:pointer;font-family:inherit;flex-shrink:0;display:flex;align-items:center;gap:6px;
-    }
-    #pron-btn:hover{background:rgba(59,130,246,.3)}
-    #pron-menu{
-      display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:200px;
-      background:#1c2433;border:1px solid rgba(255,255,255,0.13);border-radius:10px;
-      box-shadow:0 8px 28px rgba(0,0,0,.5);padding:4px;z-index:2000;
-    }
-    #pron-menu.open{display:block}
 
     /* Resultados del buscador de población (tema claro, solo se usa en #vp) */
     .br-item{padding:8px 10px;border-radius:6px;font-size:.78rem;color:#1e293b;cursor:pointer}
@@ -3086,12 +3251,6 @@ HTML_BASE = """<!DOCTYPE html>
       box-shadow:0 8px 28px rgba(15,23,42,.18);padding:4px;z-index:3100;max-height:300px;overflow-y:auto;
     }
     #vp-buscador-resultados.open{display:block}
-    #vp-volver{
-      background:#fff;border:1px solid rgba(15,23,42,0.13);
-      border-radius:8px;color:#1e293b;font-size:.8rem;font-weight:600;padding:8px 14px;
-      cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:auto;
-    }
-    #vp-volver:hover{background:#f1f5f9}
     #vp-contenido{flex:1;overflow-y:auto;padding:26px 20px 60px;}
     #vp-contenido::-webkit-scrollbar{width:6px}
     #vp-contenido::-webkit-scrollbar-track{background:transparent}
@@ -3103,35 +3262,11 @@ HTML_BASE = """<!DOCTYPE html>
     #vp-mapa{border-radius:10px;overflow:hidden;height:220px;background:#e2e8f0;}
 
     /* Tarjetas de día clicables (abren el detalle horario) */
-    .vp-day-card{cursor:pointer;transition:transform .15s,box-shadow .15s}
-    .vp-day-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(15,23,42,.14)}
 
     /* Modal de detalle horario de un día */
-    #vp-detalle-dia{
-      display:none;position:fixed;inset:0;z-index:3200;background:rgba(15,23,42,.45);
-      align-items:center;justify-content:center;padding:20px;
-    }
-    #vp-detalle-dia.open{display:flex}
-    #vpd-card{
-      background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:85vh;
-      overflow-y:auto;box-shadow:0 20px 60px rgba(15,23,42,.35);
-    }
-    #vpd-header{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      padding:16px 20px;border-bottom:1px solid rgba(15,23,42,.08);position:sticky;top:0;
-      background:#fff;border-radius:14px 14px 0 0;
-    }
-    #vpd-titulo{font-size:1rem;font-weight:700;color:#0f172a}
-    #vpd-cerrar{
-      background:rgba(15,23,42,.06);border:none;border-radius:6px;color:#475569;font-size:.8rem;
-      width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
-    }
-    #vpd-cerrar:hover{background:rgba(15,23,42,.12)}
-    #vpd-body{padding:18px 20px 22px}
     @media(max-width:700px){
       #vp-topbar{padding:10px 12px;gap:8px}
       #vp-contenido{padding:16px 12px 50px}
-      #vp-volver{margin-left:0;order:3;width:100%}
     }
 
 
@@ -3155,7 +3290,6 @@ HTML_BASE = """<!DOCTYPE html>
       cursor:pointer;font-family:inherit;flex-shrink:0;
     }
     .vl-btn:hover{background:#f1f5f9}
-    #vl-volver{margin-left:auto}
     #vl-cuerpo{flex:1;overflow-y:auto;padding:16px 18px 46px}
     #vl-cuerpo::-webkit-scrollbar{width:6px}
     #vl-cuerpo::-webkit-scrollbar-thumb{background:rgba(15,23,42,.15);border-radius:3px}
@@ -3213,7 +3347,6 @@ HTML_BASE = """<!DOCTYPE html>
     @media(max-width:700px){
       #vl-topbar{padding:10px 12px;gap:8px}
       #vl-cuerpo{padding:12px 12px 40px}
-      #vl-volver{margin-left:0;order:3}
       #vl-mapa{height:46vh;min-height:250px}
       .ll-lg-txt{font-size:.48rem}
     }
@@ -3454,6 +3587,55 @@ HTML_BASE = """<!DOCTYPE html>
       .tm-per-btn,.tm-vel-btn{padding:4px 6px;font-size:.6rem}
       #tm-live{font-size:.58rem;padding:4px 7px}
     }
+    /* ── Menú principal lateral ── */
+    .nav-btn{
+      background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:#fff;
+      border-radius:9px;width:36px;height:34px;font-size:1.15rem;line-height:1;cursor:pointer;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-family:inherit;
+    }
+    .nav-btn:hover{background:rgba(255,255,255,0.18)}
+    .nav-btn-claro{background:#fff;border-color:rgba(15,23,42,0.15);color:#0f172a}
+    .nav-btn-claro:hover{background:#f1f5f9}
+    #nav-velo{display:none;position:fixed;inset:0;z-index:5000;background:rgba(2,6,23,.45)}
+    #nav-velo.open{display:block}
+    #nav{
+      position:fixed;top:0;bottom:0;left:0;width:290px;max-width:85vw;z-index:5001;
+      background:#0d1117;color:#e2e8f0;box-shadow:6px 0 30px rgba(0,0,0,.45);
+      transform:translateX(-105%);transition:transform .22s ease;display:flex;flex-direction:column;
+      padding:14px 12px;gap:6px;overflow-y:auto;
+    }
+    #nav.open{transform:none}
+    #nav-cab{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 14px;
+      border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:6px}
+    #nav-cab .lm{display:block;font-size:.95rem;font-weight:800;letter-spacing:.5px;color:#fff}
+    #nav-cab .ls{display:block;font-size:.6rem;color:#6e7f9a;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+    #nav-cerrar{background:none;border:none;color:#94a3b8;font-size:1.1rem;cursor:pointer;padding:6px}
+    .nav-op{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;
+      color:#e2e8f0;text-decoration:none;font-size:1.25rem;border:1px solid transparent}
+    .nav-op span{font-size:.86rem;font-weight:700;line-height:1.25}
+    .nav-op small{display:block;font-size:.68rem;font-weight:500;color:#8b9ab3}
+    .nav-op:hover{background:rgba(255,255,255,.06)}
+    .nav-op.active{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.45)}
+
+    /* ── Meteograma ── */
+    .mg-cabecera{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:8px}
+    .mg-plazos{display:flex;gap:6px}
+    .mg-ayuda{font-size:.72rem;color:#64748b;margin:4px 0 10px}
+    .mg-caja{background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(15,23,42,.08);padding:8px 0 4px;margin-bottom:16px}
+    .mg-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .mg-inner{position:relative;margin:0 auto}
+    .mg-tit{font-size:.72rem;font-weight:700;color:#334155;padding:8px 0 2px 40px;position:sticky;left:0;width:max-content}
+    .mg-ley{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:600;color:#475569;margin-left:10px}
+    .mg-ley i{display:inline-block;width:11px;height:11px;border-radius:3px}
+    .mg-leyendas{margin:0 0 8px -10px}
+    .mg-sec{font-size:.95rem;font-weight:800;color:#0f172a;margin:6px 0 2px}
+    .mg-cursor{display:none;position:absolute;top:0;bottom:0;width:0;border-left:1.5px solid rgba(15,23,42,.55);pointer-events:none}
+    .mg-tip{display:none;position:absolute;top:40px;z-index:5;min-width:210px;max-width:260px;pointer-events:none;
+      background:rgba(15,23,42,.94);color:#f1f5f9;border-radius:9px;padding:8px 10px;font-size:.72rem;line-height:1.55;
+      box-shadow:0 6px 20px rgba(0,0,0,.3)}
+    .mg-tip small{color:#94a3b8}
+    .mg-tip-mod{margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.12)}
+    .mg-tip-mod span{font-weight:700;margin-right:4px}
   </style>
 </head>
 <body>
@@ -3461,6 +3643,7 @@ HTML_BASE = """<!DOCTYPE html>
 
 <!-- Barra superior flotante -->
 <div id="topbar">
+  <button type="button" class="nav-btn" onclick="abrirNav()" title="Menú" aria-label="Menú">☰</button>
   <div id="logo">
     <span class="lm">🌿 METEO</span>
     <span class="ls">Guadalentín</span>
@@ -3490,14 +3673,6 @@ HTML_BASE = """<!DOCTYPE html>
     </select>
   </div>
   <div id="ctrl-precip" style="display:none"></div>
-  <div class="sep"></div>
-  <div id="pron-wrap">
-    <button type="button" id="pron-btn"><span id="pron-btn-label">🔮 Pronóstico</span><span class="ps-caret">▾</span></button>
-    <div id="pron-menu">
-      <div class="ps-opt" data-v="poblacion">📅 Por población</div>
-      <div class="ps-opt" data-v="lluvia">🌧 Lluvia prevista</div>
-    </div>
-  </div>
   <div class="sep"></div>
   <div id="ctrl-tm">
     <label><input type="checkbox" id="tm-chk"> 🕐 Máquina del tiempo</label>
@@ -3568,6 +3743,7 @@ HTML_BASE = """<!DOCTYPE html>
 <!-- Pantalla completa de pronóstico (independiente del mapa de datos climáticos) -->
 <div id="vp">
   <div id="vp-topbar">
+    <button type="button" class="nav-btn nav-btn-claro" onclick="abrirNav()" title="Menú" aria-label="Menú">☰</button>
     <div id="vp-logo">
       <span class="lm">🔮 PRONÓSTICO</span>
       <span class="ls">Guadalentín</span>
@@ -3576,24 +3752,11 @@ HTML_BASE = """<!DOCTYPE html>
       <input type="text" id="vp-buscador-input" placeholder="🔍 Buscar población…" autocomplete="off">
       <div id="vp-buscador-resultados"></div>
     </div>
-    <button type="button" class="vl-btn" onclick="mostrarVistaMapa();mostrarVistaLluvia()">🌧 Mapa de lluvia</button>
-    <button type="button" id="vp-volver" onclick="mostrarVistaMapa()">← Mapa</button>
   </div>
   <div id="vp-contenido">
     <div id="vp-vacio">
       <div style="font-size:42px;margin-bottom:10px;">🔮</div>
       <div>Busca una población para ver su pronóstico y comparar modelos.</div>
-    </div>
-  </div>
-
-  <!-- Detalle horario de un día concreto (se abre al pinchar una tarjeta o un punto del gráfico) -->
-  <div id="vp-detalle-dia" onclick="if(event.target===this) cerrarDetalleDia()">
-    <div id="vpd-card">
-      <div id="vpd-header">
-        <span id="vpd-titulo">Detalle del día</span>
-        <button type="button" id="vpd-cerrar" onclick="cerrarDetalleDia()">✕</button>
-      </div>
-      <div id="vpd-body"></div>
     </div>
   </div>
 </div>
@@ -3602,9 +3765,8 @@ HTML_BASE = """<!DOCTYPE html>
 <!-- Pantalla completa: mapa de precipitación acumulada prevista -->
 <div id="vl">
   <div id="vl-topbar">
+    <button type="button" class="nav-btn nav-btn-claro" onclick="abrirNav()" title="Menú" aria-label="Menú">☰</button>
     <div id="vl-titulo">🌧 Lluvia prevista<small>Precipitación acumulada · Región de Murcia</small></div>
-    <button type="button" class="vl-btn" onclick="ocultarVistaLluvia();mostrarVistaPronostico()">🔮 Pronóstico por población</button>
-    <button type="button" class="vl-btn" id="vl-volver" onclick="ocultarVistaLluvia()">← Mapa</button>
   </div>
   <div id="vl-cuerpo">
     <div id="vl-inner">
@@ -3631,6 +3793,18 @@ HTML_BASE = """<!DOCTYPE html>
   </div>
 </div>
 
+<!-- Menú principal lateral (☰), común a las tres pantallas -->
+<div id="nav-velo" onclick="cerrarNav()"></div>
+<nav id="nav" aria-label="Menú principal">
+  <div id="nav-cab">
+    <div><span class="lm">🌿 METEO</span><span class="ls">Guadalentín</span></div>
+    <button type="button" id="nav-cerrar" onclick="cerrarNav()" aria-label="Cerrar">✕</button>
+  </div>
+  <a href="./" class="nav-op active" data-vista="mapa" onclick="irA('mapa');return false;">🗺<span>Mapa de estaciones<small>Datos en tiempo real y riesgos</small></span></a>
+  <a href="#pronostico" class="nav-op" data-vista="pronostico" onclick="irA('pronostico');return false;">🔮<span>Pronóstico por población<small>Meteograma de varios días</small></span></a>
+  <a href="#lluvia" class="nav-op" data-vista="lluvia" onclick="irA('lluvia');return false;">🌧<span>Lluvia prevista<small>Precipitación acumulada en la Región</small></span></a>
+</nav>
+
 <script>__JS__</script>
 <script>
 (function(){
@@ -3642,7 +3816,7 @@ HTML_BASE = """<!DOCTYPE html>
       .then(function(r){return r.json();})
       .then(function(datos){
         if(!datos||!datos.length) return;
-        historyData=datos;
+        historyData=sinDesactivadas(datos);
         historia24hCargada=true; // este refresco ya trae el histórico completo
         if(!PERIODOS[periodoActivo].archivo) activeData=datosLocales();
         var indices=getModoIndices();
@@ -3700,6 +3874,17 @@ def principal():
         print("  ❌ Sin datos WU. Comprueba la conexión."); return
 
     h_prev = leer(F_H24, [])
+
+    print("\n🧹 Filtrando lecturas imposibles...")
+    datos_wu, descartes = filtrar_lecturas(datos_wu, h_prev, ahora)
+    for sid, campo, valor, motivo in descartes:
+        print(f"  ⚠ {sid} {campo}={valor}: {motivo}")
+    if not descartes: print("  ✅ Ninguna lectura descartada")
+    guardar(F_FILTRO, anotar_descartes(leer(F_FILTRO, {}), descartes, ahora))
+    if DESACTIVADAS: print(f"  ℹ Desactivadas a mano: {', '.join(sorted(DESACTIVADAS))}")
+    if not datos_wu:
+        print("  ❌ Ninguna estación con datos actuales."); return
+
     minutos = 15
     if h_prev:
         try:
@@ -3724,6 +3909,10 @@ def principal():
     print(f"\n🌾 Historial agrícola... (+{minutos} min)")
     hagri = hist_agri(datos_wu, ahora, minutos)
     dias_acum = len(hagri)
+    # El historial agrícola guardado aún puede traer días de una estación ya
+    # desactivada: para el riesgo no cuenta (ni como vecina de otra).
+    hagri = {f: {s: v for s, v in d.items() if s.upper() not in DESACTIVADAS}
+             for f, d in hagri.items()}
 
     if dias_acum < MIN_DIAS:
         falt = MIN_DIAS - dias_acum
