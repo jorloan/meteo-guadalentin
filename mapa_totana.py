@@ -1295,6 +1295,7 @@ function showPanel(sid,html,titulo){
 }
 function hidePanel(){
   document.getElementById('dp').style.display='none';
+  document.getElementById('dp').classList.remove('alto');
   PS=null;
 }
 
@@ -2340,6 +2341,53 @@ function esEstiado(est){
   return (Date.now()/1000-est.epoch)>1800;
 }
 
+// ── Estaciones agrupadas ───────────────────────────────────
+// En Totana, Alhama o Lorca hay estaciones a pocos cientos de metros: al
+// alejar el zoom las burbujas se montaban unas encima de otras y no se
+// podía leer ni tocar ninguna (sobre todo en el móvil). Las que caen a
+// menos de AGR_PX píxeles se juntan en una sola burbuja algo mayor con el
+// número de estaciones; tocarla acerca el mapa a ellas. Temperatura y
+// humedad dan la media del grupo; lluvia, viento y riesgo, el máximo (lo
+// que interesa no perderse). A partir del zoom AGR_ZOOM_MAX se ven todas.
+// El mapa de calor sigue usando todas las estaciones.
+var AGR_PX=42, AGR_ZOOM_MAX=14;
+var _marcadores=[], _marcParam='temp';
+function pintarMarcadores(){
+  mLG.clearLayers();
+  var z=map.getZoom(), lista=_marcadores;
+  if(z>=AGR_ZOOM_MAX){ lista.forEach(function(m){ mLG.addLayer(m.mk); }); return; }
+  var celdas={};
+  lista.forEach(function(m){
+    var pt=map.project([m.lat,m.lon],z), k=Math.floor(pt.x/AGR_PX)+'_'+Math.floor(pt.y/AGR_PX);
+    (celdas[k]=celdas[k]||[]).push(m);
+  });
+  var p=_marcParam, esR=(p==='oidio'||p==='mildiu'), usaMax=(esR||p==='precip'||p==='wind');
+  Object.keys(celdas).forEach(function(k){
+    var g=celdas[k];
+    if(g.length===1){ mLG.addLayer(g[0].mk); return; }
+    var vals=g.map(function(m){return m.v;}).filter(function(v){ return v!=null&&!(esR&&v<0); });
+    var lat=0,lon=0; g.forEach(function(m){ lat+=m.lat; lon+=m.lon; }); lat/=g.length; lon/=g.length;
+    var v=!vals.length?(esR?-1:null):usaMax?Math.max.apply(null,vals):vals.reduce(function(a,b){return a+b;},0)/vals.length;
+    if(v==null) return;
+    var lb=esR?(v<0?'?':['0','B','M','A'][Math.min(3,Math.max(0,Math.round(v)))])
+      :p==='precip'?v.toFixed(1):p==='temp'?Math.round(v)+'°':Math.round(v)+'';
+    var ih='<div style="position:relative;">'
+      +'<div style="background:'+col(v,p)+';color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,.7);'
+      +'border:2px solid #fff;border-radius:50%;width:34px;height:34px;display:flex;justify-content:center;'
+      +'align-items:center;font-weight:800;font-size:11.5px;box-shadow:0 0 0 3px rgba(255,255,255,.35),0 2px 6px rgba(0,0,0,.4);cursor:pointer;">'+lb+'</div>'
+      +'<div style="position:absolute;top:-6px;right:-8px;background:#0f172a;color:#fff;border:1.5px solid #fff;'
+      +'border-radius:9px;min-width:16px;height:16px;padding:0 3px;font-size:9.5px;font-weight:800;display:flex;'
+      +'align-items:center;justify-content:center;">'+g.length+'</div></div>';
+    var mk=L.marker([lat,lon],{icon:L.divIcon({className:'',html:ih,iconSize:[34,34],iconAnchor:[17,17]}),zIndexOffset:500});
+    var b=L.latLngBounds(g.map(function(m){return [m.lat,m.lon];}));
+    mk.on('click',function(){ map.flyToBounds(b.pad(0.4),{maxZoom:AGR_ZOOM_MAX,duration:0.6}); });
+    mk.bindTooltip('<b>'+g.length+' estaciones</b> · '+(usaMax?'máximo':'media')+'<br>'
+      +g.slice(0,6).map(function(m){return m.nm;}).join(', ')+(g.length>6?'…':''),{direction:'top',offset:[0,-18],opacity:0.92});
+    mLG.addLayer(mk);
+  });
+}
+map.on('zoomend',pintarMarcadores);
+
 // ── Render principal ───────────────────────────────────────
 function render(){
   var p=document.getElementById('ps').value;
@@ -2351,6 +2399,7 @@ function render(){
   var snap=isR?historyData[historyData.length-1]:activeData[CI];
   if(!snap) return;
   var feats=[];
+  _marcadores=[]; _marcParam=pRender;
 
   (snap.stations||[]).forEach(function(est){
     if(!est||est.lat==null||est.lon==null) return;
@@ -2569,9 +2618,10 @@ function render(){
 
     (function(id,h){mk.on('click',function(){showPanel(id,h);});})(est.stationID,fh);
     mk.bindTooltip('<b>'+nm+'</b>'+(estiado?' ⏱':''),{direction:'top',offset:[0,-16],opacity:0.9});
-    mLG.addLayer(mk);
+    _marcadores.push({mk:mk,lat:est.lat,lon:est.lon,v:v,nm:nm});
     feats.push(turf.point([est.lon,est.lat],{value:v}));
   });
+  pintarMarcadores();
 
   // Heatmap interpolado — nos ahorramos el cálculo entero (turf.interpolate
   // es lo más caro con diferencia, ~200ms con las estaciones actuales) si
@@ -3021,6 +3071,72 @@ if(radarChk){
   document.addEventListener('click', function(){
     if(menu.classList.contains('open')) cerrarMenu();
   });
+})();
+
+// ── Botones de parámetro (móvil) ────────────────────────────
+// En el móvil el desplegable se sustituye por una fila de botones que se
+// desliza de lado: se ve qué está elegido y se cambia con un toque.
+// Mismo <select id="ps"> y mismo onParamChange() que el desplegable, que
+// sigue en el ordenador.
+function elegirParam(v){
+  var sel=document.getElementById('ps'); sel.value=v;
+  var opt=sel.querySelector('option[value="'+v+'"]'), lbl=document.getElementById('ps-btn-label');
+  if(opt&&lbl) lbl.textContent=opt.textContent;
+  marcarChipParam(v);
+  onParamChange();
+}
+function marcarChipParam(v){
+  document.querySelectorAll('#chips-param .chip-p').forEach(function(b){
+    var on=b.getAttribute('data-v')===v; b.classList.toggle('active',on);
+    if(on&&b.scrollIntoView&&esMovil()) b.scrollIntoView({block:'nearest',inline:'nearest'});
+  });
+}
+document.querySelectorAll('#chips-param .chip-p').forEach(function(b){
+  b.addEventListener('click',function(){ elegirParam(this.getAttribute('data-v')); });
+});
+document.getElementById('ps').addEventListener('change',function(){ marcarChipParam(this.value); });
+
+// ── Hoja de capas (móvil) ───────────────────────────────────
+// Máquina del tiempo, radar y opacidad ocupaban una segunda fila de la
+// barra con casillas diminutas. En el móvil se llevan (los mismos
+// elementos, con sus eventos) a una hoja que sube desde abajo con el
+// botón 🧰, y vuelven a la barra si la pantalla se ensancha.
+var CTRL_CAPAS=['ctrl-tm','ctrl-radar','ctrl-op'];
+function colocarControles(){
+  var movil=esMovil(), hoja=document.getElementById('hoja-capas-cuerpo'), loc=document.getElementById('btn-loc');
+  CTRL_CAPAS.forEach(function(id){
+    var el=document.getElementById(id); if(!el) return;
+    var sep=el.previousElementSibling&&el.previousElementSibling.classList.contains('sep')?el.previousElementSibling:null;
+    if(movil&&el.parentNode!==hoja){ if(sep) sep.style.display='none'; hoja.appendChild(el); }
+    else if(!movil&&el.parentNode===hoja){ loc.parentNode.insertBefore(el,loc); }
+  });
+  if(!movil) cerrarCapas();
+}
+function abrirCapas(){ document.getElementById('hoja-capas').classList.add('open'); document.getElementById('capas-velo').classList.add('open'); }
+function cerrarCapas(){ var h=document.getElementById('hoja-capas'); if(!h) return; h.classList.remove('open'); document.getElementById('capas-velo').classList.remove('open'); }
+colocarControles();
+window.matchMedia('(max-width:768px)').addEventListener('change',colocarControles);
+
+// ── Ficha de estación deslizante (móvil) ────────────────────
+// En el móvil la ficha sube desde abajo a media altura, sin tapar todo el
+// mapa; tocando o arrastrando el asa hacia arriba se abre entera, hacia
+// abajo se cierra.
+(function(){
+  var dp=document.getElementById('dp'), asa=document.getElementById('dp-asa'), y0=null, tTactil=0;
+  function inicio(e){ y0=(e.touches?e.touches[0]:e).clientY; }
+  function fin(e){
+    if(y0==null) return;
+    var dy=(e.changedTouches?e.changedTouches[0]:e).clientY-y0; y0=null; tTactil=Date.now();
+    if(dy>50){ if(dp.classList.contains('alto')) dp.classList.remove('alto'); else hidePanel(); }
+    else if(dy<-30) dp.classList.add('alto');
+    else dp.classList.toggle('alto');
+  }
+  [asa,document.getElementById('dh')].forEach(function(el){
+    el.addEventListener('touchstart',inicio,{passive:true});
+    el.addEventListener('touchend',function(e){ if(e.target.id==='cp') return; fin(e); });
+  });
+  // El toque ya lo ha resuelto touchend: el clic que lo sigue no debe deshacerlo.
+  asa.addEventListener('click',function(){ if(Date.now()-tTactil>600) dp.classList.toggle('alto'); });
 })();
 
 // ── Mi zona ─────────────────────────────────────────────────
@@ -4007,6 +4123,49 @@ HTML_BASE = """<!DOCTYPE html>
     .vz-vacio{padding:10px;color:#64748b;font-size:.9rem}
     .vz-pie{font-size:.72rem;color:#64748b;text-align:center;margin:6px 0 4px}
 
+    /* ── Mapa limpio: botones de parámetro, hoja de capas, ficha deslizante ── */
+    #chips-param,#btn-capas,#dp-asa{display:none}
+    #capas-velo{display:none}
+    #hoja-capas{display:none}
+    @media(max-width:768px){
+      #logo,#ps-wrap,#topbar .sep{display:none}
+      #topbar{flex-wrap:nowrap;padding:6px 8px;gap:6px;border-radius:14px}
+      #chips-param{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+      #chips-param::-webkit-scrollbar{display:none}
+      /* Difuminado a la derecha: se nota que hay más botones deslizando */
+      #chips-param{-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent);padding-right:24px}
+      .chip-p{flex-shrink:0;min-height:40px;padding:0 13px;border-radius:999px;border:1px solid rgba(255,255,255,.16);
+        background:rgba(255,255,255,.07);color:#e2e8f0;font-size:.9rem;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
+      .chip-p.active{background:#2563eb;border-color:#2563eb;color:#fff}
+      #btn-capas,#btn-loc{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:42px;height:40px;
+        border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);font-size:1.2rem;cursor:pointer;padding:0}
+      #ctrl-precip{position:fixed;top:60px;left:8px;right:8px;flex-wrap:wrap;justify-content:center;z-index:999}
+      .leaflet-control-zoom{display:none}
+      #capas-velo.open{display:block;position:fixed;inset:0;z-index:4600;background:rgba(2,6,23,.35)}
+      #hoja-capas{display:block;position:fixed;left:0;right:0;bottom:0;z-index:4601;background:#0d1117;color:#e2e8f0;
+        border-radius:18px 18px 0 0;padding:6px 16px calc(18px + env(safe-area-inset-bottom));
+        transform:translateY(105%);transition:transform .22s ease;box-shadow:0 -8px 30px rgba(0,0,0,.45)}
+      #hoja-capas.open{transform:none}
+      .hoja-asa,#dp-asa{width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);margin:6px auto 10px;cursor:pointer}
+      .hoja-tit{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:1.05rem;margin-bottom:8px}
+      .hoja-tit button{background:none;border:none;color:#94a3b8;font-size:1.1rem;cursor:pointer;padding:6px}
+      #hoja-capas-cuerpo>div{display:flex!important;align-items:center;gap:10px;min-height:52px;border-bottom:1px solid rgba(255,255,255,.07);font-size:1rem}
+      #hoja-capas-cuerpo label{display:flex;align-items:center;gap:10px;font-size:1rem;cursor:pointer}
+      #hoja-capas-cuerpo input[type=checkbox]{width:22px;height:22px;accent-color:#2563eb}
+      #hoja-capas-cuerpo input[type=range]{flex:1;width:auto!important;accent-color:#2563eb}
+      #hoja-capas-cuerpo #ctrl-op{flex-direction:row!important;align-items:center!important}
+      #hoja-capas-cuerpo #ctrl-op label{flex-shrink:0}
+      .hoja-nota{font-size:.8rem;color:#8b9ab3;margin-top:10px;line-height:1.4}
+      /* Ficha de estación: hoja que sube desde abajo */
+      #dp{top:auto!important;left:0!important;right:0!important;width:auto!important;bottom:var(--tabs-h)!important;
+        max-height:48dvh!important;border-radius:18px 18px 0 0!important;transition:max-height .22s ease}
+      #dp.alto{max-height:calc(100dvh - var(--tabs-h) - 70px)!important}
+      #dp-asa{display:block;margin:8px auto 0;flex-shrink:0}
+      #dh{padding:6px 16px 8px}
+      #dc{font-size:.95rem}
+      #dc table{font-size:15px!important}
+    }
+
     /* ── Pestañas de abajo (móvil) ── */
     #tabs{display:none}
     @media(max-width:768px){
@@ -4089,6 +4248,15 @@ HTML_BASE = """<!DOCTYPE html>
       <option value="mildiu">🍃 Riesgo Mildiu</option>
     </select>
   </div>
+  <div id="chips-param" role="tablist" aria-label="Qué ver en el mapa">
+    <button type="button" class="chip-p active" data-v="temp">🌡 Temp.</button>
+    <button type="button" class="chip-p" data-v="precip">🌧 Lluvia</button>
+    <button type="button" class="chip-p" data-v="humidity">💧 Humedad</button>
+    <button type="button" class="chip-p" data-v="wind">💨 Viento</button>
+    <button type="button" class="chip-p" data-v="oidio">🍇 Oídio</button>
+    <button type="button" class="chip-p" data-v="mildiu">🍃 Mildiu</button>
+  </div>
+  <button type="button" id="btn-capas" onclick="abrirCapas()" aria-label="Capas">🧰</button>
   <div id="ctrl-precip" style="display:none"></div>
   <div class="sep"></div>
   <div id="ctrl-tm">
@@ -4144,8 +4312,18 @@ HTML_BASE = """<!DOCTYPE html>
 
 <div id="aviso-dias"></div>
 
+<!-- Hoja de capas (móvil): máquina del tiempo, radar y opacidad salen de la barra de arriba -->
+<div id="capas-velo" onclick="cerrarCapas()"></div>
+<div id="hoja-capas" role="dialog" aria-label="Capas del mapa">
+  <div class="hoja-asa" onclick="cerrarCapas()"></div>
+  <div class="hoja-tit">Capas del mapa <button type="button" onclick="cerrarCapas()" aria-label="Cerrar">✕</button></div>
+  <div id="hoja-capas-cuerpo"></div>
+  <div class="hoja-nota">El mapa de fondo, las webcams y el mapa de calor, en el botón de capas de abajo a la derecha.</div>
+</div>
+
 <!-- Panel lateral de estación -->
 <div id="dp">
+  <div id="dp-asa" aria-hidden="true"></div>
   <div id="dh">
     <span id="dh-title">Detalle de estación</span>
     <button id="cp" onclick="hidePanel()">✕</button>
