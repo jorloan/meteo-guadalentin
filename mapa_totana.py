@@ -982,6 +982,11 @@ var sat=L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
 
 var map=L.map('map',{center:[37.76,-1.53],zoom:10,layers:[terreno],zoomControl:false});
 L.control.zoom({position:'bottomleft'}).addTo(map);
+// Sin el prefijo "Leaflet | ": en el móvil, con el icono de capas justo
+// encima en la misma esquina, el texto entero no cabía y se cortaba por
+// el borde de la pantalla ("Leaflet | © Goog…"). Sigue acreditando el
+// mapa base (© Google/Esri/OSM, ya puesto en cada tileLayer).
+map.attributionControl.setPrefix(false);
 map.createPane('hp');
 map.getPane('hp').style.zIndex=390;
 map.getPane('hp').style.filter='blur(14px)';
@@ -1130,10 +1135,18 @@ map.on('locationfound',function(e){
 // buscar una población por nombre) no sirven para una finca sin GPS a
 // mano y sin un pueblo cercano que la describa bien. Este botón arma un
 // modo "siguiente toque en el mapa" (cursor en cruz + aviso) que crea el
-// sitio con esas coordenadas exactas y pasa a Mi zona para verlo.
+// sitio con esas coordenadas exactas y pasa a Mi zona para verlo. Antes
+// había un botón 🎯 aparte solo para centrar el mapa en la ubicación del
+// usuario (locateMe()); en vez de repetir ese concepto como una acción
+// suelta, aquí se dispara de paso (si hay permiso, el mapa se acerca a
+// donde está el usuario mientras arma el modo; si no, no pasa nada y el
+// modo se arma igual) — así "dónde estoy" es el primer paso de "añadir
+// finca", no una cosa aparte, pero sin obligar a fijar justo ese punto:
+// se puede tocar cualquier sitio del mapa, esté cerca o lejos de él.
 var modoPin=false;
 function activarModoPin(){
   if(modoPin){ desactivarModoPin(); return; }
+  locateMe();
   modoPin=true;
   var b=document.getElementById('btn-pin'); if(b){ b.classList.add('active'); b.title='Cancelar'; }
   map.getContainer().style.cursor='crosshair';
@@ -3245,12 +3258,12 @@ document.getElementById('ps').addEventListener('change',function(){ marcarChipPa
 // botón 🧰, y vuelven a la barra si la pantalla se ensancha.
 var CTRL_CAPAS=['ctrl-radar','ctrl-op'];
 function colocarControles(){
-  var movil=esMovil(), hoja=document.getElementById('hoja-capas-cuerpo'), loc=document.getElementById('btn-loc');
+  var movil=esMovil(), hoja=document.getElementById('hoja-capas-cuerpo'), ancla=document.getElementById('btn-pin');
   CTRL_CAPAS.forEach(function(id){
     var el=document.getElementById(id); if(!el) return;
     var sep=el.previousElementSibling&&el.previousElementSibling.classList.contains('sep')?el.previousElementSibling:null;
     if(movil&&el.parentNode!==hoja){ if(sep) sep.style.display='none'; hoja.appendChild(el); }
-    else if(!movil&&el.parentNode===hoja){ loc.parentNode.insertBefore(el,loc); }
+    else if(!movil&&el.parentNode===hoja){ ancla.parentNode.insertBefore(el,ancla); }
   });
   if(!movil) cerrarCapas();
 }
@@ -4198,14 +4211,15 @@ HTML_BASE = """<!DOCTYPE html>
     #ctrl-radar input[type=checkbox]{cursor:pointer;accent-color:#3b82f6}
     #radar-fuera-rango{display:none;font-size:.62rem;color:#f0ad4e;font-weight:700;white-space:nowrap;cursor:help}
 
-    /* Botón ubicación */
-    #btn-loc,#btn-pin{
+    /* Botón añadir finca (centra el mapa en la ubicación del usuario, si
+       hay GPS, y arma el modo de toque) */
+    #btn-pin{
       background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
       border-radius:8px;color:#e6edf3;font-size:1rem;
       width:34px;height:34px;display:flex;align-items:center;justify-content:center;
       cursor:pointer;flex-shrink:0;padding:0;
     }
-    #btn-loc:hover,#btn-pin:hover{background:rgba(255,255,255,0.15)}
+    #btn-pin:hover{background:rgba(255,255,255,0.15)}
     #btn-pin.active{background:#1d4ed8;border-color:transparent}
 
     /* Aviso modo "añadir finca" */
@@ -4334,6 +4348,8 @@ HTML_BASE = """<!DOCTYPE html>
     .leaflet-control-attribution{
       background:rgba(13,17,23,0.7)!important;color:#4b5563!important;
       border-radius:6px 0 0 0!important;font-size:.6rem!important;
+      max-width:calc(100vw - 16px)!important;overflow:hidden!important;
+      white-space:nowrap!important;text-overflow:ellipsis!important;
     }
     .leaflet-control-attribution a{color:#6b7280!important}
 
@@ -4462,7 +4478,7 @@ HTML_BASE = """<!DOCTYPE html>
       .chip-p{flex-shrink:0;min-height:40px;padding:0 13px;border-radius:999px;border:1px solid rgba(255,255,255,.16);
         background:rgba(255,255,255,.07);color:#e2e8f0;font-size:.9rem;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
       .chip-p.active{background:#2563eb;border-color:#2563eb;color:#fff}
-      #btn-capas,#btn-loc,#btn-pin{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:42px;height:40px;
+      #btn-capas,#btn-pin{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:42px;height:40px;
         border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);font-size:1.2rem;cursor:pointer;padding:0}
       #ctrl-precip{position:fixed;top:60px;left:8px;right:8px;flex-wrap:wrap;justify-content:center;z-index:999}
       .leaflet-control-zoom{display:none}
@@ -4664,7 +4680,6 @@ HTML_BASE = """<!DOCTYPE html>
     <label>🔆 Opacidad</label>
     <input type="range" id="op" min="0" max="1" step="0.05" value="0.35" style="width:65px">
   </div>
-  <button id="btn-loc" title="Mi ubicación" onclick="locateMe()">🎯</button>
   <button id="btn-pin" title="Añadir finca en el mapa" onclick="activarModoPin()">📌</button>
 </div>
 
