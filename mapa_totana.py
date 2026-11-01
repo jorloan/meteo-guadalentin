@@ -4113,6 +4113,17 @@ HTML_BASE = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Meteo Guadalentín</title>
+  <!-- Google Analytics (GA4). async a propósito: un <script> bloqueante
+       aquí sería el mismo problema de "tarda en cargar" que ya se quitó
+       de Leaflet/Turf (ver el comentario de abajo) al depender de la
+       latencia de un dominio externo antes de poder pintar nada. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SP9MPQ1FFN"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-SP9MPQ1FFN');
+  </script>
   <!-- Leaflet y Turf autoalojados (vendor/) en vez de unpkg/jsdelivr: la
        carga dependía de dos CDN externos con un <script> bloqueante en
        <head>, así que cualquier lentitud/caída de esos CDN retrasaba la
