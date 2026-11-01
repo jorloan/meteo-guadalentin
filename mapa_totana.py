@@ -935,8 +935,6 @@ function riesgoSinDesactivadas(d){        // {fecha: {stationID: {...}}}
 }
 var RC=['#27ae60','#f39c12','#e67e22','#c0392b'];
 var RL=['Sin riesgo','Riesgo bajo','Riesgo medio','Riesgo ALTO'];
-var CI=historyData.length-1;
-var PT=null;
 window.HO=0.35;
 
 // ── Mapa base ──────────────────────────────────────────────
@@ -1463,15 +1461,185 @@ function graficoEstacion12h(sid){
     +svg+'</div>';
 }
 
+// ── Gráfica de días anteriores en el panel de estación ──────────
+// Sustituye a la antigua máquina del tiempo (repintar el mapa en un
+// momento pasado): cada estación tiene ahora su propia gráfica de los
+// últimos días, de clima o — en Riesgos — del nivel calculado cada día.
+// Se pinta al abrir el panel (showPanel()), bajo demanda: ninguna de las
+// dos descargas que necesita (history_7d.json / historial_riesgo.json)
+// se hace hasta que de verdad se abre un panel.
+var DIAS_PANEL=7;
+var historia7dCargada=false, historia7dCargando=false;
+function asegurarHistoria7d(cb){
+  if(historia7dCargada){ cb(); return; }
+  if(historia7dCargando){ setTimeout(function(){asegurarHistoria7d(cb);},200); return; }
+  historia7dCargando=true;
+  fetch('history_7d.json?v='+Date.now()).then(function(r){return r.json();})
+    .then(function(datos){ extData['7d']=(datos&&datos.length)?sinDesactivadas(datos):[]; })
+    .catch(function(){ extData['7d']=[]; })
+    .then(function(){ historia7dCargada=true; historia7dCargando=false; cb(); });
+}
+
+// Llamada al abrir cualquier panel de estación: pinta la gráfica que
+// corresponda (clima o riesgo) en cuanto los datos que necesita están
+// listos, sin bloquear la apertura del panel con el fetch.
+function pintarGraficaDiasPanel(sid, par){
+  var cont=document.getElementById('panel-grafica-dias');
+  if(!cont || PS!==sid) return; // el panel pudo cerrarse o cambiar de estación mientras cargaba
+  var cargando='<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);'
+    +'font-size:11px;color:#9ca3af;">⏳ Cargando histórico…</div>';
+  if(esParamRiesgo(par)){
+    if(!riesgoHistCargado){ cont.innerHTML=cargando; cargarRiesgoHistorico(function(){ pintarGraficaDiasPanel(sid,par); }); return; }
+    cont.innerHTML=graficoRiesgoDias(sid, par);
+  } else {
+    if(!historia7dCargada){ cont.innerHTML=cargando; asegurarHistoria7d(function(){ pintarGraficaDiasPanel(sid,par); }); return; }
+    cont.innerHTML=graficoEstacionDias(sid);
+  }
+}
+
+// Mínimo/máximo de temperatura y lluvia del día (el último precipTotal
+// válido, que al ser un contador creciente desde medianoche ya ES el
+// total del día) de cada uno de los últimos DIAS_PANEL días, a partir
+// del histórico de 7 días (resolución 3h: suficiente para una vista de
+// conjunto, no para el detalle que ya da la gráfica de 12h de arriba).
+function datosDiariosEstacion(sid, dias){
+  var datos=extData['7d']||[];
+  var porDia={};
+  datos.forEach(function(snap){
+    var dk=(snap.timestamp||'').slice(0,10); if(!dk) return;
+    var est=(snap.stations||[]).filter(function(e){ return e&&e.stationID===sid; })[0];
+    if(!est) return;
+    var d=porDia[dk]=porDia[dk]||{tMin:null,tMax:null,lluvia:0};
+    var t=est.metric&&est.metric.temp!=null?est.metric.temp:null;
+    if(t!=null){ d.tMin=(d.tMin==null)?t:Math.min(d.tMin,t); d.tMax=(d.tMax==null)?t:Math.max(d.tMax,t); }
+    var p=est.metric&&est.metric.precipTotal!=null?est.metric.precipTotal:null;
+    if(p!=null) d.lluvia=Math.max(d.lluvia,p);
+  });
+  return Object.keys(porDia).sort().slice(-dias).map(function(k){
+    var d=porDia[k]; return {dia:k, tMin:d.tMin, tMax:d.tMax, lluvia:d.lluvia};
+  });
+}
+
+function graficoEstacionDias(sid){
+  var pts=datosDiariosEstacion(sid, DIAS_PANEL);
+  var temps=[]; pts.forEach(function(p){ if(p.tMin!=null) temps.push(p.tMin); if(p.tMax!=null) temps.push(p.tMax); });
+  if(!temps.length) return ''; // estación sin histórico suficiente todavía
+
+  var W=272,H=120,mL=26,mR=8,mT=8,mB=16;
+  var pw=W-mL-mR, ph2=H-mT-mB, n=pts.length;
+  var vMin=Math.min.apply(null,temps)-1, vMax=Math.max.apply(null,temps)+1;
+  if(vMax-vMin<2){ vMin-=1; vMax+=1; }
+  var pMax=Math.max(1, Math.max.apply(null, pts.map(function(p){return p.lluvia||0;})));
+
+  function xAt(i){ return n>1?mL+i*(pw/(n-1)):mL+pw/2; }
+  function yTemp(v){ return mT+ph2-((v-vMin)/(vMax-vMin))*ph2; }
+  function yPrecip(v){ return mT+ph2-(v/pMax)*ph2*0.85; }
+
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
+  [vMin,(vMin+vMax)/2,vMax].forEach(function(v){
+    var y=yTemp(v);
+    svg+='<line x1="'+mL+'" y1="'+y.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(255,255,255,0.09)"/>';
+    svg+='<text x="1" y="'+(y+3).toFixed(1)+'" font-size="8" fill="#8b98ab">'+Math.round(v)+'°</text>';
+  });
+
+  var bw=Math.max(2,(pw/n)*0.5);
+  pts.forEach(function(p,i){
+    if(!p.lluvia) return;
+    var y=yPrecip(p.lluvia), x=xAt(i)-bw/2, hb=(mT+ph2)-y;
+    svg+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,hb).toFixed(1)
+      +'" rx="1" fill="#3b82f6" opacity="0.6"><title>'+p.lluvia.toFixed(1)+' mm</title></rect>';
+  });
+
+  function linea(campo,color){
+    var d='',en=false;
+    pts.forEach(function(p,i){
+      var v=p[campo];
+      if(v==null){ en=false; return; }
+      d+=(en?'L':'M')+xAt(i).toFixed(1)+','+yTemp(v).toFixed(1)+' ';
+      en=true;
+    });
+    if(d) svg+='<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="2"/>';
+    pts.forEach(function(p,i){
+      var v=p[campo]; if(v==null) return;
+      svg+='<circle cx="'+xAt(i).toFixed(1)+'" cy="'+yTemp(v).toFixed(1)+'" r="2.3" fill="'+color+'">'
+        +'<title>'+p.dia.slice(8,10)+'/'+p.dia.slice(5,7)+': '+v.toFixed(1)+'°C</title></circle>';
+    });
+  }
+  linea('tMax','#f59e0b');
+  linea('tMin','#60a5fa');
+
+  var paso=n>8?2:1;
+  for(var i=0;i<n;i+=paso){
+    svg+='<text x="'+xAt(i).toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#8b98ab" text-anchor="middle">'
+      +pts[i].dia.slice(8,10)+'/'+pts[i].dia.slice(5,7)+'</text>';
+  }
+  svg+='</svg>';
+
+  return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">'
+    +'<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">📅 Últimos '+n+' días'
+    +' &nbsp;<span style="color:#f59e0b;">▬</span> Máx'
+    +' &nbsp;<span style="color:#60a5fa;">▬</span> Mín'
+    +' &nbsp;<span style="color:#3b82f6;">▮</span> Lluvia/día</div>'
+    +svg+'</div>';
+}
+
+// Nivel de riesgo (0-3) de los últimos DIAS_RIESGO_PANEL días: los
+// anteriores a hoy vienen de historial_riesgo.json (un snapshot diario ya
+// calculado); hoy, del riesgoData en vivo (el día no ha terminado, así
+// que historial_riesgo.json todavía no lo trae, o trae un valor viejo).
+var DIAS_RIESGO_PANEL=7;
+function graficoRiesgoDias(sid, riesgoId){
+  var hoy=(historyData.length?historyData[historyData.length-1].timestamp:new Date().toISOString()).slice(0,10);
+  var fechas=Object.keys(riesgoHistData).filter(function(f){ return f<hoy; }).sort().slice(-(DIAS_RIESGO_PANEL-1));
+  fechas.push(hoy);
+  var puntos=fechas.map(function(f){
+    var nivel = (f===hoy)
+      ? (riesgoData[sid]?riesgoData[sid][riesgoId]:undefined)
+      : ((riesgoHistData[f]&&riesgoHistData[f][sid])?riesgoHistData[f][sid][riesgoId]:undefined);
+    if(nivel==null||nivel<0) nivel=null;
+    return {fecha:f, nivel:nivel};
+  });
+  if(!puntos.some(function(p){return p.nivel!=null;})) return '';
+
+  var W=272,H=110,mL=4,mR=4,mT=10,mB=16;
+  var pw=W-mL-mR, ph2=H-mT-mB, n=puntos.length, colW=pw/n, barW=Math.max(10,colW*0.6);
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;">';
+  [0,1,2,3].forEach(function(nv){
+    var y=mT+ph2-(nv/3)*ph2;
+    svg+='<line x1="'+mL+'" y1="'+y.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+y.toFixed(1)+'" stroke="rgba(255,255,255,0.07)"/>';
+  });
+  puntos.forEach(function(p,i){
+    var cx=mL+colW*i+colW/2, dd=p.fecha.slice(8,10)+'/'+p.fecha.slice(5,7);
+    svg+='<text x="'+cx.toFixed(1)+'" y="'+(H-4)+'" font-size="7.5" fill="#8b98ab" text-anchor="middle">'+dd+'</text>';
+    if(p.nivel==null){
+      svg+='<text x="'+cx.toFixed(1)+'" y="'+(mT+ph2/2+3).toFixed(1)+'" font-size="9" fill="#6b7280" text-anchor="middle">—</text>';
+      return;
+    }
+    var h=Math.max(6,(p.nivel/3)*ph2*0.92+(p.nivel===0?6:0)), y=mT+ph2-h;
+    svg+='<rect x="'+(cx-barW/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+h.toFixed(1)
+      +'" rx="3" fill="'+RC[p.nivel]+'"><title>'+dd+': '+RL[p.nivel]+'</title></rect>';
+  });
+  svg+='</svg>';
+
+  return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">'
+    +'<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">📅 Nivel de riesgo, últimos '+n+' días</div>'
+    +svg+'</div>';
+}
+
 // ── Panel lateral fijo ─────────────────────────────────────
 var PS=null;
-function showPanel(sid,html,titulo){
+function showPanel(sid,html,titulo,par){
   // La gráfica de 12h se añade aquí, al mostrar el panel, no antes: ver
   // el comentario en el punto donde se construye "fh" para el motivo.
-  document.getElementById('dc').innerHTML=html+graficoEstacion12h(sid);
+  // La de varios días anteriores (clima o, en Riesgos, nivel 0-3) va en su
+  // propio hueco porque necesita datos que casi nunca están ya en memoria
+  // (history_7d.json o historial_riesgo.json): se pinta al vuelo cuando
+  // lleguen, sin bloquear la apertura del panel — ver pintarGraficaDiasPanel().
+  document.getElementById('dc').innerHTML=html+graficoEstacion12h(sid)+'<div id="panel-grafica-dias"></div>';
   document.getElementById('dh-title').textContent=titulo||'Detalle de estación';
   document.getElementById('dp').style.display='flex';
   PS=sid;
+  pintarGraficaDiasPanel(sid,par);
 }
 function hidePanel(){
   document.getElementById('dp').style.display='none';
@@ -2563,8 +2731,6 @@ if(AVISO_DIAS){
 
 // Devuelve true si la estación lleva >30 min sin datos nuevos (solo en frame actual)
 function esEstiado(est){
-  var indices=getModoIndices();
-  if(idxActual<indices.length-1) return false; // no aplicar en historial
   if(!est.epoch) return false;
   return (Date.now()/1000-est.epoch)>1800;
 }
@@ -2626,7 +2792,7 @@ function render(){
   leg.upd(p);
   if(heatActive) hLG.clearLayers(); mLG.clearLayers(); HL=null;
 
-  var snap=isR?historyData[historyData.length-1]:activeData[CI];
+  var snap=historyData[historyData.length-1];
   if(!snap) return;
   var feats=[];
   _marcadores=[]; _marcParam=pRender;
@@ -2862,7 +3028,7 @@ function render(){
     // ~1,4 s de un cambio de parámetro de ~1,8 s. Se añade al vuelo en
     // showPanel(), solo para la estación realmente pinchada.
 
-    (function(id,h){mk.on('click',function(){showPanel(id,h);});})(est.stationID,fh);
+    (function(id,h,par){mk.on('click',function(){showPanel(id,h,null,par);});})(est.stationID,fh,pRender);
     mk.bindTooltip('<b>'+nm+'</b>'+(estiado?' ⏱':''),{direction:'top',offset:[0,-16],opacity:0.9});
     _marcadores.push({mk:mk,lat:est.lat,lon:est.lon,v:v,nm:nm});
     feats.push(turf.point([est.lon,est.lat],{value:v}));
@@ -2898,314 +3064,19 @@ function render(){
   }
 }
 
-// ── Slider máquina del tiempo ──────────────────────────────
-var sl=document.getElementById('sl');
-var tl=document.getElementById('tl');
-var tlSub=document.getElementById('tl-sub');
-var tmOffset=document.getElementById('tm-offset');
-var tmCounter=document.getElementById('tm-counter');
-var tmLive=document.getElementById('tm-live');
-var tmPeriodos=document.getElementById('tm-periodos');
-var slFechaIni=document.getElementById('sl-fecha-ini');
-var slFechaFin=document.getElementById('sl-fecha-fin');
-var slSep=document.getElementById('sl-sep');
-var velocidadMs=500;
-
-// ── Periodos disponibles ──────────────────────────────────────
-// 24h: usa historyData embebido (resolución 5 min, ya viene con la página)
-// 2d/7d: se descargan bajo demanda (resolución 30 min / 3 h) para no
-// disparar el tamaño de la página en la carga inicial.
-// 6h y 12h no descargan nada: son el propio historial de 24h recortado a
-// las últimas N horas. Conservan su misma resolución, pero repartida en
-// una ventana más corta, así que cada paso del slider cubre menos tiempo
-// real: es lo que hace falta para seguir un chubasco de cerca.
-var PERIODOS={
-  '6h': {archivo:null, horas:6},
-  '12h':{archivo:null, horas:12},
-  '24h':{archivo:null},
-  '2d': {archivo:'history_2d.json'},
-  '7d': {archivo:'history_7d.json'}
-};
-
-// Recorta un historial a sus últimas N horas. Si el recorte se quedara
-// vacío (hueco de datos), se devuelve el último snapshot para no dejar
-// el slider sin nada que mostrar.
-function recortarHoras(datos,horas){
-  if(!horas||!datos||!datos.length) return datos;
-  var limite=Date.now()-horas*3600*1000;
-  var r=datos.filter(function(e){
-    var t=new Date(e.timestamp).getTime();
-    return !isNaN(t) && t>=limite;
-  });
-  return r.length?r:datos.slice(-1);
-}
-
-// Dataset que corresponde al periodo activo cuando no hay descarga de por
-// medio (6h/12h/24h). Se usa también al refrescar historyData.
-function datosLocales(){
-  var cfg=PERIODOS[periodoActivo];
-  return (cfg&&cfg.horas)?recortarHoras(historyData,cfg.horas):historyData;
-}
-var periodoActivo='24h';
-var extData={};        // caché de periodos descargados: {'2d':[...], '7d':[...]}
-var activeData=historyData;   // dataset que alimenta el slider en modo no-riesgo
-
-// ── Índices por día (para oidio/mildiu) ────────────────────────
-var diaIdx = [];   // índices en historyData, uno por día
-
-function construirDiaIdx(){
-  diaIdx = [];
-  var porDia={};
-  historyData.forEach(function(e,i){
-    var d=new Date(e.timestamp);
-    var mm=String(d.getMonth()+1).padStart(2,'0');
-    var dd=String(d.getDate()).padStart(2,'0');
-    var dk=d.getFullYear()+'-'+mm+'-'+dd;
-    porDia[dk]=i;   // última lectura de cada día
-  });
-  Object.keys(porDia).sort().forEach(function(k){
-    diaIdx.push({key:k, idx:porDia[k]});
-  });
-}
-construirDiaIdx();
-
-var modoRiesgo=false;
-var idxActual=activeData.length-1;  // índice dentro de activeData o diaIdx
-var diaFiltroIni='', diaFiltroFin='';
-
-function getModoIndices(){
-  if(!modoRiesgo){
-    var idxs=[];
-    for(var i=0;i<activeData.length;i++) idxs.push(i);
-    return idxs;
-  }
-  // Filtrar diaIdx por rango seleccionado
-  if(!diaFiltroIni && !diaFiltroFin) return diaIdx.map(function(d){return d.idx;});
-  return diaIdx.filter(function(d){
-    return (!diaFiltroIni || d.key>=diaFiltroIni) && (!diaFiltroFin || d.key<=diaFiltroFin);
-  }).map(function(d){return d.idx;});
-}
-
-// Descarga (con caché) el histórico del periodo seleccionado y lo
-// convierte en el dataset activo del slider.
-function cargarPeriodo(p, cb){
-  var cfg=PERIODOS[p]||PERIODOS['24h'];
-  if(!cfg.archivo){ activeData=cfg.horas?recortarHoras(historyData,cfg.horas):historyData; cb(); return; }
-  if(extData[p]){ activeData=extData[p]; cb(); return; }
-  sl.disabled=true;
-  fetch(PERIODOS[p].archivo+'?v='+Date.now())
-    .then(function(r){return r.json();})
-    .then(function(datos){
-      extData[p]=(datos&&datos.length)?sinDesactivadas(datos):historyData;
-      activeData=extData[p];
-      sl.disabled=false;
-      cb();
-    })
-    .catch(function(){
-      periodoActivo='24h';
-      tmPeriodos.querySelectorAll('.tm-per-btn').forEach(function(b){
-        b.classList.toggle('active', b.getAttribute('data-per')==='24h');
-      });
-      activeData=historyData;
-      sl.disabled=false;
-      cb();
-    });
-}
-
-function actualizarModoSlider(){
-  var p=document.getElementById('ps').value;
-  modoRiesgo=esParamRiesgo(p);
-  var indices=getModoIndices();
-  sl.min=0; sl.max=Math.max(0,indices.length-1); sl.value=indices.length-1;
-  idxActual=indices.length-1;
-
-  if(modoRiesgo){
-    tmPeriodos.style.display='none';
-    sl.style.display='none';
-    tmCounter.style.display='none';
-    slFechaIni.style.display='';
-    slFechaFin.style.display='';
-    slSep.style.display='';
-    if(diaIdx.length>0){
-      slFechaIni.value=diaIdx[0].key;
-      slFechaFin.value=diaIdx[diaIdx.length-1].key;
-      diaFiltroIni=diaIdx[0].key;
-      diaFiltroFin=diaIdx[diaIdx.length-1].key;
-    }
-  } else {
-    tmPeriodos.style.display='';
-    sl.style.display='';
-    tmCounter.style.display='';
-    slFechaIni.style.display='none';
-    slFechaFin.style.display='none';
-    slSep.style.display='none';
-  }
-  actualizarVisibilidadTM();
-  actualizarLabel();
-}
-
-tmPeriodos.querySelectorAll('.tm-per-btn').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    var p=this.getAttribute('data-per');
-    if(p===periodoActivo) return;
-    periodoActivo=p;
-    tmPeriodos.querySelectorAll('.tm-per-btn').forEach(function(b){
-      b.classList.toggle('active', b===btn);
-    });
-    cargarPeriodo(periodoActivo, function(){
-      actualizarModoSlider();
-      render();
-    });
-  });
-});
-
-document.getElementById('tm-speed').querySelectorAll('.tm-vel-btn').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    velocidadMs=parseInt(this.getAttribute('data-vel'));
-    document.getElementById('tm-speed').querySelectorAll('.tm-vel-btn').forEach(function(b){
-      b.classList.toggle('active', b===btn);
-    });
-    if(PT){ clearInterval(PT); PT=setInterval(avanzarFrame, velocidadMs); }
-  });
-});
-
-tmLive.addEventListener('click', function(){
-  if(PT){ clearInterval(PT); PT=null; document.getElementById('pb').textContent='▶'; }
-  var indices=getModoIndices();
-  idxActual=indices.length-1;
-  sl.value=idxActual;
-  actualizarLabel();
-  render();
-});
-
-function actualizarLabel(){
-  var indices=getModoIndices();
-  if(!indices.length){
-    tl.textContent='--:--'; tlSub.textContent='Sin datos';
-    return;
-  }
-  var idx=indices[Math.min(idxActual,indices.length-1)];
-  var fuente=modoRiesgo?historyData:activeData;
-  var ts=fuente[idx].timestamp;
-  var last=idxActual===indices.length-1;
-  if(radarChk&&radarChk.checked){
-    // En el frame "actual" usamos el reloj real (no el timestamp del último
-    // dato propio, que puede llevar unos minutos de retraso) para no marcar
-    // la vista en vivo como fuera de rango por un desfase de ciclos.
-    var refRadar=last?Date.now()/1000:new Date(ts).getTime()/1000;
-    actualizarFrameRadar(Math.round(refRadar));
-  }
-
-  tmCounter.textContent=(Math.min(idxActual,indices.length-1)+1)+' / '+indices.length;
-  tmLive.classList.toggle('mostrar', !last);
-
-  if(modoRiesgo){
-    var d=new Date(ts);
-    var fechaCorta=d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'});
-    var fechaLarga=d.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long'});
-    fechaLarga=fechaLarga.charAt(0).toUpperCase()+fechaLarga.slice(1);
-    tl.textContent=fechaCorta;
-    tlSub.textContent=fechaLarga;
-    tmOffset.textContent=last?'HOY':'HISTÓRICO';
-    tmOffset.classList.toggle('en-vivo', last);
-  } else {
-    var d2=new Date(ts);
-    var horaStr=d2.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-    var fechaStr=d2.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}).replace('.','').toUpperCase();
-    var diffMin=Math.round((Date.now()-d2.getTime())/60000);
-    var relTxt;
-    if(last || diffMin<=1) relTxt='EN VIVO';
-    else if(diffMin<60) relTxt='hace '+diffMin+' min';
-    else{
-      var h=Math.floor(diffMin/60), m=diffMin%60;
-      relTxt='hace '+h+'h'+(m?' '+m+'min':'');
-    }
-    tl.textContent=horaStr;
-    tlSub.textContent=fechaStr+' · '+relTxt;
-    tmOffset.textContent=relTxt;
-    tmOffset.classList.toggle('en-vivo', last);
-  }
-}
-
-// ── Render con soporte historial ─────────────────────────────
-// ── Render con historial de riesgo ──────────────────────────
-var _renderOriginal = render;
-
-render = function(){
-  var p   = document.getElementById('ps').value;
-  var isR =esParamRiesgo(p);
-
-  // Calcular índice correcto según modo
-  var indices = getModoIndices();
-  if(indices.length > 0){
-    CI = indices[Math.min(idxActual, indices.length-1)];
-  }
-
-  // En modo riesgo usar datos históricos del día seleccionado
-  if(isR && riesgoHistData && Object.keys(riesgoHistData).length > 0){
-    var ts       = historyData[CI] ? historyData[CI].timestamp : '';
-    var fechaDia = ts.slice(0, 10);
-    if(riesgoHistData[fechaDia]){
-      var ultimo=historyData[historyData.length-1], esHoy=!!(ultimo&&ultimo.timestamp&&ultimo.timestamp.slice(0,10)===fechaDia);
-      var rdBak = riesgoData;
-      var rTemp = {};
-      Object.keys(rdBak).forEach(function(sid){
-        rTemp[sid] = Object.assign({}, rdBak[sid]);
-        var h = riesgoHistData[fechaDia][sid];
-        if(h){
-          // Un día guardado antes de existir un riesgo no lo trae: sin datos
-          // ese día, salvo hoy, que vale el cálculo actual (riesgoData).
-          RIESGO_IDS.forEach(function(k){
-            if(h[k]!==undefined) rTemp[sid][k]=h[k];
-            else if(!esHoy) rTemp[sid][k]=-1;
-          });
-          rTemp[sid].dsv_temporada = h.dsv_temporada;
-          rTemp[sid].dsv_7d        = h.dsv_7d;
-          rTemp[sid].datos_ok      = h.datos_ok;
-        }
-      });
-      riesgoData = rTemp;
-      _renderOriginal();
-      riesgoData = rdBak;
-      return;
-    }
-  }
-  _renderOriginal();
-};
-
-// ── Slider listeners ─────────────────────────────────────────
-var sl2 = document.getElementById('sl');
-sl2.addEventListener('input', function(){
-  idxActual = parseInt(this.value);
-  actualizarLabel();
-  render();
-});
-
-function avanzarFrame(){
-  var indices = getModoIndices();
-  idxActual = (idxActual+1) % indices.length;
-  sl2.value = idxActual;
-  actualizarLabel();
-  render();
-  if(idxActual === indices.length-1){
-    clearInterval(PT); PT=null;
-    document.getElementById('pb').textContent='▶';
-  }
-}
-
-document.getElementById('pb').addEventListener('click', function(){
-  if(PT){ clearInterval(PT); PT=null; this.textContent='▶'; return; }
-  this.textContent = '⏸';
-  var indices = getModoIndices();
-  if(idxActual >= indices.length-1) idxActual = 0;
-  PT = setInterval(avanzarFrame, velocidadMs);
-});
+// ── Datos para la ventana de lluvia y las gráficas de días anteriores ──
+var extData={};        // caché de descargas bajo demanda: {'2d':[...], '2d_precip':[...], '7d':[...]}
+var activeData=historyData;   // alias de historyData (lo usan getPrecipVentana/acumularPrecip)
 
 document.getElementById('op').addEventListener('input', function(){
   window.HO = parseFloat(this.value);
   if(HL) HL.setStyle({fillOpacity: window.HO});
 });
 
+// Histórico de riesgo por día (historial_riesgo.json): lo pide, bajo
+// demanda, la gráfica de días anteriores del panel de estación en Riesgos
+// (pintarGraficaDiasPanel() / graficoRiesgoDias()) — nunca al entrar en un
+// riesgo sin más, para no descargarlo si no se llega a abrir ningún panel.
 var riesgoHistCargado=false;
 function cargarRiesgoHistorico(cb){
   if(riesgoHistCargado){ if(cb) cb(); return; }
@@ -3254,10 +3125,7 @@ function onParamChange(){
   _prevParam = p;
   var ctrlPrecip=document.getElementById('ctrl-precip');
   if(ctrlPrecip) ctrlPrecip.style.display=(p==='precip')?'flex':'none';
-  actualizarModoSlider();
   render();
-  if(esRiesgo && !riesgoHistCargado) cargarRiesgoHistorico(render);
-  if(esRiesgo && !historia24hCargada) asegurarHistoria24hCompleta(function(){ actualizarModoSlider(); render(); });
 }
 
 // ── Radar de lluvia: capa independiente, combinable con cualquier parámetro ──
@@ -3265,7 +3133,7 @@ var radarChk = document.getElementById('radar-chk');
 if(radarChk){
   radarChk.addEventListener('change', function(){
     if(this.checked){
-      actualizarLabel(); // añade la capa y sincroniza el frame con la posición del slider
+      actualizarFrameRadar(Math.round(Date.now()/1000)); // añade la capa en el frame en vivo
     } else {
       if(map.hasLayer(rLG)) rLG.remove();
       var aviso=document.getElementById('radar-fuera-rango');
@@ -3343,7 +3211,7 @@ document.getElementById('ps').addEventListener('change',function(){ marcarChipPa
 // barra con casillas diminutas. En el móvil se llevan (los mismos
 // elementos, con sus eventos) a una hoja que sube desde abajo con el
 // botón 🧰, y vuelven a la barra si la pantalla se ensancha.
-var CTRL_CAPAS=['ctrl-tm','ctrl-radar','ctrl-op'];
+var CTRL_CAPAS=['ctrl-radar','ctrl-op'];
 function colocarControles(){
   var movil=esMovil(), hoja=document.getElementById('hoja-capas-cuerpo'), loc=document.getElementById('btn-loc');
   CTRL_CAPAS.forEach(function(id){
@@ -3527,9 +3395,6 @@ function pintarBarraRiesgos(){
   if(document.getElementById('ps').value!==riesgoElegido) elegirParam(riesgoElegido);
   else render();
 }
-// Ver días anteriores: la máquina del tiempo, que en modo riesgo va por días.
-function riesgosDiasAnteriores(){ var c=document.getElementById('tm-chk'); if(c) c.click(); }
-
 // ── Mi zona ─────────────────────────────────────────────────
 // La pantalla de inicio en el móvil: la respuesta directa para un sitio
 // (la ubicación del usuario o una finca guardada), sin tener que
@@ -4017,17 +3882,16 @@ function actualizarPronBtn(activo){
 if(vistaDeHash()!=='mapa') setTimeout(function(){ aplicarVista(vistaDeHash()); },0);
 else actualizarPronBtn('mapa');
 
-// ── Máquina del tiempo: oculta por defecto ──────────────────────
-// history_24h.json (el histórico completo de 24h que alimenta la cinta
-// de tiempo) pesa varios MB y antes se descargaba siempre, entera, en
-// cuanto se abría la página — se usara o no la cinta. Ahora esa
-// descarga se retrasa hasta que de verdad hace falta: al activar la
-// máquina del tiempo a mano, o al entrar en un riesgo agrícola
-// (oídio/mildiu), que también necesita el histórico por días.
+// ── Histórico completo de 24h, bajo demanda ─────────────────────
+// history_24h.json (el histórico completo de 24h) pesa varios MB y antes
+// se descargaba siempre, entera, en cuanto se abría la página. Ahora esa
+// descarga se retrasa hasta que de verdad hace falta: al abrir el panel
+// de una estación, para las gráficas de 12h y de días anteriores (ver
+// pintarGraficaDiasPanel()). Mientras tanto el mapa vive con la
+// "semilla" embebida (último snapshot) y el refresco periódico de más
+// abajo, que sigue trayendo el histórico completo cada 5 min para no
+// perder el "en vivo" aunque nunca se abra ningún panel.
 var historia24hCargada=false, historia24hCargando=false;
-// Siempre arranca desactivada: ya no se recuerda en localStorage, para
-// que quien la abrió una vez no la vuelva a encontrar tapando el mapa.
-var tmVisible=false;
 
 function asegurarHistoria24hCompleta(cb){
   if(historia24hCargada){ if(cb) cb(); return; }
@@ -4039,72 +3903,17 @@ function asegurarHistoria24hCompleta(cb){
   });
 }
 
-// La cinta solo se ve cuando el usuario la abre (casilla «Máquina del
-// tiempo» o, en Riesgos, «📅 Días anteriores», donde va por fechas).
-function actualizarVisibilidadTM(){
-  var bar=document.getElementById('tm-bar');
-  // Desde que los riesgos tienen su pestaña, la cinta por días también se
-  // abre a mano (botón «📅 Días anteriores»): siempre abierta tapaba medio
-  // mapa en el móvil.
-  var on=tmVisible;
-  // 'flex' explícito, no '': el CSS de #tm-bar pasa a arrancar en
-  // display:none (ver ese bloque) para que no haya ni un parpadeo visible
-  // al cargar antes de que este script llegue a ejecutarse — con el CSS
-  // en 'none' por defecto, un '' aquí heredaría ese 'none' en vez de
-  // recuperar el layout en flex.
-  if(bar) bar.style.display=on?'flex':'none';
-  var bd=document.getElementById('rg-dias'); if(bd) bd.classList.toggle('active',on);
-  // La leyenda (y el zoom) van pegados abajo del todo; solo suben para
-  // dejar hueco cuando la cinta de tiempo está a la vista.
-  document.body.classList.toggle('tm-on', on);
-}
-
-(function(){
-  var chk=document.getElementById('tm-chk');
-  if(!chk) return;
-  chk.checked=tmVisible;
-  chk.addEventListener('change', function(){
-    tmVisible=this.checked;
-    actualizarVisibilidadTM();
-    if(tmVisible) asegurarHistoria24hCompleta(function(){ actualizarModoSlider(); render(); });
-  });
-})();
-
-function initSl(){
-  var n = historyData.length;
-  if(!n){ document.getElementById('tl').innerText='Sin datos'; return; }
-  actualizarModoSlider();
-  render();
-}
-
-// Solo se embebe el último snapshot en el HTML (para que el mapa aparezca
-// de inmediato con las condiciones actuales); el histórico completo de
-// 24h se descarga aparte justo después, y al llegar se reconstruyen los
-// índices y se refresca el slider con el rango completo.
 function cargarHistoria24hInicial(cb){
   fetch('history_24h.json?v='+Date.now())
     .then(function(r){return r.json();})
     .then(function(datos){
-      if(datos && datos.length){
-        historyData=sinDesactivadas(datos);
-        construirDiaIdx();
-        if(!PERIODOS[periodoActivo].archivo) activeData=datosLocales();
-      }
+      if(datos && datos.length){ historyData=sinDesactivadas(datos); }
     })
     .catch(function(){})
     .then(cb);
 }
 
-initSl();
-actualizarVisibilidadTM();
-// El histórico completo de 24h YA NO se descarga aquí sin condiciones:
-// solo cuando se active la máquina del tiempo o se entre en un riesgo
-// agrícola (asegurarHistoria24hCompleta(), ver más arriba). Mientras
-// tanto el mapa vive con la "semilla" embebida (último snapshot) y el
-// refresco periódico de más abajo, que sigue trayendo el histórico
-// completo cada 5 min para no perder el "en vivo" ya lo pone al día
-// solo, aunque nunca se abra la cinta de tiempo.
-if(modoRiesgo || tmVisible) asegurarHistoria24hCompleta(function(){ actualizarModoSlider(); render(); });
+if(historyData.length) render();
 """
 
 HTML_BASE = """<!DOCTYPE html>
@@ -4308,51 +4117,6 @@ HTML_BASE = """<!DOCTYPE html>
       .ll-lg-txt{font-size:.48rem}
     }
 
-    /* ── Máquina del tiempo (formato tipo radarspain.es) ───────── */
-    #tm-bar{
-      /* Oculta por defecto en el propio CSS (no solo por JS): así no
-         hay parpadeo al cargar la página, ni riesgo de que se quede
-         visible si algo falla antes de que actualizarVisibilidadTM()
-         llegue a ejecutarse. JS la muestra (display:flex) solo al
-         activar el toggle o al entrar en riesgos con filtro por días. */
-      position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:999;
-      width:min(720px,94vw);
-      background:rgba(13,17,23,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-      border:1px solid rgba(255,255,255,0.09);border-radius:16px;
-      box-shadow:0 8px 32px rgba(0,0,0,.5);
-      padding:10px 14px 12px;display:none;flex-direction:column;gap:7px;
-    }
-    #tm-row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .tm-play{
-      width:32px;height:32px;border-radius:50%;flex-shrink:0;
-      background:rgba(59,130,246,.85);border:none;color:#fff;font-size:.8rem;
-      display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
-    }
-    .tm-play:hover{background:#3b82f6}
-    #tm-clock{display:flex;flex-direction:column;line-height:1.05;flex-shrink:0}
-    .tm-clock-lbl{font-size:.54rem;color:#6e7f9a;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
-    #tl{font-size:1.28rem;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
-    #tm-info{display:flex;flex-direction:column;line-height:1.35;flex-shrink:0;margin-right:auto}
-    #tm-offset{font-size:.64rem;font-weight:800;color:#3b82f6;letter-spacing:.3px}
-    #tm-offset.en-vivo{color:#27ae60}
-    #tl-sub{font-size:.62rem;color:#6e7f9a}
-    #tm-periodos,#tm-speed{display:flex;gap:2px;background:rgba(255,255,255,0.05);border-radius:8px;padding:2px;flex-shrink:0}
-    .tm-per-btn,.tm-vel-btn{
-      background:transparent;border:none;color:#94a3b8;font-size:.66rem;font-weight:700;
-      padding:5px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;
-    }
-    .tm-per-btn:hover,.tm-vel-btn:hover{color:#e6edf3}
-    .tm-per-btn.active,.tm-vel-btn.active{background:rgba(59,130,246,.85);color:#fff}
-    #tm-live{
-      flex-shrink:0;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);
-      color:#93c5fd;font-size:.64rem;font-weight:700;padding:5px 9px;border-radius:8px;cursor:pointer;
-      display:none;
-    }
-    #tm-live:hover{background:rgba(59,130,246,.3)}
-    #tm-live.mostrar{display:block}
-    #tm-row2{display:flex;align-items:center;gap:8px}
-    #sl{flex:1}
-    #tm-counter{font-size:.6rem;color:#6e7f9a;font-variant-numeric:tabular-nums;flex-shrink:0;min-width:42px;text-align:right}
 
     /* Sliders */
     input[type=range]{
@@ -4384,14 +4148,6 @@ HTML_BASE = """<!DOCTYPE html>
     .precip-chip:hover{background:rgba(255,255,255,0.14)}
     .precip-chip.active{background:rgba(59,130,246,.85);border-color:transparent;color:#fff}
 
-    /* Toggle máquina del tiempo — oculta por defecto para una pantalla
-       más limpia y, sobre todo, para no descargar history_24h.json (el
-       histórico completo de 24h) hasta que de verdad se necesita: al
-       activarla o al entrar en un riesgo agrícola. */
-    #ctrl-tm{display:flex;align-items:center;gap:6px;flex-shrink:0}
-    #ctrl-tm label{display:flex;align-items:center;gap:4px;font-size:.72rem;color:#e6edf3;font-weight:600;cursor:pointer;user-select:none}
-    #ctrl-tm input[type=checkbox]{cursor:pointer;accent-color:#3b82f6}
-
     /* Toggle radar (independiente del parámetro) */
     #ctrl-radar{display:flex;align-items:center;gap:6px;flex-shrink:0}
     #ctrl-radar label{display:flex;align-items:center;gap:4px;font-size:.72rem;color:#e6edf3;font-weight:600;cursor:pointer;user-select:none}
@@ -4415,10 +4171,8 @@ HTML_BASE = """<!DOCTYPE html>
       white-space:nowrap;backdrop-filter:blur(8px);
     }
 
-    /* Leyenda abajo del todo; solo se deja hueco para el panel de la
-       máquina del tiempo (fijo abajo) cuando está visible */
+    /* Leyenda abajo del todo */
     .leaflet-bottom.leaflet-left{bottom:0!important}
-    body.tm-on .leaflet-bottom.leaflet-left{bottom:104px!important}
 
     /* Leyenda (Leaflet control) */
     .legend{
@@ -4541,13 +4295,6 @@ HTML_BASE = """<!DOCTYPE html>
       .legend{max-width:130px!important;font-size:.68rem!important}
       .leg-hdr{padding:5px 9px}
       .leg-body{padding:5px 9px 7px}
-      body.tm-on .leaflet-bottom.leaflet-left{bottom:150px!important}
-      #tm-bar{bottom:6px;left:6px;right:6px;width:auto;transform:none;padding:8px 10px 10px}
-      #tm-row1{gap:6px}
-      #tl{font-size:1.05rem}
-      #tm-info{margin-right:0}
-      .tm-per-btn,.tm-vel-btn{padding:4px 6px;font-size:.6rem}
-      #tm-live{font-size:.58rem;padding:4px 7px}
     }
     /* ── Menú principal lateral ── */
     .nav-btn{
@@ -4710,9 +4457,6 @@ HTML_BASE = """<!DOCTYPE html>
     .chip-r small{font-weight:500;font-size:.68rem;opacity:.85}
     .rg-pie{display:flex;align-items:center;gap:10px}
     #rg-info{flex:1;font-size:.72rem;color:#9fb0c8;line-height:1.4;min-width:0}
-    #rg-dias.active{background:#2563eb;border-color:#2563eb;color:#fff}
-    #rg-dias{flex-shrink:0;min-height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);
-      color:#e2e8f0;font-size:.78rem;font-weight:700;font-family:inherit;cursor:pointer;padding:0 10px}
     body[data-vista=riesgos] #rg-vacio[style*="block"]{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1001;
       width:min(88vw,380px);background:#fff;color:#0f172a;border-radius:16px;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.35);
       font-size:.95rem;line-height:1.5}
@@ -4776,7 +4520,6 @@ HTML_BASE = """<!DOCTYPE html>
       /* Todo lo que iba pegado abajo sube por encima de la barra */
       #map{bottom:var(--tabs-h)}
       #vp,#vl,#vz{bottom:var(--tabs-h)}
-      #tm-bar{bottom:calc(var(--tabs-h) + 6px)}
     }
     @media(max-width:600px){
       #dp{bottom:calc(150px + var(--tabs-h))}
@@ -4858,10 +4601,6 @@ HTML_BASE = """<!DOCTYPE html>
   <button type="button" id="btn-capas" onclick="abrirCapas()" aria-label="Capas">🧰</button>
   <div id="ctrl-precip" style="display:none"></div>
   <div class="sep"></div>
-  <div id="ctrl-tm">
-    <label><input type="checkbox" id="tm-chk"> 🕐 Máquina del tiempo</label>
-  </div>
-  <div class="sep"></div>
   <div id="ctrl-radar">
     <label><input type="checkbox" id="radar-chk"> 📡 Radar</label>
     <span id="radar-fuera-rango" title="Radar disponible: en vivo (~2h vía RainViewer) y hasta ~48h atrás (archivo propio)">⚠ sin radar aquí</span>
@@ -4884,45 +4623,9 @@ HTML_BASE = """<!DOCTYPE html>
   <div id="rg-riesgos" class="rg-chips"></div>
   <div class="rg-pie">
     <div id="rg-info" onclick="this.classList.toggle('abierto')"></div>
-    <button type="button" id="rg-dias" onclick="riesgosDiasAnteriores()">📅 Días anteriores</button>
   </div>
 </div>
 <div id="rg-vacio"></div>
-
-<!-- Máquina del tiempo ─────────────────────────────────────── -->
-<div id="tm-bar">
-  <div id="tm-row1">
-    <button type="button" id="pb" class="tm-play">▶</button>
-    <div id="tm-clock">
-      <span class="tm-clock-lbl">Hora local</span>
-      <span id="tl">--:--</span>
-    </div>
-    <div id="tm-info">
-      <span id="tm-offset">EN VIVO</span>
-      <span id="tl-sub">-</span>
-    </div>
-    <div id="tm-periodos">
-      <button type="button" class="tm-per-btn" data-per="6h">6h</button>
-      <button type="button" class="tm-per-btn" data-per="12h">12h</button>
-      <button type="button" class="tm-per-btn active" data-per="24h">24h</button>
-      <button type="button" class="tm-per-btn" data-per="2d">2 días</button>
-      <button type="button" class="tm-per-btn" data-per="7d">Semana</button>
-    </div>
-    <div id="tm-speed">
-      <button type="button" class="tm-vel-btn" data-vel="1500">0,5×</button>
-      <button type="button" class="tm-vel-btn active" data-vel="500">1×</button>
-      <button type="button" class="tm-vel-btn" data-vel="200">2×</button>
-    </div>
-    <button type="button" id="tm-live">⟲ Volver al directo</button>
-  </div>
-  <div id="tm-row2">
-    <input type="range" id="sl" min="0" max="0" value="0">
-    <span id="tm-counter">0 / 0</span>
-    <input type="date" id="sl-fecha-ini" style="display:none">
-    <span id="sl-sep" style="display:none">→</span>
-    <input type="date" id="sl-fecha-fin" style="display:none">
-  </div>
-</div>
 
 <div id="aviso-dias"></div>
 
@@ -5058,16 +4761,6 @@ HTML_BASE = """<!DOCTYPE html>
         if(!datos||!datos.length) return;
         historyData=sinDesactivadas(datos);
         historia24hCargada=true; // este refresco ya trae el histórico completo
-        if(!PERIODOS[periodoActivo].archivo) activeData=datosLocales();
-        var indices=getModoIndices();
-        var eraActual=(idxActual>=indices.length-1);
-        actualizarModoSlider();
-        if(!eraActual){
-          var newIndices=getModoIndices();
-          idxActual=Math.min(idxActual,newIndices.length-1);
-          document.getElementById('sl').value=idxActual;
-          actualizarLabel();
-        }
         render();
         if(vistaActual==='zona'&&!zonaBuscando) renderZona();
       }).catch(function(){});
