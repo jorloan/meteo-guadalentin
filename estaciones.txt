@@ -246,9 +246,8 @@ IGUILA23
 IALGUE13
 
 # Calasparra (01-11-2026): IREGINDE74 (la candidata de antes) ya no aparece
-# en las búsquedas; esta sí, en varias URL de wunderground.com. Pendiente de
-# confirmar en el próximo ciclo real (este entorno no tiene acceso directo a
-# wunderground.com para comprobarla antes de subirla). Si en el próximo
-# data.json no trae coordenadas/datos válidos, hay que quitarla. Nerpio y
-# Elche de la Sierra: sin ningún PWS real encontrado, igual que antes.
+# en las búsquedas; esta sí, en varias URL de wunderground.com, y ya
+# comprobada con datos reales en history_24h.json (8.8°C, humedad 91%,
+# 38.227°N -1.698°O). Nerpio y Elche de la Sierra: sin ningún PWS real
+# encontrado, igual que antes.
 ICALAS6     # Calasparra
