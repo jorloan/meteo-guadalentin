@@ -1127,6 +1127,38 @@ map.on('locationfound',function(e){
     .addTo(map).bindPopup('📍 Estás aquí').openPopup();
 });
 
+// ── Añadir finca tocando el mapa ────────────────────────────
+// Las dos formas que ya había de guardar un sitio en Mi zona (GPS o
+// buscar una población por nombre) no sirven para una finca sin GPS a
+// mano y sin un pueblo cercano que la describa bien. Este botón arma un
+// modo "siguiente toque en el mapa" (cursor en cruz + aviso) que crea el
+// sitio con esas coordenadas exactas y pasa a Mi zona para verlo.
+var modoPin=false;
+function activarModoPin(){
+  if(modoPin){ desactivarModoPin(); return; }
+  modoPin=true;
+  var b=document.getElementById('btn-pin'); if(b){ b.classList.add('active'); b.title='Cancelar'; }
+  map.getContainer().style.cursor='crosshair';
+  var av=document.getElementById('aviso-pin'); if(av) av.style.display='flex';
+}
+function desactivarModoPin(){
+  modoPin=false;
+  var b=document.getElementById('btn-pin'); if(b){ b.classList.remove('active'); b.title='Añadir finca en el mapa'; }
+  map.getContainer().style.cursor='';
+  var av=document.getElementById('aviso-pin'); if(av) av.style.display='none';
+}
+map.on('click',function(e){
+  if(!modoPin) return;
+  var lat=e.latlng.lat, lon=e.latlng.lng;
+  desactivarModoPin();
+  var cerca=cercaDe(lat,lon);
+  var nombre=prompt('Nombre para esta finca:', cerca?('Finca cerca de '+cerca):'Mi finca');
+  if(nombre==null) return;
+  nombre=nombre.trim()||'Mi finca';
+  elegirZona({nombre:nombre,lat:lat,lon:lon,sub:cerca?'cerca de '+cerca:''});
+  irA('zona');
+});
+
 // ── Colores ────────────────────────────────────────────────
 function lerp(c1,c2,t){
   return 'rgb('+Math.round(c1[0]+t*(c2[0]-c1[0]))+','+Math.round(c1[1]+t*(c2[1]-c1[1]))+','+Math.round(c1[2]+t*(c2[2]-c1[2]))+')';
@@ -3981,6 +4013,7 @@ function vistaInicio(){ return esMovil()?'zona':'mapa'; }
 function vistaDeHash(){ var v=(location.hash||'').replace('#',''); return VISTAS.indexOf(v)>=0?v:vistaInicio(); }
 var vistaActual='mapa';
 function aplicarVista(v){
+  if(v!=='mapa'&&v!=='riesgos'&&modoPin) desactivarModoPin();
   if(v!=='pronostico') document.getElementById('vp').classList.remove('open');
   if(v!=='lluvia')     document.getElementById('vl').classList.remove('open');
   if(v!=='zona')       document.getElementById('vz').classList.remove('open');
@@ -4410,13 +4443,23 @@ HTML_BASE = """<!DOCTYPE html>
     #radar-fuera-rango{display:none;font-size:.62rem;color:#f0ad4e;font-weight:700;white-space:nowrap;cursor:help}
 
     /* Botón ubicación */
-    #btn-loc{
+    #btn-loc,#btn-pin{
       background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);
       border-radius:8px;color:#e6edf3;font-size:1rem;
       width:34px;height:34px;display:flex;align-items:center;justify-content:center;
       cursor:pointer;flex-shrink:0;padding:0;
     }
-    #btn-loc:hover{background:rgba(255,255,255,0.15)}
+    #btn-loc:hover,#btn-pin:hover{background:rgba(255,255,255,0.15)}
+    #btn-pin.active{background:#1d4ed8;border-color:transparent}
+
+    /* Aviso modo "añadir finca" */
+    #aviso-pin{
+      display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:998;
+      background:rgba(30,58,95,0.9);border:1px solid rgba(59,130,246,.3);
+      border-radius:8px;padding:7px 14px;font-size:.7rem;color:#93c5fd;
+      white-space:nowrap;backdrop-filter:blur(8px);align-items:center;gap:6px;
+    }
+    #aviso-pin a{color:#93c5fd;text-decoration:underline;cursor:pointer}
 
     /* Aviso días */
     #aviso-dias{
@@ -4548,7 +4591,7 @@ HTML_BASE = """<!DOCTYPE html>
       #topbar{top:6px;left:6px;right:6px;border-radius:12px;gap:7px;padding:8px 12px}
       .sep{display:none}
       #dp{top:auto;right:6px;left:6px;bottom:150px;width:auto;max-height:44vh;border-radius:12px}
-      #aviso-dias{top:70px}
+      #aviso-dias,#aviso-pin{top:70px}
       .legend{max-width:130px!important;font-size:.68rem!important}
       .leg-hdr{padding:5px 9px}
       .leg-body{padding:5px 9px 7px}
@@ -4672,7 +4715,7 @@ HTML_BASE = """<!DOCTYPE html>
       .chip-p{flex-shrink:0;min-height:40px;padding:0 13px;border-radius:999px;border:1px solid rgba(255,255,255,.16);
         background:rgba(255,255,255,.07);color:#e2e8f0;font-size:.9rem;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
       .chip-p.active{background:#2563eb;border-color:#2563eb;color:#fff}
-      #btn-capas,#btn-loc{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:42px;height:40px;
+      #btn-capas,#btn-loc,#btn-pin{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:42px;height:40px;
         border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);font-size:1.2rem;cursor:pointer;padding:0}
       #ctrl-precip{position:fixed;top:60px;left:8px;right:8px;flex-wrap:wrap;justify-content:center;z-index:999}
       .leaflet-control-zoom{display:none}
@@ -4883,6 +4926,7 @@ HTML_BASE = """<!DOCTYPE html>
     <input type="range" id="op" min="0" max="1" step="0.05" value="0.35" style="width:65px">
   </div>
   <button id="btn-loc" title="Mi ubicación" onclick="locateMe()">🎯</button>
+  <button id="btn-pin" title="Añadir finca en el mapa" onclick="activarModoPin()">📌</button>
 </div>
 
 <!-- Barra de la pestaña Riesgos (sustituye a la de datos meteorológicos) -->
@@ -4936,6 +4980,7 @@ HTML_BASE = """<!DOCTYPE html>
 </div>
 
 <div id="aviso-dias"></div>
+<div id="aviso-pin">📌 Toca el mapa donde quieras añadir tu finca · <a href="#" onclick="desactivarModoPin();return false;">cancelar</a></div>
 
 <!-- Hoja de capas (móvil): máquina del tiempo, radar y opacidad salen de la barra de arriba -->
 <div id="capas-velo" onclick="cerrarCapas()"></div>
