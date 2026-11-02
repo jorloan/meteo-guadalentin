@@ -3251,6 +3251,17 @@ document.querySelectorAll('#chips-param .chip-p').forEach(function(b){
 });
 document.getElementById('ps').addEventListener('change',function(){ marcarChipParam(this.value); });
 
+// Atajos de teclado en el mapa (ordenador): T/L/H/V cambian de parámetro
+// y R enciende o apaga el radar. No actúan mientras se escribe en un campo.
+var ATAJOS_PARAM={t:'temp',l:'precip',h:'humidity',v:'wind'};
+document.addEventListener('keydown',function(e){
+  if(e.ctrlKey||e.metaKey||e.altKey||vistaActual!=='mapa') return;
+  var t=e.target; if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
+  var k=(e.key||'').toLowerCase();
+  if(ATAJOS_PARAM[k]){ elegirParam(ATAJOS_PARAM[k]); e.preventDefault(); }
+  else if(k==='r'){ var c=document.getElementById('radar-chk'); if(c){ c.click(); e.preventDefault(); } }
+});
+
 // ── Hoja de capas (móvil) ───────────────────────────────────
 // Máquina del tiempo, radar y opacidad ocupaban una segunda fila de la
 // barra con casillas diminutas. En el móvil se llevan (los mismos
@@ -4595,6 +4606,54 @@ HTML_BASE = """<!DOCTYPE html>
       #dp{bottom:calc(150px + var(--tabs-h))}
     }
 
+    /* ── Ordenador: barra lateral de secciones + barra del mapa a la vista ──
+       Las pestañas de abajo del móvil (#tabs) se convierten en una barra
+       fija a la izquierda: las cinco pantallas siempre visibles, con la
+       abierta resaltada, en vez de escondidas tras el ☰. En la barra del
+       mapa, los botones de parámetro sustituyen al desplegable (un clic) y
+       las herramientas del mapa se agrupan a la derecha. */
+    .tabs-logo{display:none}
+    @media(min-width:769px){
+      :root{--rail-w:84px}
+      #tabs{
+        display:flex;flex-direction:column;align-items:stretch;gap:4px;position:fixed;top:0;bottom:0;left:0;
+        width:var(--rail-w);z-index:4500;padding:12px 8px;background:#0d1117;
+        border-right:1px solid rgba(255,255,255,.08);box-shadow:4px 0 20px rgba(0,0,0,.35);
+      }
+      .tabs-logo{display:flex;flex-direction:column;align-items:center;font-size:1.3rem;line-height:1.1;
+        padding:2px 0 12px;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);user-select:none}
+      .tabs-logo b{font-size:.68rem;letter-spacing:.6px;color:#fff;margin-top:3px}
+      .tabs-logo small{font-size:.5rem;color:#6e7f9a;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+      .tab{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+        min-height:62px;border-radius:12px;text-decoration:none;color:#8b9ab3;font-size:.68rem;font-weight:700;
+        text-align:center;transition:background .15s,color .15s}
+      .tab span{font-size:1.45rem;line-height:1;filter:grayscale(1);opacity:.75;transition:filter .15s,opacity .15s}
+      .tab:hover{background:rgba(255,255,255,.06);color:#e2e8f0}
+      .tab:hover span{filter:none;opacity:1}
+      .tab.active{background:rgba(59,130,246,.18);color:#fff}
+      .tab.active span{filter:none;opacity:1}
+      .tab.active::before{content:'';position:absolute;left:-8px;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:#3b82f6}
+      /* Todo lo demás se aparta para dejar sitio a la barra */
+      #map,#vp,#vl,#vz{left:var(--rail-w)}
+      #topbar,body[data-vista=riesgos] #topbar-riesgos{left:calc(var(--rail-w) + 12px)}
+      .nav-btn,#logo,#ps-wrap{display:none!important}
+      /* Barra del mapa: parámetros a la izquierda, herramientas a la derecha */
+      #topbar{padding:8px 10px;gap:8px}
+      #chips-param{display:flex;gap:6px;flex-wrap:wrap}
+      .chip-p{min-height:38px;padding:0 15px;border-radius:999px;border:1px solid rgba(255,255,255,.16);
+        background:rgba(255,255,255,.07);color:#e2e8f0;font-size:.86rem;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
+      .chip-p:hover{background:rgba(255,255,255,.14)}
+      .chip-p.active{background:#2563eb;border-color:#2563eb;color:#fff}
+      #ctrl-radar{margin-left:auto}
+      #ctrl-radar,#ctrl-op{min-height:38px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.05)}
+      #ctrl-radar label,#ctrl-op label{font-size:.82rem!important}
+      #ctrl-radar input[type=checkbox]{width:16px;height:16px}
+      #ctrl-op{flex-direction:row!important;align-items:center!important;gap:8px}
+      #ctrl-op input[type=range]{width:90px!important}
+      #btn-pin{width:40px!important;height:38px!important;font-size:1.05rem}
+      #topbar .sep{display:none}
+    }
+
     /* ── Meteograma ── */
     .mg-cabecera{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:8px}
     .mg-plazos{display:flex;gap:6px}
@@ -4663,16 +4722,16 @@ HTML_BASE = """<!DOCTYPE html>
     </select>
   </div>
   <div id="chips-param" role="tablist" aria-label="Qué ver en el mapa">
-    <button type="button" class="chip-p active" data-v="temp">🌡 Temp.</button>
-    <button type="button" class="chip-p" data-v="precip">🌧 Lluvia</button>
-    <button type="button" class="chip-p" data-v="humidity">💧 Humedad</button>
-    <button type="button" class="chip-p" data-v="wind">💨 Viento</button>
+    <button type="button" class="chip-p active" data-v="temp" title="Temperatura (tecla T)">🌡 Temp.</button>
+    <button type="button" class="chip-p" data-v="precip" title="Lluvia (tecla L)">🌧 Lluvia</button>
+    <button type="button" class="chip-p" data-v="humidity" title="Humedad (tecla H)">💧 Humedad</button>
+    <button type="button" class="chip-p" data-v="wind" title="Viento (tecla V)">💨 Viento</button>
   </div>
   <button type="button" id="btn-capas" onclick="abrirCapas()" aria-label="Capas">🧰</button>
   <div id="ctrl-precip" style="display:none"></div>
   <div class="sep"></div>
   <div id="ctrl-radar">
-    <label><input type="checkbox" id="radar-chk"> 📡 Radar</label>
+    <label title="Radar de lluvia (tecla R)"><input type="checkbox" id="radar-chk"> 📡 Radar</label>
     <span id="radar-fuera-rango" title="Radar disponible: en vivo (~2h vía RainViewer) y hasta ~48h atrás (archivo propio)">⚠ sin radar aquí</span>
   </div>
   <div class="sep"></div>
@@ -4798,6 +4857,7 @@ HTML_BASE = """<!DOCTYPE html>
 
 <!-- Pestañas de abajo (solo en el móvil) -->
 <nav id="tabs" aria-label="Secciones">
+  <div class="tabs-logo" aria-hidden="true">🌿<b>METEO</b><small>Guadalentín</small></div>
   <a href="#zona" class="tab" data-vista="zona" onclick="irA('zona');return false;"><span>📍</span>Mi zona</a>
   <a href="#mapa" class="tab" data-vista="mapa" onclick="irA('mapa');return false;"><span>🗺</span>Mapa</a>
   <a href="#riesgos" class="tab" data-vista="riesgos" onclick="irA('riesgos');return false;"><span>🌿</span>Riesgos</a>
