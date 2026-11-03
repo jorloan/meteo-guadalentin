@@ -2835,6 +2835,16 @@ map.on('zoomend',pintarMarcadores);
 
 // ── Render principal ───────────────────────────────────────
 function render(){
+  // Todo el cuerpo va también en un try/catch general (además del que ya
+  // protege estación por estación más abajo): actualizarDatos() llama a
+  // render() cada 5 min EN SEGUNDO PLANO, sin importar qué pantalla esté
+  // abierta (Mi zona, Pronóstico...), y antes su propio ".catch(){}" vacío
+  // se tragaba sin avisar cualquier fallo fuera del bucle por estación
+  // (p.ej. en leg.upd(), al construir la leyenda) — el mapa se quedaba a
+  // medio pintar sin que nadie lo viera, y al volver más tarde a la
+  // pantalla de Mapa parecía bloqueado desde el primer momento, sin haber
+  // tocado nada todavía.
+  try{
   var p=document.getElementById('ps').value;
   // En la pestaña Riesgos solo se pintan riesgos (un cultivo sin modelo deja el mapa vacío).
   if(typeof vistaActual!=='undefined'&&vistaActual==='riesgos'&&!esParamRiesgo(p)){ mLG.clearLayers(); hLG.clearLayers(); return; }
@@ -3123,6 +3133,7 @@ function render(){
       hLG.addLayer(HL);
     }catch(e){console.error('Heatmap:',e);}
   }
+  }catch(e){ console.error('render():',e); }
 }
 
 // ── Datos para la ventana de lluvia y las gráficas de días anteriores ──
@@ -4910,7 +4921,7 @@ HTML_BASE = """<!DOCTYPE html>
         historia24hCargada=true; // este refresco ya trae el histórico completo
         render();
         if(vistaActual==='zona'&&!zonaBuscando) renderZona();
-      }).catch(function(){});
+      }).catch(function(e){ console.error('actualizarDatos():',e); });
   }
   function programar(){clearTimeout(timer);timer=setTimeout(function(){actualizarDatos();programar();},INTERVALO);}
   document.addEventListener('visibilitychange',function(){
