@@ -2792,6 +2792,11 @@ function esEstiado(est){
 var AGR_PX=42, AGR_ZOOM_MAX=14;
 var _marcadores=[], _marcParam='temp';
 function pintarMarcadores(){
+  // Si esto tira (p.ej. por un dato corrupto que llegó a _marcadores),
+  // que no se lleve el zoom por delante: zoomend llama a esta función en
+  // cada zoom, así que un fallo aquí sin capturar dejaba el zoom sin
+  // repintar nunca más hasta recargar la página.
+  try{
   mLG.clearLayers();
   var z=map.getZoom(), lista=_marcadores;
   if(z>=AGR_ZOOM_MAX){ lista.forEach(function(m){ mLG.addLayer(m.mk); }); return; }
@@ -2824,6 +2829,7 @@ function pintarMarcadores(){
       +g.slice(0,6).map(function(m){return m.nm;}).join(', ')+(g.length>6?'…':''),{direction:'top',offset:[0,-18],opacity:0.92});
     mLG.addLayer(mk);
   });
+  }catch(e){ console.error('pintarMarcadores():',e); }
 }
 map.on('zoomend',pintarMarcadores);
 
@@ -2843,6 +2849,15 @@ function render(){
   _marcadores=[]; _marcParam=pRender;
 
   (snap.stations||[]).forEach(function(est){
+    // Todo el cuerpo va en try/catch: un dato corrupto de una sola
+    // estación (p.ej. un campo que debería ser número y no lo es) no
+    // debe tirar todo el forEach — antes, si pasaba, el mapa se quedaba
+    // con _marcadores a medio construir, y como pintarMarcadores() (el
+    // zoom) y el propio render() (cambiar de parámetro) reutilizan o
+    // repiten ese mismo recorrido, el fallo se repetía en cada intento:
+    // el mapa se veía "colgado" (ni el zoom ni los botones hacían nada)
+    // hasta recargar la página, aunque solo fuera una estación la culpable.
+    try{
     if(!est||est.lat==null||est.lon==null) return;
     var v=raw(est,pRender,snap.timestamp); if(v==null) return;
     var bg=col(v,pRender);
@@ -3037,7 +3052,7 @@ function render(){
         +'<tr><td style="color:#888">🌧 Precipitación</td>'
         +'<td style="font-weight:700">'+(function(){
           var acum=getPrecipHoraDe(est.stationID,snap.timestamp);
-          return acum!=null?(acum.toFixed(1)+' mm (1h)'):( m.precipTotal!=null?m.precipTotal.toFixed(1)+' mm':'—');
+          return acum!=null?(acum.toFixed(1)+' mm (1h)'):( m.precipTotal!=null?(+m.precipTotal).toFixed(1)+' mm':'—');
         })()+' </td></tr>'
         +'<tr><td style="color:#888">💨 Viento</td>'
         +'<td style="font-weight:700">'+(m.windSpeed!=null?m.windSpeed.toFixed(0)+' km/h':'—')+' '+wdL(est.winddir)+'</td></tr>'
@@ -3077,6 +3092,7 @@ function render(){
     mk.bindTooltip('<b>'+nm+'</b>'+(estiado?' ⏱':''),{direction:'top',offset:[0,-16],opacity:0.9});
     _marcadores.push({mk:mk,lat:est.lat,lon:est.lon,v:v,nm:nm});
     feats.push(turf.point([est.lon,est.lat],{value:v}));
+    }catch(e){ console.error('render() estación '+(est&&est.stationID)+':',e); }
   });
   pintarMarcadores();
 
@@ -3834,7 +3850,7 @@ function htmlZona(z,cerca,d,cargando,error){
       +'<div>💧 Humedad <b>'+(e.humidity!=null?e.humidity+' %':'—')+'</b></div>'
       +'<div>💨 Viento <b>'+(m.windSpeed!=null?Math.round(m.windSpeed)+' km/h '+wdL(e.winddir):'—')+'</b>'
       +(m.windGust!=null?' <small>rachas '+Math.round(m.windGust)+'</small>':'')+'</div>'
-      +'<div>🌧 Lluvia hoy <b>'+(m.precipTotal!=null?m.precipTotal.toFixed(1).replace('.',',')+' mm':'—')+'</b></div>'
+      +'<div>🌧 Lluvia hoy <b>'+(m.precipTotal!=null?(+m.precipTotal).toFixed(1).replace('.',',')+' mm':'—')+'</b></div>'
       +'</div></div>'
       +(cerca.length>1&&cerca[1].km<=15?'<div class="vz-nota">Otras cerca: '+cerca.slice(1,4).filter(function(c){return c.km<=15;}).map(function(c){
         return nombreEstacion(c.e)+' '+Math.round(c.e.metric.temp)+'°';
