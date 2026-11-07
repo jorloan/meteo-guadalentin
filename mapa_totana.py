@@ -4750,7 +4750,7 @@ HTML_BASE = """<!DOCTYPE html>
     .mg-sec{font-size:.95rem;font-weight:800;color:#0f172a;margin:6px 0 2px}
     .mg-cursor{display:none;position:absolute;top:0;bottom:0;width:0;border-left:1.5px solid rgba(15,23,42,.55);pointer-events:none}
     .mg-tip{display:none;position:absolute;top:40px;z-index:5;min-width:210px;max-width:260px;pointer-events:none;
-      background:rgba(15,23,42,.94);color:#f1f5f9;border-radius:9px;padding:8px 10px;font-size:.72rem;line-height:1.55;
+      background:rgba(15,23,42,.78);color:#f1f5f9;border-radius:9px;padding:8px 10px;font-size:.72rem;line-height:1.55;
       box-shadow:0 6px 20px rgba(0,0,0,.3)}
     .mg-tip small{color:#94a3b8}
     .mg-tip-mod{margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.12)}
