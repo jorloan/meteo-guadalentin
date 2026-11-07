@@ -2252,19 +2252,27 @@ function mgActivarCursor(n,pxh,mL,W){
     cur.style.left=(mL+(i+0.5)*pxh)+'px'; cur.style.display='block';
     var t=h.time[i], d=new Date(t.slice(0,10)+'T00:00:00'), c=mgPulverizar(h,i);
     var pp=h.precipitation_probability?h.precipitation_probability[i]:null;
+    // En el móvil el cuadro salía con una línea por cada variable SIEMPRE,
+    // ocupara lo que ocupara: tapaba buena parte de la pantalla al
+    // deslizar por los días, incluidas líneas de paneles que el usuario
+    // ya había plegado (ET0 y viento, plegados de entrada ahí mismo). Cada
+    // línea va ahora condicionada a si su panel está desplegado
+    // (mgPlegados(), lo mismo que decide el aspecto ▾/▸ de cada panel).
+    var pl=mgPlegados();
+    function abierto(id){ return pl.indexOf(id)<0; }
     var mods='';
-    if(mod) MODELOS_PRON.forEach(function(m){
+    if(mod&&abierto('mod-temp')) MODELOS_PRON.forEach(function(m){
       var v=mod['temperature_2m_'+m.id]; v=v?v[i]:null;
       if(v!=null) mods+='<span style="color:'+COL_MODELO[m.id]+'">'+m.nombre+' '+v.toFixed(1)+'°</span> ';
     });
     tip.innerHTML='<b>'+DIAS_LARGO[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1)+' · '+t.slice(11,16)+'</b> '
       +mgIcono(h.weather_code[i],h.is_day?h.is_day[i]:1)
-      +'<div>🌡 '+fmt(h.temperature_2m[i],1,' °C')+(h.apparent_temperature?' <small>(sensación '+fmt(h.apparent_temperature[i],0,'°')+')</small>':'')+'</div>'
-      +'<div>🌧 '+fmt(h.precipitation[i],1,' mm')+(pp!=null?' · '+pp+'%':'')+'</div>'
-      +'<div>☁️ nubes baja/media/alta: '+[h.cloud_cover_low,h.cloud_cover_mid,h.cloud_cover_high].map(function(a){return a?fmt(a[i],0,'%'):'—';}).join(' / ')+'</div>'
-      +'<div>💨 '+fmt(h.wind_speed_10m[i],0,' km/h')+' '+wdL(h.wind_direction_10m[i])+' · rachas '+fmt(h.wind_gusts_10m?h.wind_gusts_10m[i]:null,0,'')+'</div>'
-      +'<div>💧 HR '+fmt(h.relative_humidity_2m[i],0,'%')+' · ET0 '+fmt(h.et0_fao_evapotranspiration?h.et0_fao_evapotranspiration[i]:null,2,' mm')+'</div>'
-      +'<div>🚜 <span style="color:'+['#15803d','#a16207','#b91c1c'][c.n]+';font-weight:700">'+MG_PULV_TXT[c.n]+'</span>'+(c.n?' <small>('+c.txt+')</small>':'')+'</div>'
+      +(abierto('temp')?'<div>🌡 '+fmt(h.temperature_2m[i],1,' °C')+(h.apparent_temperature?' <small>(sensación '+fmt(h.apparent_temperature[i],0,'°')+')</small>':'')+'</div>':'')
+      +(abierto('lluvia')?'<div>🌧 '+fmt(h.precipitation[i],1,' mm')+(pp!=null?' · '+pp+'%':'')+'</div>'
+      +'<div>☁️ nubes baja/media/alta: '+[h.cloud_cover_low,h.cloud_cover_mid,h.cloud_cover_high].map(function(a){return a?fmt(a[i],0,'%'):'—';}).join(' / ')+'</div>':'')
+      +(abierto('viento')?'<div>💨 '+fmt(h.wind_speed_10m[i],0,' km/h')+' '+wdL(h.wind_direction_10m[i])+' · rachas '+fmt(h.wind_gusts_10m?h.wind_gusts_10m[i]:null,0,'')+'</div>':'')
+      +(abierto('et0')?'<div>💧 HR '+fmt(h.relative_humidity_2m[i],0,'%')+' · ET0 '+fmt(h.et0_fao_evapotranspiration?h.et0_fao_evapotranspiration[i]:null,2,' mm')+'</div>':'')
+      +(abierto('tratar')?'<div>🚜 <span style="color:'+['#15803d','#a16207','#b91c1c'][c.n]+';font-weight:700">'+MG_PULV_TXT[c.n]+'</span>'+(c.n?' <small>('+c.txt+')</small>':'')+'</div>':'')
       +(mods?'<div class="mg-tip-mod">'+mods+'</div>':'');
     tip.style.display='block';
     // El cuadro va al lado contrario del cursor dentro de la parte visible
@@ -4742,7 +4750,7 @@ HTML_BASE = """<!DOCTYPE html>
     .mg-sec{font-size:.95rem;font-weight:800;color:#0f172a;margin:6px 0 2px}
     .mg-cursor{display:none;position:absolute;top:0;bottom:0;width:0;border-left:1.5px solid rgba(15,23,42,.55);pointer-events:none}
     .mg-tip{display:none;position:absolute;top:40px;z-index:5;min-width:210px;max-width:260px;pointer-events:none;
-      background:rgba(15,23,42,.94);color:#f1f5f9;border-radius:9px;padding:8px 10px;font-size:.72rem;line-height:1.55;
+      background:rgba(15,23,42,.78);color:#f1f5f9;border-radius:9px;padding:8px 10px;font-size:.72rem;line-height:1.55;
       box-shadow:0 6px 20px rgba(0,0,0,.3)}
     .mg-tip small{color:#94a3b8}
     .mg-tip-mod{margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.12)}
