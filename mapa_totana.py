@@ -989,7 +989,15 @@ L.control.zoom({position:'bottomleft'}).addTo(map);
 map.attributionControl.setPrefix(false);
 map.createPane('hp');
 map.getPane('hp').style.zIndex=390;
-map.getPane('hp').style.filter='blur(14px)';
+// 10px en vez de los 14px originales: con los miles de celdas que genera
+// turf.interpolate() con las estaciones actuales (ver más abajo, en
+// render()), un filter:blur() de este tamaño sobre tantas formas SVG a la
+// vez es justo el patrón que más cuesta de componer en Safari/iOS — más
+// que en Chrome, que lo acelera mejor — y es la sospecha más fundada de
+// por qué la web se queda colgada para siempre en iPhone con solo abrir
+// el mapa (nov 2026). Se reduce un poco el radio aquí, y el número de
+// celdas de forma más decisiva en render(), para aliviarlo.
+map.getPane('hp').style.filter='blur(10px)';
 
 // ── Radar de lluvia ────────────────────────────────────────────
 // Dos fuentes:
@@ -3132,12 +3140,17 @@ function render(){
       try{
         var c=turf.featureCollection(validFeats);
         var weight=pRender==='temp'?2:esParamRiesgo(pRender)?6:4;
-        // Celda de rejilla más grande que el original (2.5-3km): con la
-        // zona cubierta ahora mucho más extensa (Almería-Albacete-Benidorm)
-        // y más estaciones, una rejilla fina dispara el nº de celdas y el
-        // tiempo de cálculo. Con 4-4.5km se ve igual de suave y es ~2.5x
-        // más rápido.
-        var g=turf.interpolate(c,esParamRiesgo(pRender)?4.5:4,
+        // Celda de rejilla más grande que el original (2.5-3km, luego
+        // 4-4.5km): con la zona cubierta ahora mucho más extensa
+        // (Almería-Albacete-Benidorm) y ~180 estaciones, 4-4.5km generaba
+        // unas 3.400 celdas — bastantes formas SVG para que, con el filtro
+        // de desenfoque de la capa (ver map.getPane('hp') más arriba),
+        // Safari/iOS las componga mucho peor que Chrome, hasta el punto de
+        // quedarse colgado para siempre al abrir el mapa (nov 2026). A
+        // 8-9km quedan ~850 celdas (una cuarta parte), sigue viéndose
+        // suave y es ~4x más rápido de calcular, además de mucho más
+        // barato de desenfocar.
+        var g=turf.interpolate(c,esParamRiesgo(pRender)?9:8,
           {gridType:'square',property:'value',units:'kilometers',weight:weight});
         var cl=turf.featureCollection(g.features.filter(function(f){
           return f.properties.value!=null&&!isNaN(f.properties.value);
