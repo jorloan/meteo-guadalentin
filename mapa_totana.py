@@ -3107,31 +3107,50 @@ function render(){
   pintarMarcadores();
 
   // Heatmap interpolado — nos ahorramos el cálculo entero (turf.interpolate
-  // es lo más caro con diferencia, ~200ms con las estaciones actuales) si
-  // la capa ni siquiera está activa, ya que el resultado no se usaría.
+  // es lo más caro con diferencia, bastante más de los ~200ms originales
+  // ahora que hay 170-180 estaciones en vez de las 90-100 de cuando se
+  // escribió ese cálculo) si la capa ni siquiera está activa, ya que el
+  // resultado no se usaría.
   var validFeats = isR ? feats.filter(function(f){return f.properties.value>=0;}) : feats;
   if(heatActive && validFeats.length>2){
-    try{
-      var c=turf.featureCollection(validFeats);
-      var weight=pRender==='temp'?2:esParamRiesgo(pRender)?6:4;
-      // Celda de rejilla más grande que el original (2.5-3km): con la
-      // zona cubierta ahora mucho más extensa (Almería-Albacete-Benidorm)
-      // y más estaciones, una rejilla fina dispara el nº de celdas y el
-      // tiempo de cálculo. Con 4-4.5km se ve igual de suave y es ~2.5x
-      // más rápido.
-      var g=turf.interpolate(c,esParamRiesgo(pRender)?4.5:4,
-        {gridType:'square',property:'value',units:'kilometers',weight:weight});
-      var cl=turf.featureCollection(g.features.filter(function(f){
-        return f.properties.value!=null&&!isNaN(f.properties.value);
-      }));
-      HL=L.geoJSON(cl,{pane:'hp',style:function(f){
-        var v=f.properties.value;
-        if(esParamRiesgo(pRender)) v=Math.min(3,Math.max(0,Math.round(v)));
-        return{fillColor:col(v,pRender),fillOpacity:window.HO,stroke:false};
-      }});
-      hLG.clearLayers();
-      hLG.addLayer(HL);
-    }catch(e){console.error('Heatmap:',e);}
+    // Diferido a la siguiente vuelta del bucle de eventos: antes este
+    // cálculo se hacía aquí mismo, de forma síncrona, bloqueando el hilo
+    // principal en CADA cambio de parámetro — en un móvil de gama media/
+    // baja (varias veces más lento que donde se midieron esos ~200ms) eso
+    // se notaba como la web "colgada" un buen rato al cambiar de
+    // Temperatura a Lluvia o a cualquier otro parámetro. Los marcadores
+    // (lo que de verdad hace falta ver al instante) ya están pintados
+    // antes de este punto; el sombreado del mapa de calor puede llegar un
+    // instante después sin que se note nada bloqueado. _marcParam (puesto
+    // más arriba, al construir _marcadores) guarda qué parámetro pintó
+    // ESTE render(): si antes de que el setTimeout se ejecute ya hay un
+    // render() más nuevo en marcha (otro cambio de parámetro, p.ej.),
+    // _marcParam ya no coincide y este cálculo, ya obsoleto, se descarta.
+    var pCapturado=pRender;
+    setTimeout(function(){
+      if(_marcParam!==pCapturado) return;
+      try{
+        var c=turf.featureCollection(validFeats);
+        var weight=pRender==='temp'?2:esParamRiesgo(pRender)?6:4;
+        // Celda de rejilla más grande que el original (2.5-3km): con la
+        // zona cubierta ahora mucho más extensa (Almería-Albacete-Benidorm)
+        // y más estaciones, una rejilla fina dispara el nº de celdas y el
+        // tiempo de cálculo. Con 4-4.5km se ve igual de suave y es ~2.5x
+        // más rápido.
+        var g=turf.interpolate(c,esParamRiesgo(pRender)?4.5:4,
+          {gridType:'square',property:'value',units:'kilometers',weight:weight});
+        var cl=turf.featureCollection(g.features.filter(function(f){
+          return f.properties.value!=null&&!isNaN(f.properties.value);
+        }));
+        HL=L.geoJSON(cl,{pane:'hp',style:function(f){
+          var v=f.properties.value;
+          if(esParamRiesgo(pRender)) v=Math.min(3,Math.max(0,Math.round(v)));
+          return{fillColor:col(v,pRender),fillOpacity:window.HO,stroke:false};
+        }});
+        hLG.clearLayers();
+        hLG.addLayer(HL);
+      }catch(e){console.error('Heatmap:',e);}
+    },0);
   }
   }catch(e){ console.error('render():',e); }
 }
