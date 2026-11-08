@@ -3733,7 +3733,7 @@ function renderZona(){
   pintarZona(cab+htmlZona(z,cerca,fresco?p.d:null,!fresco));
   if(!fresco){
     var url='https://api.open-meteo.com/v1/forecast?latitude='+z.lat+'&longitude='+z.lon
-      +'&hourly='+ZONA_HV+'&daily='+ZONA_DV+'&forecast_days=4&timezone=auto';
+      +'&hourly='+ZONA_HV+'&daily='+ZONA_DV+'&forecast_days=7&timezone=auto';
     var k=clavePron(z);
     fetch(url).then(function(r){return r.json();}).then(function(d){
       if(!d||!d.hourly) throw new Error((d&&d.reason)||'sin datos');
@@ -3834,6 +3834,93 @@ function tratarZona(h){
   return {n:n,txt:txt,sub:sub,tira:tira};
 }
 
+// Próximo día de lluvia: ¿llueve ahora?, si no, la primera hora con lluvia
+// (≥0,2 mm) en los 7 días del pronóstico y lo que se espera ese día.
+function proximaLluviaZona(d){
+  var h=d.hourly, dl=d.daily, i0=zonaIdxAhora(h), n=h.time.length;
+  var hoy=h.time[i0].slice(0,10);
+  function diasHasta(f){ return Math.round((new Date(f+'T00:00:00')-new Date(hoy+'T00:00:00'))/864e5); }
+  function nombreDia(f){ var dd=diasHasta(f), dt=new Date(f+'T00:00:00');
+    return dd===0?'hoy':dd===1?'mañana':dd===2?'pasado mañana':'el '+DIAS_LARGO[dt.getDay()]; }
+  function mmDia(f){ var k=dl.time.indexOf(f); return k>=0?dl.precipitation_sum[k]:null; }
+  function probDia(f){ var k=dl.time.indexOf(f); return k>=0&&dl.precipitation_probability_max?dl.precipitation_probability_max[k]:null; }
+  if((h.precipitation[i0]||0)>=0.2){
+    var j=i0; while(j<n&&(h.precipitation[j]||0)>=0.2) j++;
+    var mm0=mmDia(hoy);
+    return {n:2,ic:'🌧',tit:'Está lloviendo',
+      sub:(j>=n?'Sigue lloviendo todo el pronóstico':'Hasta las '+horaTxt(h.time[Math.min(j,n-1)]))+(mm0!=null?' · hoy '+mm0.toFixed(1).replace('.',',')+' mm':'')};
+  }
+  var f=-1;
+  for(var i=i0+1;i<n;i++) if((h.precipitation[i]||0)>=0.2){ f=i; break; }
+  if(f<0) return {n:0,ic:'☀️',tit:'Sin lluvia en 7 días',sub:'No se prevé lluvia en el pronóstico'};
+  var dia=h.time[f].slice(0,10), mm=mmDia(dia), pp=probDia(dia);
+  var sub='Desde las '+horaTxt(h.time[f]);
+  if(mm!=null) sub+=' · '+mm.toFixed(1).replace('.',',')+' mm ese día';
+  if(pp!=null) sub+=' · probabilidad '+pp+' %';
+  var dd=diasHasta(dia);
+  return {n:(mm>=10||dd===0)?2:1,ic:'🌧',tit:'Próxima lluvia: '+nombreDia(dia),sub:sub};
+}
+
+// Tareas del campo: qué se puede hacer y qué no con el pronóstico de las
+// próximas horas. Reglas sencillas y orientativas (n: 0 sí, 1 con cuidado, 2 no).
+function tareasZona(d){
+  var h=d.hourly, i0=zonaIdxAhora(h), n=h.time.length;
+  function suma(a,b){ var s=0; for(var i=Math.max(0,a);i<Math.min(n,b);i++) s+=h.precipitation[i]||0; return s; }
+  function ext(arr,a,b,mx){ var v=mx?-Infinity:Infinity; for(var i=a;i<Math.min(n,b);i++){ var x=arr[i]; if(x==null) continue; v=mx?Math.max(v,x):Math.min(v,x); } return v; }
+  var l12=suma(i0,i0+12), l24=suma(i0,i0+24), l48=suma(i0,i0+48), hoyYa=suma(0,i0+1);
+  var tmin=ext(h.temperature_2m,i0,i0+24,false), tmax=ext(h.temperature_2m,i0,i0+24,true);
+  var racha=ext(h.wind_gusts_10m,i0,i0+24,true), viento=h.wind_speed_10m[i0]||0;
+  var llueve=(h.precipitation[i0]||0)>=0.2;
+  function mm(x){ return (Math.round(x*10)/10).toString().replace('.',','); }
+  var t=[];
+
+  var pv=mgPulverizar(h,i0);
+  t.push({ic:'💦',nom:'Pulverizar',n:pv.n,why:pv.n===0?'Condiciones adecuadas ahora':'Ahora: '+pv.txt});
+
+  var r={n:0,why:'Sin lluvia prevista en 48 h: toca regar'};
+  if(l48>=8) r={n:2,why:'Llueven '+mm(l48)+' mm en 48 h: mejor esperar'};
+  else if(l48>=3) r={n:1,why:'Llovizna prevista ('+mm(l48)+' mm): riega menos'};
+  else if(viento>=20) r={n:1,why:'Viento de '+Math.round(viento)+' km/h: mejor goteo que aspersión'};
+  t.push({ic:'💧',nom:'Regar',n:r.n,why:r.why});
+
+  var a={n:0,why:'Buen momento, sin lluvia fuerte que lave el abono'};
+  if(l24>=10) a={n:2,why:'Lluvia fuerte ('+mm(l24)+' mm): se lavaría el abono'};
+  else if(llueve||l24>=4) a={n:1,why:'Lluvia prevista ('+mm(l24)+' mm): espera a que pase'};
+  else if(tmax>=32) a={n:1,why:'Calor ('+Math.round(tmax)+' °C): abona a primera hora o al atardecer'};
+  t.push({ic:'🌱',nom:'Abonar',n:a.n,why:a.why});
+
+  var l={n:0,why:'Suelo en buen punto, sin lluvia en 24 h'};
+  if(hoyYa+l24>=10) l={n:2,why:'Suelo muy mojado o lluvia fuerte ('+mm(hoyYa+l24)+' mm): no entres con maquinaria'};
+  else if(llueve||l24>=3) l={n:1,why:'Lluvia prevista ('+mm(l24)+' mm): mejor esperar'};
+  else if(tmin<=0) l={n:1,why:'Helada ('+Math.round(tmin)+' °C): suelo duro y plántulas en riesgo'};
+  t.push({ic:'🚜',nom:'Labrar / sembrar',n:l.n,why:l.why});
+
+  var c={n:0,why:'Sin lluvia en las próximas 12 h'};
+  if(llueve||l12>=1) c={n:2,why:'Lluvia en las próximas 12 h ('+mm(l12)+' mm)'};
+  else if(racha>=45) c={n:1,why:'Rachas de '+Math.round(racha)+' km/h'};
+  else if(tmax>=35) c={n:1,why:'Calor ('+Math.round(tmax)+' °C): recoge temprano'};
+  t.push({ic:'🧺',nom:'Recolectar',n:c.n,why:c.why});
+  return t;
+}
+
+function htmlLluviaTareasZona(d){
+  var p=proximaLluviaZona(d), ts=tareasZona(d);
+  var et=['Sí','Con cuidado','No'];
+  return '<div class="vz-tarjeta">'
+    +'<div class="vz-tit">🌧 Próxima lluvia</div>'
+    +'<div class="vz-aviso vz-aviso-'+(p.n===0?0:p.n)+'"><span>'+p.ic+'</span><div>'+p.tit+'<div class="vz-aviso-sub">'+p.sub+'</div></div></div>'
+    +'</div>'
+    +'<div class="vz-tarjeta">'
+    +'<div class="vz-tit">🧑‍🌾 Tareas del campo <small>· próximas 24 h</small></div>'
+    +ts.map(function(x){
+      return '<div class="vz-tarea vz-tarea-'+x.n+'"><span class="vz-tarea-ic">'+x.ic+'</span>'
+        +'<div class="vz-tarea-c"><b>'+x.nom+'</b><small>'+x.why+'</small></div>'
+        +'<span class="vz-tarea-e">'+(x.n===0?'✅':x.n===1?'⚠️':'⛔')+' '+et[x.n]+'</span></div>';
+    }).join('')
+    +'<div class="vz-nota">Orientativo, según el pronóstico de tu zona. Ajusta a tu cultivo y tu suelo.</div>'
+    +'</div>';
+}
+
 function htmlMisCultivosZona(est){
   var m=misCultivos();
   if(!m||!m.length){
@@ -3873,6 +3960,9 @@ function htmlZona(z,cerca,d,cargando,error){
       +(!d&&cargando?'<div class="vz-nota">⏳ Cargando pronóstico…</div>':'')
       +'</div>';
   }
+
+  // 1b. Próxima lluvia y tareas del campo
+  if(d) html+=htmlLluviaTareasZona(d);
 
   // 2. ¿Se puede tratar?
   if(d){
@@ -4501,6 +4591,16 @@ HTML_BASE = """<!DOCTYPE html>
     .vz-aviso-0{background:#ecfdf5;color:#065f46}
     .vz-aviso-1{background:#fef9c3;color:#713f12;border-left:5px solid #eab308}
     .vz-aviso-2{background:#fee2e2;color:#7f1d1d;border-left:5px solid #dc2626}
+    .vz-aviso-sub{font-weight:500;font-size:.88rem;opacity:.85;margin-top:2px}
+    .vz-tarea{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:6px;border-left:5px solid}
+    .vz-tarea-0{background:#ecfdf5;border-color:#22c55e}
+    .vz-tarea-1{background:#fef9c3;border-color:#eab308}
+    .vz-tarea-2{background:#fee2e2;border-color:#dc2626}
+    .vz-tarea-ic{font-size:1.4rem}
+    .vz-tarea-c{flex:1;min-width:0}
+    .vz-tarea-c b{display:block;font-size:.98rem;color:#0f172a}
+    .vz-tarea-c small{display:block;font-size:.8rem;color:#475569;line-height:1.35}
+    .vz-tarea-e{font-size:.78rem;font-weight:800;white-space:nowrap;color:#334155}
     .vz-tratar{font-size:1.35rem;font-weight:800;padding:6px 0 2px}
     .vz-tratar-0{color:#15803d}.vz-tratar-1{color:#a16207}.vz-tratar-2{color:#b91c1c}
     .vz-sub{font-size:.98rem;color:#334155;line-height:1.5;margin-bottom:10px}
