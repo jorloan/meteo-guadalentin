@@ -36,6 +36,10 @@ jobs:
           playwright install --with-deps chromium
           python3 sencrop_descargar.py
 
+      - name: Descargar estaciones CHS (SAIH Segura)
+        continue-on-error: true
+        run: python3 chs_descargar.py
+
       - name: Ejecutar mapa
         run: python3 mapa_totana.py
 

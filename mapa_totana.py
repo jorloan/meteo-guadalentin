@@ -3102,14 +3102,14 @@ function render(){
         +'<tr><td style="color:#888">🕒 Observación</td>'
         +'<td>'+(est.obsTimeLocal?est.obsTimeLocal.slice(11,16):'—')+'</td></tr>'
         +'</table>'
-        +(esSencrop(est.stationID)?'':'<a href="https://www.wunderground.com/dashboard/pws/'+est.stationID
+        +(esExterna(est.stationID)?'':'<a href="https://www.wunderground.com/dashboard/pws/'+est.stationID
         +'" target="_blank" style="display:inline-block;margin-top:12px;padding:7px 16px;'
         +'background:#3498db;color:#fff;text-decoration:none;border-radius:6px;font-size:12px;">'
         +'Ver historial en WU ↗</a>');
     }
 
     var fh='<div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:4px;">'+nm+'</div>'
-      +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+(esSencrop(est.stationID)?lineaPropietario(est.stationID):est.stationID)+'</div>'+ph;
+      +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+(esExterna(est.stationID)?lineaPropietario(est.stationID):est.stationID)+'</div>'+ph;
     // graficoEstacion12h(est.stationID) NO se añade aquí: este bloque se
     // ejecuta para las ~175 estaciones en CADA repintado del mapa
     // (cualquier parámetro, no solo al pinchar), así que construirla ya
@@ -3584,7 +3584,10 @@ function estacionesCercanas(lat,lon){
   return res;
 }
 function esSencrop(sid){ return String(sid).indexOf('SC-')===0; }
+function esChs(sid){ return String(sid).indexOf('CH-')===0; }
+function esExterna(sid){ return esSencrop(sid)||esChs(sid); }
 function lineaPropietario(sid){
+  if(esChs(sid)) return 'Fuente: Confederación Hidrográfica del Segura (SAIH)';
   var p=PROPIETARIOS[String(sid).slice(3)];
   if(!p) return 'Estación Sencrop · Comunidad de Regantes';
   return 'Propietario: '+String(p).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -5123,6 +5126,17 @@ def principal():
         print(f"  ✅ Sencrop: {len(sc)} estaciones.")
     except Exception as e:
         print(f"  ⚠ Sencrop no disponible: {e}")
+
+    # Estaciones de la Confederación Hidrográfica del Segura (SAIH): las descarga aparte
+    # chs_descargar.py a chs.json (coordenadas oficiales en chs_coordenadas.json).
+    try:
+        from chs_a_wu import leer_chs
+        ch = leer_chs(os.path.join(REPO_DIR, 'chs.json'), os.path.join(REPO_DIR, 'chs_coordenadas.json'),
+                      DESACTIVADAS, ahora.tzinfo, ahora)
+        datos_wu.extend(ch)
+        print(f"  ✅ CHS (SAIH): {len(ch)} estaciones.")
+    except Exception as e:
+        print(f"  ⚠ CHS no disponible: {e}")
 
     if not datos_wu:
         print("  ❌ Sin datos WU. Comprueba la conexión."); return
