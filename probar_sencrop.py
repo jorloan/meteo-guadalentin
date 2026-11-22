@@ -1,164 +1,107 @@
-"""Prueba puntual: ¿se puede entrar en Sencrop desde GitHub Actions y qué API usa la web?
+"""Prueba puntual: ¿qué medidas y rangos admite el historial de Sencrop?
 
 Uso (solo en CI, ver .github/workflows/probar-sencrop.yml):
     SENCROP_USER=... SENCROP_PASSWORD=... python3 probar_sencrop.py
 
-El repositorio es público y los logs de Actions también, así que este script
-NO imprime credenciales, cabeceras, tokens, valores de respuesta ni query strings.
-Solo imprime: si el login funcionó, las rutas (host + path) que la web llama por
-XHR/fetch con su código de respuesta, y, para las rutas de estaciones/mediciones,
-la ESTRUCTURA de la respuesta JSON (nombres de campos y tipos, sin valores).
+Repositorio y logs públicos: NO se imprimen credenciales, cabeceras, tokens ni
+valores de medidas. Solo: códigos de respuesta, nombres de métricas y número de
+puntos de cada serie, para diseñar el rellenado de 7 días.
 """
 import json
 import os
-import re
 import sys
-from urllib.parse import urlsplit
+from datetime import datetime, timedelta, timezone
+from urllib.parse import urlencode
 
 from playwright.sync_api import sync_playwright
 
 URL_LOGIN = "https://app.sencrop.com/login"
 URL_DASHBOARD = "https://app.sencrop.com/station/dashboard"
+API = "https://sencrop-api-production.infra.sencrop.com/app/station/measurement-page/measurements"
 USUARIO = os.environ.get("SENCROP_USER", "")
 CLAVE = os.environ.get("SENCROP_PASSWORD", "")
-# Solo se describe la estructura de respuestas de estas rutas (datos de estaciones)
-INTERESANTES = ("station", "device", "measure", "weather", "dashboard", "observation", "history", "histor", "series", "chart", "data")
-MAX_ESTRUCTURAS = 40
+ORGANIZACION = "236298"   # Comunidad de Regantes (ya aparece en las URLs de la web)
+
+CANDIDATAS = ["temperature", "rainfall", "relativeHumidity", "humidity", "windSpeed",
+              "windGust", "windDirection", "dewPoint", "wetTemperature", "precipitation",
+              "wind", "rain"]
 
 
-def limpiar(url):
-    """host + path, sin query ni identificadores largos."""
-    partes = urlsplit(url)
-    ruta = re.sub(r"[0-9a-fA-F-]{24,}", "<id>", partes.path)
-    return partes.netloc + ruta
+def iso(dt):
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.000+00:00")
 
 
-def con_query(url):
-    """host + path + query con ids largos enmascarados (para ver los parámetros de fechas)."""
-    partes = urlsplit(url)
-    q = re.sub(r"[0-9a-fA-F-]{24,}", "<id>", partes.query)
-    return limpiar(url) + ("?" + q[:200] if q else "")
-
-
-def estructura(valor, profundidad=0, maximo=7):
-    """Describe un JSON con nombres de campos y tipos, sin ningún valor."""
-    if profundidad >= maximo:
-        return "…"
-    if isinstance(valor, dict):
-        return "{" + ", ".join(f"{k}: {estructura(v, profundidad + 1, maximo)}"
-                               for k, v in list(valor.items())[:40]) + "}"
-    if isinstance(valor, list):
-        if not valor:
-            return "[]"
-        return f"[{len(valor)} x " + estructura(valor[0], profundidad + 1, maximo) + "]"
-    if isinstance(valor, bool):
-        return "bool"
-    if isinstance(valor, (int, float)):
-        return "num"
-    if valor is None:
-        return "null"
-    return "str"
+def describir(js):
+    """Nombres de métricas y nº de puntos de cada serie, sin valores."""
+    try:
+        medidas = js["response"]["stationMeasurements"]
+    except Exception:
+        return "(estructura inesperada: " + str(list(js)[:5]) + ")"
+    out = []
+    for nombre, series in medidas.items():
+        for s in series:
+            ts = s.get("timeseries") or []
+            out.append(f"{nombre}/{s.get('metric')}: {len(ts)} pts, relleno={s.get('hasFill')}")
+    return "; ".join(out) or "(vacío)"
 
 
 def main():
     if not USUARIO or not CLAVE:
         print("Faltan los secrets SENCROP_USER / SENCROP_PASSWORD")
         return 1
-
-    llamadas = {}
-    estructuras = {}
-    historial = {}
-
+    estaciones = {}
     with sync_playwright() as p:
         navegador = p.chromium.launch()
-        pagina = navegador.new_page()
+        ctx = navegador.new_context(locale="es-ES")
+        pagina = ctx.new_page()
 
         def al_responder(resp):
-            req = resp.request
-            if req.resource_type not in ("xhr", "fetch"):
-                return
-            ruta = limpiar(resp.url)
-            clave = (req.method, ruta, resp.status)
-            llamadas[clave] = llamadas.get(clave, 0) + 1
-            if ("measurement-page/measurements" in ruta and resp.status == 200
-                    and len(historial) < 8):
+            if "station/dashboard/station-list" in resp.url and resp.status == 200:
                 try:
-                    clave_h = con_query(resp.url)
-                    if clave_h not in historial:
-                        historial[clave_h] = estructura(resp.json(), 0, 7)
+                    for e in resp.json().get("stations") or []:
+                        estaciones[e["id"]] = e.get("name")
                 except Exception:
                     pass
-            if ("sencrop" in ruta and resp.status == 200
-                    and True
-                    and any(k in ruta.lower() for k in INTERESANTES)
-                    and ruta not in estructuras and len(estructuras) < MAX_ESTRUCTURAS):
-                try:
-                    cuerpo = ""
-                    if req.method == "POST" and req.post_data:
-                        try: cuerpo = "  [cuerpo: " + estructura(json.loads(req.post_data), 0, 4) + "]"
-                        except Exception: cuerpo = "  [cuerpo: no JSON]"
-                    estructuras[ruta] = con_query(resp.url) + cuerpo + "\n     " + estructura(resp.json())
-                except Exception:
-                    estructuras[ruta] = con_query(resp.url) + "\n     (no es JSON)"
 
         pagina.on("response", al_responder)
-
         pagina.goto(URL_LOGIN, wait_until="networkidle")
         pagina.fill("input[type=email], input[name=email]", USUARIO)
         pagina.fill("input[type=password]", CLAVE)
         pagina.click("button[type=submit]")
-
-        try:
-            pagina.wait_for_url("**/home**", timeout=30000)
-            print("LOGIN: OK (llegó a /home)")
-        except Exception:
-            print("LOGIN: FALLÓ. URL final:", limpiar(pagina.url))
+        pagina.wait_for_url("**/home**", timeout=30000)
+        pagina.wait_for_load_state("networkidle")
+        pagina.goto(URL_DASHBOARD, wait_until="networkidle")
+        pagina.wait_for_timeout(3000)
+        print("LOGIN: OK; estaciones vistas:", len(estaciones))
+        if not estaciones:
             navegador.close()
             return 1
 
-        pagina.wait_for_load_state("networkidle")
+        sid = next(iter(estaciones))
+        ahora = datetime.now(timezone.utc)
 
-        # Dashboard: lista de estaciones con sus lecturas actuales
-        pagina.goto(URL_DASHBOARD, wait_until="networkidle")
-        pagina.wait_for_timeout(4000)
-        print("DASHBOARD URL:", limpiar(pagina.url))
+        def pedir(tipo, medida, dias, fin=None):
+            fin = fin or ahora
+            q = {"organisationId": ORGANIZACION, "stationId": sid,
+                 "startDatetime": iso(fin - timedelta(days=dias)),
+                 "endDatetime": iso(fin), "measures": medida, "enableFilling": "true"}
+            r = ctx.request.get(f"{API}/{tipo}?{urlencode(q)}")
+            try:
+                return r.status, (describir(r.json()) if r.ok else r.text()[:120].replace("\n", " "))
+            except Exception as e:
+                return r.status, f"({type(e).__name__})"
 
-        # Abrir el Historial de la primera estación y probar a pedir 7 días
-        try:
-            pagina.locator("text=Historial").first.click(timeout=8000)
-            pagina.wait_for_load_state("networkidle")
-            pagina.wait_for_timeout(5000)
-            print("HISTORIAL URL:", limpiar(pagina.url))
-            for etiqueta in ("7 días", "7 dias", "7 d", "Semana", "7J"):
-                try:
-                    pagina.locator(f"text={etiqueta}").first.click(timeout=2500)
-                    pagina.wait_for_load_state("networkidle")
-                    pagina.wait_for_timeout(4000)
-                    print("Pulsado selector:", etiqueta)
-                    break
-                except Exception:
-                    pass
-            print("Botones/pestañas visibles:",
-                  [t.strip()[:25] for t in pagina.locator("button, [role=tab]").all_inner_texts()][:30])
-        except Exception as e:
-            print("No se pudo abrir el historial:", type(e).__name__)
+        print("\n--- Medidas candidatas (hourly, 1 día) ---")
+        for m in CANDIDATAS:
+            print(f"  {m}: {pedir('hourly', m, 1)}")
 
+        print("\n--- Rangos con temperature ---")
+        for tipo, dias in (("hourly", 2), ("hourly", 7), ("hourly", 8), ("daily", 7), ("daily", 14)):
+            print(f"  {tipo} {dias} días: {pedir(tipo, 'temperature', dias)}")
+
+        print("\n--- Varias medidas a la vez (hourly 7 días, separadas por coma) ---")
+        print("  ", pedir("hourly", "temperature,rainfall,relativeHumidity,windSpeed", 7))
         navegador.close()
-
-    print("\nLlamadas a Sencrop (método, estado, ruta, veces):")
-    for (metodo, ruta, estado), veces in sorted(llamadas.items(), key=lambda x: x[0][1]):
-        if "sencrop" in ruta:
-            print(f"  {metodo:5} {estado} {ruta}  x{veces}")
-
-    print("\n=== HISTORIAL (URL con parámetros y estructura, sin valores) ===")
-    for url, est in historial.items():
-        print("URL:", url)
-        print("ESTRUCTURA:", est[:1800])
-    print("=== FIN HISTORIAL ===")
-
-    print("\nEstructura de las respuestas de estaciones/mediciones (sin valores):")
-    for ruta, est in estructuras.items():
-        print(f"  {ruta}")
     return 0
 
 
