@@ -23,11 +23,6 @@ URL_DASHBOARD = 'https://app.sencrop.com/station/dashboard'
 USUARIO = os.environ.get('SENCROP_USER', '')
 CLAVE = os.environ.get('SENCROP_PASSWORD', '')
 
-# Cabeceras que el navegador pone solo y no se pueden fijar desde fetch()
-PROHIBIDAS = {'host', 'content-length', 'cookie', 'origin', 'referer', 'user-agent',
-              'accept-encoding', 'connection'}
-
-
 def tipos(valor, nivel=0):
     """Estructura de un JSON sin valores (para el log público)."""
     if nivel > 3: return '…'
@@ -38,22 +33,6 @@ def tipos(valor, nivel=0):
     if isinstance(valor, bool): return 'bool'
     if isinstance(valor, (int, float)): return 'num'
     return 'null' if valor is None else 'str'
-
-
-def variantes_cuerpo(cuerpo):
-    """Cuerpos alternativos de la petición de la lista de estaciones para intentar
-    saltarse el filtro por defecto del Dashboard (que devolvía 8 de 10)."""
-    if not isinstance(cuerpo, dict): return []
-    out = []
-    claves_filtro = [k for k in cuerpo if 'filter' in k.lower()]
-    for k in claves_filtro:
-        sin = dict(cuerpo); sin.pop(k, None); out.append(('sin ' + k, sin))
-        vacio = dict(cuerpo); vacio[k] = {}; out.append((k + '={}', vacio))
-        lista = dict(cuerpo); lista[k] = []; out.append((k + '=[]', lista))
-    for k in cuerpo:
-        if k.lower() in ('limit', 'pagesize', 'perpage', 'size'):
-            grande = dict(cuerpo); grande[k] = 200; out.append((k + '=200', grande))
-    return out
 
 
 def reducir(est):
@@ -70,7 +49,8 @@ def descargar():
     with sync_playwright() as p:
         navegador = p.chromium.launch()
         pagina = navegador.new_context(locale='es-ES').new_page()
-        capt = {'req': None, 'lista': None}
+        capt = {'req': None}
+        todas = {}   # id -> estación; el Dashboard pagina de 8 en 8 al bajar por la lista
 
         def al_pedir(req):
             if 'station/dashboard/station-list' in req.url and req.method == 'POST':
@@ -78,8 +58,11 @@ def descargar():
 
         def al_responder(resp):
             if 'station/dashboard/station-list' in resp.url and resp.status == 200:
-                try: capt['lista'] = resp.json()
-                except Exception: pass
+                try:
+                    for e in resp.json().get('stations') or []:
+                        if e.get('id'): todas[e['id']] = e
+                except Exception:
+                    pass
 
         pagina.on('request', al_pedir)
         pagina.on('response', al_responder)
@@ -94,33 +77,30 @@ def descargar():
         pagina.goto(URL_DASHBOARD, wait_until='networkidle')
         pagina.wait_for_timeout(3000)
 
-        if capt['lista']:
-            mejor = capt['lista'].get('stations') or []
-            print(f'  Dashboard: {len(mejor)} estaciones con el filtro por defecto')
-
-        req = capt['req']
-        if req is not None:
+        print(f'  Dashboard: {len(todas)} estaciones en la primera página')
+        sin_novedad = 0
+        for _ in range(12):
+            antes = len(todas)
+            pagina.evaluate("""() => {
+                document.querySelectorAll('*').forEach(e => {
+                    if (e.scrollHeight > e.clientHeight + 50 &&
+                        ['auto', 'scroll'].includes(getComputedStyle(e).overflowY))
+                        e.scrollTop = e.scrollHeight;
+                });
+                window.scrollTo(0, document.body.scrollHeight);
+            }""")
+            pagina.wait_for_timeout(1500)
+            sin_novedad = sin_novedad + 1 if len(todas) == antes else 0
+            if sin_novedad >= 2:
+                break
+        print(f'  Tras bajar por la lista: {len(todas)} estaciones')
+        if capt['req'] is not None:
             try:
-                cuerpo = json.loads(req.post_data or '{}')
+                print('  Cuerpo de la petición (solo estructura):',
+                      tipos(json.loads(capt['req'].post_data or '{}')))
             except Exception:
-                cuerpo = None
-            if cuerpo is not None:
-                print('  Cuerpo de la petición (solo estructura):', tipos(cuerpo))
-                cab = {k: v for k, v in req.headers.items()
-                       if k.lower() not in PROHIBIDAS and not k.startswith(':')}
-                for nombre, alterno in variantes_cuerpo(cuerpo):
-                    try:
-                        r = pagina.evaluate(
-                            """async (a) => { const r = await fetch(a.url, {method:'POST',
-                                headers:a.h, body:a.b, credentials:'include'});
-                                return r.ok ? await r.json() : null; }""",
-                            {'url': req.url, 'h': cab, 'b': json.dumps(alterno)})
-                        n = len((r or {}).get('stations') or [])
-                        print(f'  Variante "{nombre}": {n} estaciones')
-                        if n > len(mejor or []):
-                            mejor = r['stations']
-                    except Exception as e:
-                        print(f'  Variante "{nombre}" falló: {type(e).__name__}')
+                pass
+        mejor = list(todas.values())
         navegador.close()
     return mejor
 
