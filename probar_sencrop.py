@@ -22,6 +22,12 @@ USUARIO = os.environ.get("SENCROP_USER", "")
 CLAVE = os.environ.get("SENCROP_PASSWORD", "")
 ORGANIZACION = "236298"   # Comunidad de Regantes (ya aparece en las URLs de la web)
 
+# Cabeceras que el navegador pone solo y no hay que copiar
+PROHIBIDAS = {"host", "content-length", "cookie", "origin", "referer", "user-agent",
+              "accept-encoding", "connection", "content-type", "sec-fetch-site",
+              "sec-fetch-mode", "sec-fetch-dest", "sec-ch-ua", "sec-ch-ua-mobile",
+              "sec-ch-ua-platform"}
+
 CANDIDATAS = ["temperature", "rainfall", "relativeHumidity", "humidity", "windSpeed",
               "windGust", "windDirection", "dewPoint", "wetTemperature", "precipitation",
               "wind", "rain"]
@@ -50,6 +56,7 @@ def main():
         print("Faltan los secrets SENCROP_USER / SENCROP_PASSWORD")
         return 1
     estaciones = {}
+    cab_api = {}   # cabeceras que la web adjunta a sus llamadas a la API (NUNCA se imprimen sus valores)
     with sync_playwright() as p:
         navegador = p.chromium.launch()
         ctx = navegador.new_context(locale="es-ES")
@@ -63,6 +70,18 @@ def main():
                 except Exception:
                     pass
 
+        def al_pedir(req):
+            if (not cab_api and req.method == "GET"
+                    and "sencrop-api-production" in req.url and "/app/" in req.url):
+                try:
+                    h = req.all_headers()
+                except Exception:
+                    h = dict(req.headers)
+                for k, v in h.items():
+                    if k.lower() not in PROHIBIDAS and not k.startswith(":"):
+                        cab_api[k] = v
+
+        pagina.on("request", al_pedir)
         pagina.on("response", al_responder)
         pagina.goto(URL_LOGIN, wait_until="networkidle")
         pagina.fill("input[type=email], input[name=email]", USUARIO)
@@ -73,6 +92,7 @@ def main():
         pagina.goto(URL_DASHBOARD, wait_until="networkidle")
         pagina.wait_for_timeout(3000)
         print("LOGIN: OK; estaciones vistas:", len(estaciones))
+        print("Cabeceras de la web hacia la API (solo nombres):", sorted(cab_api))
         if not estaciones:
             navegador.close()
             return 1
@@ -85,7 +105,7 @@ def main():
             q = {"organisationId": ORGANIZACION, "stationId": sid,
                  "startDatetime": iso(fin - timedelta(days=dias)),
                  "endDatetime": iso(fin), "measures": medida, "enableFilling": "true"}
-            r = ctx.request.get(f"{API}/{tipo}?{urlencode(q)}")
+            r = ctx.request.get(f"{API}/{tipo}?{urlencode(q)}", headers=cab_api)
             try:
                 return r.status, (describir(r.json()) if r.ok else r.text()[:120].replace("\n", " "))
             except Exception as e:
