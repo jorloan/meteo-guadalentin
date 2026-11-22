@@ -1,0 +1,48 @@
+name: Rellenar historial Sencrop (7 dias)
+
+# Solo se lanza a mano (Actions -> Rellenar historial Sencrop -> Run workflow).
+# Baja 7 dias horarios de las estaciones Sencrop y los mete en history_24h/2d/7d
+# (solo donde esa estacion no tiene dato). Es idempotente: repetirlo no duplica nada.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rellenar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar Playwright
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+      - name: Descargar 7 dias de Sencrop
+        env:
+          SENCROP_USER: ${{ secrets.SENCROP_USER }}
+          SENCROP_PASSWORD: ${{ secrets.SENCROP_PASSWORD }}
+        run: |
+          python3 sencrop_rellenar.py descargar
+          cp sencrop_historial_7d.json /tmp/sencrop_historial_7d.json
+      - name: Inyectar en los historiales y publicar
+        run: |
+          git config user.name "Meteo Bot"
+          git config user.email "meteo-bot@lya-agricola.com"
+          for i in 1 2 3 4 5 6; do
+            git fetch -q --depth=1 origin main
+            git reset -q --hard origin/main
+            cp /tmp/sencrop_historial_7d.json sencrop_historial_7d.json
+            python3 sencrop_rellenar.py inyectar
+            rm -f sencrop_historial_7d.json
+            git add history_24h.json history_2d.json history_2d_precip.json history_7d.json
+            git commit -q -m "Sencrop: relleno de 7 dias de historial" || { echo "Nada que cambiar"; exit 0; }
+            if git push -q origin HEAD:main; then echo "Publicado"; exit 0; fi
+            echo "Push rechazado (el ciclo de 5 min empujo antes); reintento $i"
+            sleep 8
+          done
+          exit 1
