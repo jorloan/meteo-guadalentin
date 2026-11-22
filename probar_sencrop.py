@@ -93,6 +93,7 @@ def main():
         pagina.wait_for_timeout(3000)
         print("LOGIN: OK; estaciones vistas:", len(estaciones))
         print("Cabeceras de la web hacia la API (solo nombres):", sorted(cab_api))
+        print("Cookies (nombre, dominio):", sorted((c["name"], c["domain"]) for c in ctx.cookies()))
         if not estaciones:
             navegador.close()
             return 1
@@ -105,11 +106,18 @@ def main():
             q = {"organisationId": ORGANIZACION, "stationId": sid,
                  "startDatetime": iso(fin - timedelta(days=dias)),
                  "endDatetime": iso(fin), "measures": medida, "enableFilling": "true"}
-            r = ctx.request.get(f"{API}/{tipo}?{urlencode(q)}", headers=cab_api)
-            try:
-                return r.status, (describir(r.json()) if r.ok else r.text()[:120].replace("\n", " "))
-            except Exception as e:
-                return r.status, f"({type(e).__name__})"
+            # misma llamada que haría la web: fetch desde la propia página, con sus cookies
+            res = pagina.evaluate("""async (u) => {
+                try {
+                    const r = await fetch(u, {credentials: 'include', headers: {'accept': 'application/json'}});
+                    const t = await r.text();
+                    let j = null; try { j = JSON.parse(t); } catch (e) {}
+                    return {status: r.status, json: j, texto: t.slice(0, 120)};
+                } catch (e) { return {status: 0, json: null, texto: String(e).slice(0, 120)}; }
+            }""", f"{API}/{tipo}?{urlencode(q)}")
+            if res["status"] == 200 and res["json"] is not None:
+                return 200, describir(res["json"])
+            return res["status"], res["texto"].replace("\n", " ")
 
         print("\n--- Medidas candidatas (hourly, 1 día) ---")
         for m in CANDIDATAS:
