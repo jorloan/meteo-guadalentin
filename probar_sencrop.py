@@ -9,6 +9,7 @@ Solo imprime: si el login funcionó, las rutas (host + path) que la web llama po
 XHR/fetch con su código de respuesta, y, para las rutas de estaciones/mediciones,
 la ESTRUCTURA de la respuesta JSON (nombres de campos y tipos, sin valores).
 """
+import json
 import os
 import re
 import sys
@@ -21,8 +22,8 @@ URL_DASHBOARD = "https://app.sencrop.com/station/dashboard"
 USUARIO = os.environ.get("SENCROP_USER", "")
 CLAVE = os.environ.get("SENCROP_PASSWORD", "")
 # Solo se describe la estructura de respuestas de estas rutas (datos de estaciones)
-INTERESANTES = ("station", "device", "measure", "weather", "dashboard", "observation", "history")
-MAX_ESTRUCTURAS = 25
+INTERESANTES = ("station", "device", "measure", "weather", "dashboard", "observation", "history", "histor", "series", "chart", "data")
+MAX_ESTRUCTURAS = 40
 
 
 def limpiar(url):
@@ -30,6 +31,13 @@ def limpiar(url):
     partes = urlsplit(url)
     ruta = re.sub(r"[0-9a-fA-F-]{24,}", "<id>", partes.path)
     return partes.netloc + ruta
+
+
+def con_query(url):
+    """host + path + query con ids largos enmascarados (para ver los parámetros de fechas)."""
+    partes = urlsplit(url)
+    q = re.sub(r"[0-9a-fA-F-]{24,}", "<id>", partes.query)
+    return limpiar(url) + ("?" + q[:200] if q else "")
 
 
 def estructura(valor, profundidad=0, maximo=7):
@@ -72,13 +80,17 @@ def main():
             clave = (req.method, ruta, resp.status)
             llamadas[clave] = llamadas.get(clave, 0) + 1
             if ("sencrop" in ruta and resp.status == 200
-                    and (req.method == "GET" or "station-list" in ruta)
+                    and True
                     and any(k in ruta.lower() for k in INTERESANTES)
                     and ruta not in estructuras and len(estructuras) < MAX_ESTRUCTURAS):
                 try:
-                    estructuras[ruta] = estructura(resp.json())
+                    cuerpo = ""
+                    if req.method == "POST" and req.post_data:
+                        try: cuerpo = "  [cuerpo: " + estructura(json.loads(req.post_data), 0, 4) + "]"
+                        except Exception: cuerpo = "  [cuerpo: no JSON]"
+                    estructuras[ruta] = con_query(resp.url) + cuerpo + "\n     " + estructura(resp.json())
                 except Exception:
-                    estructuras[ruta] = "(no es JSON)"
+                    estructuras[ruta] = con_query(resp.url) + "\n     (no es JSON)"
 
         pagina.on("response", al_responder)
 
@@ -102,14 +114,25 @@ def main():
         pagina.wait_for_timeout(4000)
         print("DASHBOARD URL:", limpiar(pagina.url))
 
-        # Entrar en la primera estación para ver la llamada de mediciones/histórico
+        # Abrir el Historial de la primera estación y probar a pedir 7 días
         try:
-            pagina.locator("text=Pluviometría").first.click(timeout=8000)
+            pagina.locator("text=Historial").first.click(timeout=8000)
             pagina.wait_for_load_state("networkidle")
-            pagina.wait_for_timeout(4000)
-            print("ESTACIÓN URL:", limpiar(pagina.url))
+            pagina.wait_for_timeout(5000)
+            print("HISTORIAL URL:", limpiar(pagina.url))
+            for etiqueta in ("7 días", "7 dias", "7 d", "Semana", "7J"):
+                try:
+                    pagina.locator(f"text={etiqueta}").first.click(timeout=2500)
+                    pagina.wait_for_load_state("networkidle")
+                    pagina.wait_for_timeout(4000)
+                    print("Pulsado selector:", etiqueta)
+                    break
+                except Exception:
+                    pass
+            print("Botones/pestañas visibles:",
+                  [t.strip()[:25] for t in pagina.locator("button, [role=tab]").all_inner_texts()][:30])
         except Exception as e:
-            print("No se pudo abrir la primera estación:", type(e).__name__)
+            print("No se pudo abrir el historial:", type(e).__name__)
 
         navegador.close()
 
