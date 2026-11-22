@@ -5102,6 +5102,17 @@ def principal():
         for d in ex.map(wu, ESTACIONES):
             if d: datos_wu.append(d)
     print(f"  ✅ {len(datos_wu)}/{len(ESTACIONES)} con datos.")
+
+    # Estaciones de la Comunidad de Regantes (Sencrop): las descarga aparte
+    # sencrop_descargar.py a sencrop.json. Si falta o falla, simplemente no hay.
+    try:
+        from sencrop_a_wu import leer_sencrop
+        sc = leer_sencrop(os.path.join(REPO_DIR, 'sencrop.json'), DESACTIVADAS, ahora.tzinfo)
+        datos_wu.extend(sc)
+        print(f"  ✅ Sencrop: {len(sc)} estaciones.")
+    except Exception as e:
+        print(f"  ⚠ Sencrop no disponible: {e}")
+
     if not datos_wu:
         print("  ❌ Sin datos WU. Comprueba la conexión."); return
 

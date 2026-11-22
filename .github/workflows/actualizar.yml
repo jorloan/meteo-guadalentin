@@ -26,6 +26,16 @@ jobs:
       - name: Verificar y rellenar historial
         run: python3 check_historial.py || python3 fix_historial.py
 
+      - name: Descargar estaciones Sencrop (Comunidad de Regantes)
+        continue-on-error: true
+        env:
+          SENCROP_USER: ${{ secrets.SENCROP_USER }}
+          SENCROP_PASSWORD: ${{ secrets.SENCROP_PASSWORD }}
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+          python3 sencrop_descargar.py
+
       - name: Ejecutar mapa
         run: python3 mapa_totana.py
 
