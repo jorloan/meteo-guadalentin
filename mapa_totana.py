@@ -2876,6 +2876,7 @@ function render(){
 
   var snap=historyData[historyData.length-1];
   if(!snap) return;
+  contarFuentes(snap);
   var feats=[];
   _marcadores=[]; _marcParam=pRender;
 
@@ -2890,6 +2891,7 @@ function render(){
     // hasta recargar la página, aunque solo fuera una estación la culpable.
     try{
     if(!est||est.lat==null||est.lon==null) return;
+    if(fuenteOculta(est.stationID)) return;
     var v=raw(est,pRender,snap.timestamp); if(v==null) return;
     var bg=col(v,pRender);
     var lb;
@@ -3339,7 +3341,7 @@ document.addEventListener('keydown',function(e){
 // barra con casillas diminutas. En el móvil se llevan (los mismos
 // elementos, con sus eventos) a una hoja que sube desde abajo con el
 // botón 🧰, y vuelven a la barra si la pantalla se ensancha.
-var CTRL_CAPAS=['ctrl-radar','ctrl-op'];
+var CTRL_CAPAS=['ctrl-radar','ctrl-fuentes','ctrl-op'];
 function colocarControles(){
   var movil=esMovil(), hoja=document.getElementById('hoja-capas-cuerpo'), ancla=document.getElementById('btn-pin');
   CTRL_CAPAS.forEach(function(id){
@@ -3587,6 +3589,35 @@ function esSencrop(sid){ return String(sid).indexOf('SC-')===0; }
 function esChs(sid){ return String(sid).indexOf('CH-')===0; }
 function esImida(sid){ return String(sid).indexOf('IM-')===0; }
 function esAemet(sid){ return String(sid).indexOf('AE-')===0; }
+// Filtro por origen de los datos: la casilla de cada fuente enciende/apaga sus estaciones
+// en el mapa (no toca los datos ni Mi zona). Se recuerda en localStorage.
+var FUENTES=[['wu','WU','Estaciones personales de Weather Underground'],
+  ['sc','Sencrop','Comunidad de Regantes Tajo-Segura de Totana'],
+  ['ch','CHS','Confederación Hidrográfica del Segura (SAIH)'],
+  ['im','IMIDA','Red agrometeorológica SIAM del IMIDA'],
+  ['ae','AEMET','Estaciones automáticas de AEMET']];
+function fuenteDe(sid){
+  var p=String(sid).slice(0,3);
+  return p==='SC-'?'sc':p==='CH-'?'ch':p==='IM-'?'im':p==='AE-'?'ae':'wu';
+}
+function fuentesOcultas(){
+  try{ var v=JSON.parse(localStorage.getItem('meteo_fuentes_ocultas')||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; }
+}
+function fuenteOculta(sid){ return fuentesOcultas().indexOf(fuenteDe(sid))>=0; }
+function cambiarFuente(clave,visible){
+  var o=fuentesOcultas().filter(function(x){ return x!==clave; });
+  if(!visible) o.push(clave);
+  try{ localStorage.setItem('meteo_fuentes_ocultas',JSON.stringify(o)); }catch(e){}
+  render();
+}
+function contarFuentes(snap){
+  var n={}; (snap.stations||[]).forEach(function(e){ if(e&&e.stationID){ var f=fuenteDe(e.stationID); n[f]=(n[f]||0)+1; } });
+  var ocultas=fuentesOcultas();
+  FUENTES.forEach(function(f){
+    var c=document.getElementById('fz-n-'+f[0]); if(c) c.textContent=n[f[0]]||0;
+    var i=document.getElementById('fz-'+f[0]); if(i) i.checked=ocultas.indexOf(f[0])<0;
+  });
+}
 function esExterna(sid){ return esSencrop(sid)||esChs(sid)||esImida(sid)||esAemet(sid); }
 function lineaPropietario(sid){
   if(esChs(sid)) return 'Fuente: Confederación Hidrográfica del Segura (SAIH)';
@@ -4392,6 +4423,11 @@ HTML_BASE = """<!DOCTYPE html>
     .precip-chip.active{background:rgba(59,130,246,.85);border-color:transparent;color:#fff}
 
     /* Toggle radar (independiente del parámetro) */
+    #ctrl-fuentes{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    #ctrl-fuentes .fz-t{font-size:.58rem;color:#6e7f9a;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+    #ctrl-fuentes label{display:flex;align-items:center;gap:3px;font-size:.7rem;color:#e6edf3;font-weight:600;cursor:pointer;user-select:none;white-space:nowrap}
+    #ctrl-fuentes input[type=checkbox]{cursor:pointer;accent-color:#3b82f6}
+    #ctrl-fuentes i{font-style:normal;font-size:.6rem;color:#6e7f9a;font-weight:700}
     #ctrl-radar{display:flex;align-items:center;gap:6px;flex-shrink:0}
     #ctrl-radar label{display:flex;align-items:center;gap:4px;font-size:.72rem;color:#e6edf3;font-weight:600;cursor:pointer;user-select:none}
     #ctrl-radar input[type=checkbox]{cursor:pointer;accent-color:#3b82f6}
@@ -4691,6 +4727,10 @@ HTML_BASE = """<!DOCTYPE html>
       #hoja-capas-cuerpo input[type=checkbox]{width:22px;height:22px;accent-color:#2563eb}
       #hoja-capas-cuerpo input[type=range]{flex:1;width:auto!important;accent-color:#2563eb}
       #hoja-capas-cuerpo #ctrl-op{flex-direction:row!important;align-items:center!important}
+      #hoja-capas-cuerpo #ctrl-fuentes{flex-wrap:wrap;row-gap:4px;padding:8px 0}
+      #hoja-capas-cuerpo #ctrl-fuentes .fz-t{width:100%;font-size:.75rem}
+      #hoja-capas-cuerpo #ctrl-fuentes label{min-height:40px;margin-right:12px}
+      #hoja-capas-cuerpo #ctrl-fuentes i{font-size:.8rem}
       #hoja-capas-cuerpo #ctrl-op label{flex-shrink:0}
       .hoja-nota{font-size:.8rem;color:#8b9ab3;margin-top:10px;line-height:1.4}
       /* Ficha de estación: hoja que sube desde abajo */
@@ -4918,6 +4958,15 @@ HTML_BASE = """<!DOCTYPE html>
   <div id="ctrl-radar">
     <label title="Radar de lluvia (tecla R)"><input type="checkbox" id="radar-chk"> 📡 Radar</label>
     <span id="radar-fuera-rango" title="Radar disponible: en vivo (~2h vía RainViewer) y hasta ~48h atrás (archivo propio)">⚠ sin radar aquí</span>
+  </div>
+  <div class="sep"></div>
+  <div id="ctrl-fuentes" title="Qué fuentes de datos se ven en el mapa">
+    <span class="fz-t">Fuentes</span>
+    <label title="Estaciones personales de Weather Underground"><input type="checkbox" id="fz-wu" checked onchange="cambiarFuente('wu',this.checked)"> WU <i id="fz-n-wu"></i></label>
+    <label title="Comunidad de Regantes Tajo-Segura de Totana"><input type="checkbox" id="fz-sc" checked onchange="cambiarFuente('sc',this.checked)"> Sencrop <i id="fz-n-sc"></i></label>
+    <label title="Confederación Hidrográfica del Segura (SAIH)"><input type="checkbox" id="fz-ch" checked onchange="cambiarFuente('ch',this.checked)"> CHS <i id="fz-n-ch"></i></label>
+    <label title="Red agrometeorológica SIAM del IMIDA"><input type="checkbox" id="fz-im" checked onchange="cambiarFuente('im',this.checked)"> IMIDA <i id="fz-n-im"></i></label>
+    <label title="Estaciones automáticas de AEMET"><input type="checkbox" id="fz-ae" checked onchange="cambiarFuente('ae',this.checked)"> AEMET <i id="fz-n-ae"></i></label>
   </div>
   <div class="sep"></div>
   <div id="ctrl-op">
