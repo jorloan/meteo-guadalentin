@@ -44,6 +44,12 @@ jobs:
         continue-on-error: true
         run: python3 imida_descargar.py
 
+      - name: Descargar estaciones AEMET
+        continue-on-error: true
+        env:
+          AEMET_API_KEY: ${{ secrets.AEMET_API_KEY }}
+        run: python3 aemet_descargar.py
+
       - name: Ejecutar mapa
         run: python3 mapa_totana.py
 

@@ -3586,10 +3586,12 @@ function estacionesCercanas(lat,lon){
 function esSencrop(sid){ return String(sid).indexOf('SC-')===0; }
 function esChs(sid){ return String(sid).indexOf('CH-')===0; }
 function esImida(sid){ return String(sid).indexOf('IM-')===0; }
-function esExterna(sid){ return esSencrop(sid)||esChs(sid)||esImida(sid); }
+function esAemet(sid){ return String(sid).indexOf('AE-')===0; }
+function esExterna(sid){ return esSencrop(sid)||esChs(sid)||esImida(sid)||esAemet(sid); }
 function lineaPropietario(sid){
   if(esChs(sid)) return 'Fuente: Confederación Hidrográfica del Segura (SAIH)';
   if(esImida(sid)) return 'Fuente: IMIDA (Red Agrometeorológica SIAM)';
+  if(esAemet(sid)) return 'Fuente: AEMET (estación automática)';
   var p=PROPIETARIOS[String(sid).slice(3)];
   if(!p) return 'Estación Sencrop · Comunidad de Regantes';
   return 'Propietario: '+String(p).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -5150,6 +5152,16 @@ def principal():
         print(f"  ✅ IMIDA (SIAM): {len(im)} estaciones.")
     except Exception as e:
         print(f"  ⚠ IMIDA no disponible: {e}")
+
+    # Estaciones automáticas de AEMET: las descarga aparte aemet_descargar.py a aemet.json
+    # (necesita el secreto AEMET_API_KEY; sin él simplemente no hay).
+    try:
+        from aemet_a_wu import leer_aemet
+        ae = leer_aemet(os.path.join(REPO_DIR, 'aemet.json'), DESACTIVADAS, ahora.tzinfo, ahora)
+        datos_wu.extend(ae)
+        print(f"  ✅ AEMET: {len(ae)} estaciones.")
+    except Exception as e:
+        print(f"  ⚠ AEMET no disponible: {e}")
 
     if not datos_wu:
         print("  ❌ Sin datos WU. Comprueba la conexión."); return
