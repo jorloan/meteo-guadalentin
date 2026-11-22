@@ -32,7 +32,7 @@ def limpiar(url):
     return partes.netloc + ruta
 
 
-def estructura(valor, profundidad=0, maximo=4):
+def estructura(valor, profundidad=0, maximo=7):
     """Describe un JSON con nombres de campos y tipos, sin ningún valor."""
     if profundidad >= maximo:
         return "…"
@@ -71,7 +71,8 @@ def main():
             ruta = limpiar(resp.url)
             clave = (req.method, ruta, resp.status)
             llamadas[clave] = llamadas.get(clave, 0) + 1
-            if ("sencrop" in ruta and resp.status == 200 and req.method == "GET"
+            if ("sencrop" in ruta and resp.status == 200
+                    and (req.method == "GET" or "station-list" in ruta)
                     and any(k in ruta.lower() for k in INTERESANTES)
                     and ruta not in estructuras and len(estructuras) < MAX_ESTRUCTURAS):
                 try:
