@@ -67,6 +67,7 @@ def main():
 
     llamadas = {}
     estructuras = {}
+    historial = {}
 
     with sync_playwright() as p:
         navegador = p.chromium.launch()
@@ -79,6 +80,14 @@ def main():
             ruta = limpiar(resp.url)
             clave = (req.method, ruta, resp.status)
             llamadas[clave] = llamadas.get(clave, 0) + 1
+            if ("measurement-page/measurements" in ruta and resp.status == 200
+                    and len(historial) < 8):
+                try:
+                    clave_h = con_query(resp.url)
+                    if clave_h not in historial:
+                        historial[clave_h] = estructura(resp.json(), 0, 7)
+                except Exception:
+                    pass
             if ("sencrop" in ruta and resp.status == 200
                     and True
                     and any(k in ruta.lower() for k in INTERESANTES)
@@ -141,9 +150,15 @@ def main():
         if "sencrop" in ruta:
             print(f"  {metodo:5} {estado} {ruta}  x{veces}")
 
+    print("\n=== HISTORIAL (URL con parámetros y estructura, sin valores) ===")
+    for url, est in historial.items():
+        print("URL:", url)
+        print("ESTRUCTURA:", est[:1800])
+    print("=== FIN HISTORIAL ===")
+
     print("\nEstructura de las respuestas de estaciones/mediciones (sin valores):")
     for ruta, est in estructuras.items():
-        print(f"  {ruta}\n     {est[:900]}")
+        print(f"  {ruta}")
     return 0
 
 
