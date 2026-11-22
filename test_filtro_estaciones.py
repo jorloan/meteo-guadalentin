@@ -69,6 +69,13 @@ class Filtro(unittest.TestCase):
         self.assertEqual(quedan, [])
         self.assertEqual(desc[0][1], 'observacion')
 
+    def test_limite_de_15_min_y_fuentes_lentas(self):
+        for sid, min_ok, min_mal in (('IWU1', 14, 16), ('SC-1', 14, 16), ('CH-1', 44, 46), ('IM-1', 89, 91)):
+            q, _ = filtrar_lecturas([est(sid, hace_min=min_ok)], [], AHORA)
+            self.assertEqual(len(q), 1, sid)
+            q, _ = filtrar_lecturas([est(sid, hace_min=min_mal)], [], AHORA)
+            self.assertEqual(q, [], sid)
+
     def test_rocio_por_encima_de_temperatura(self):
         e = est('IMALA', temp=15.0, dewpt=22.0)
         filtrar_lecturas([e], [], AHORA)

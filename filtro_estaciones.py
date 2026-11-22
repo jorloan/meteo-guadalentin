@@ -60,7 +60,10 @@ VENTANA_SALTO    = 30    # min: más separadas ya no se comparan
 VECINAS_RADIO_KM = 20
 VECINAS_MIN      = 4     # con menos vecinas no se compara (no hay con qué)
 DESVIO_TEMP      = 9     # °C respecto a la mediana de las vecinas (holgado por la altitud)
-LECTURA_VIEJA_H  = 3     # una observación más antigua no es "actual": no se pinta
+LECTURA_VIEJA_MIN = 15   # una observación más antigua no es "actual": no se pinta (WU, Sencrop)
+# Fuentes que publican más despacio: IMIDA un dato por hora (llega con 40-100 min de edad),
+# CHS cada 10-30 min.
+LECTURA_VIEJA_MIN_FUENTE = {'IM-': 90, 'CH-': 45}
 RETENCION_LOG_D  = 7     # días que se recuerda una estación en filtro_estaciones.json
 
 # Lo que se calcula a partir de la temperatura o la humedad cae con ellas.
@@ -131,10 +134,11 @@ def filtrar_lecturas(nuevos, h_prev, ahora):
     for est in nuevos:
         if not est or not est.get('stationID'): continue
         ep = est.get('epoch')
-        if isinstance(ep, (int, float)) and ahora_ts - ep > LECTURA_VIEJA_H * 3600:
-            horas = (ahora_ts - ep) / 3600
+        limite = LECTURA_VIEJA_MIN_FUENTE.get(str(est['stationID'])[:3], LECTURA_VIEJA_MIN)
+        if isinstance(ep, (int, float)) and ahora_ts - ep > limite * 60:
+            minutos = (ahora_ts - ep) / 60
             descartes.append((est['stationID'], 'observacion', est.get('obsTimeLocal'),
-                              f'lectura de hace {horas:.0f} h'))
+                              f'lectura de hace {minutos:.0f} min (máx. {limite})'))
             continue
         quedan.append(est)
 
