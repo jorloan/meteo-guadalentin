@@ -62,8 +62,8 @@ VECINAS_MIN      = 4     # con menos vecinas no se compara (no hay con qué)
 DESVIO_TEMP      = 9     # °C respecto a la mediana de las vecinas (holgado por la altitud)
 LECTURA_VIEJA_MIN = 15   # una observación más antigua no es "actual": no se pinta (WU, Sencrop)
 # Fuentes que publican más despacio: IMIDA un dato por hora (llega con 40-100 min de edad),
-# CHS cada 10-30 min, AEMET cada 10 min pero con retraso de publicación.
-LECTURA_VIEJA_MIN_FUENTE = {'IM-': 90, 'CH-': 45, 'AE-': 60}
+# CHS cada 10-30 min, AEMET un dato por hora con retraso de publicación.
+LECTURA_VIEJA_MIN_FUENTE = {'IM-': 90, 'CH-': 45, 'AE-': 90}
 RETENCION_LOG_D  = 7     # días que se recuerda una estación en filtro_estaciones.json
 
 # Lo que se calcula a partir de la temperatura o la humedad cae con ellas.

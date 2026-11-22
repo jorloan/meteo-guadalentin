@@ -59,6 +59,27 @@ def agrupar(registros):
     return est
 
 
+def fundir(nuevo, anterior, horas=30):
+    """AEMET solo da ~13 h de datos horarios: se unen con las filas ya guardadas (por `fint`)
+    para no perder la lluvia de la mañana al calcular la de hoy. Conserva `horas` horas."""
+    from aemet_a_wu import fecha_utc
+    ref = None
+    for e in nuevo.values():
+        for f in e['filas']:
+            d = fecha_utc(f.get('fint'))
+            if d and (ref is None or d > ref):
+                ref = d
+    for idema, e in nuevo.items():
+        filas = {f['fint']: f for f in e['filas']}
+        for f in (anterior.get(idema) or {}).get('filas', []):
+            filas.setdefault(f.get('fint'), f)
+        if ref:
+            filas = {k: f for k, f in filas.items()
+                     if fecha_utc(k) and (ref - fecha_utc(k)).total_seconds() <= horas * 3600}
+        e['filas'] = sorted(filas.values(), key=lambda f: str(f.get('fint')), reverse=True)
+    return nuevo
+
+
 def principal():
     clave = os.environ.get('AEMET_API_KEY', '').strip()
     if not clave:
@@ -78,6 +99,11 @@ def principal():
     if not est:
         print('  ⚠ AEMET: sin estaciones en la zona; se conserva el fichero anterior')
         return 0
+    try:
+        with open(F_AEMET, 'r', encoding='utf-8') as f:
+            est = fundir(est, json.load(f).get('estaciones') or {})
+    except Exception:
+        pass
     with open(F_AEMET, 'w', encoding='utf-8') as f:
         json.dump({'actualizado': datetime.now(ZONA).isoformat(), 'estaciones': est},
                   f, ensure_ascii=False, separators=(',', ':'))

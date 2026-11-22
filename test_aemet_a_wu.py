@@ -57,6 +57,14 @@ class Pruebas(unittest.TestCase):
         self.assertEqual(list(g), ['A'])
         self.assertEqual(g['A']['filas'][0]['ta'], 2)
 
+    def test_fundir_conserva_filas_antiguas(self):
+        from aemet_descargar import fundir
+        nuevo = {'A': {'filas': [{'fint': '2026-11-22T20:00:00+0000', 'ta': 1}]}}
+        ant = {'A': {'filas': [{'fint': '2026-11-22T08:00:00+0000', 'ta': 2},
+                               {'fint': '2026-11-20T08:00:00+0000', 'ta': 3}]}}
+        f = fundir(nuevo, ant)['A']['filas']
+        self.assertEqual([x['ta'] for x in f], [1, 2])
+
 
 if __name__ == '__main__':
     unittest.main()
