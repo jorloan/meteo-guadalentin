@@ -1,0 +1,28 @@
+name: Probar Sencrop
+
+# Solo se lanza a mano (pestaña Actions -> Probar Sencrop -> Run workflow).
+# No toca datos ni hace commit. Usa los secrets SENCROP_USER y SENCROP_PASSWORD.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar Playwright (solo para esta prueba)
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+      - name: Probar login y listar llamadas de la web
+        env:
+          SENCROP_USER: ${{ secrets.SENCROP_USER }}
+          SENCROP_PASSWORD: ${{ secrets.SENCROP_PASSWORD }}
+        run: python3 probar_sencrop.py
