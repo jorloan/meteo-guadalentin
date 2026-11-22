@@ -71,8 +71,8 @@ def main():
                     pass
 
         def al_pedir(req):
-            if (not cab_api and req.method == "GET"
-                    and "sencrop-api-production" in req.url and "/app/" in req.url):
+            if ("sencrop-api-production" in req.url and "measurement-page" in req.url
+                    and req.method == "GET"):
                 try:
                     h = req.all_headers()
                 except Exception:
@@ -92,8 +92,14 @@ def main():
         pagina.goto(URL_DASHBOARD, wait_until="networkidle")
         pagina.wait_for_timeout(3000)
         print("LOGIN: OK; estaciones vistas:", len(estaciones))
+        try:
+            pagina.locator("text=Historial").first.click(timeout=8000)
+            pagina.wait_for_load_state("networkidle")
+            pagina.wait_for_timeout(6000)
+        except Exception as e:
+            print("No se pudo abrir el historial:", type(e).__name__)
         print("Cabeceras de la web hacia la API (solo nombres):", sorted(cab_api))
-        print("Cookies (nombre, dominio):", sorted((c["name"], c["domain"]) for c in ctx.cookies()))
+        
         if not estaciones:
             navegador.close()
             return 1
@@ -106,18 +112,11 @@ def main():
             q = {"organisationId": ORGANIZACION, "stationId": sid,
                  "startDatetime": iso(fin - timedelta(days=dias)),
                  "endDatetime": iso(fin), "measures": medida, "enableFilling": "true"}
-            # misma llamada que haría la web: fetch desde la propia página, con sus cookies
-            res = pagina.evaluate("""async (u) => {
-                try {
-                    const r = await fetch(u, {credentials: 'include', headers: {'accept': 'application/json'}});
-                    const t = await r.text();
-                    let j = null; try { j = JSON.parse(t); } catch (e) {}
-                    return {status: r.status, json: j, texto: t.slice(0, 120)};
-                } catch (e) { return {status: 0, json: null, texto: String(e).slice(0, 120)}; }
-            }""", f"{API}/{tipo}?{urlencode(q)}")
-            if res["status"] == 200 and res["json"] is not None:
-                return 200, describir(res["json"])
-            return res["status"], res["texto"].replace("\n", " ")
+            r = ctx.request.get(f"{API}/{tipo}?{urlencode(q)}", headers=cab_api)
+            try:
+                return r.status, (describir(r.json()) if r.ok else r.text()[:120].replace("\n", " "))
+            except Exception as e:
+                return r.status, f"({type(e).__name__})"
 
         print("\n--- Medidas candidatas (hourly, 1 día) ---")
         for m in CANDIDATAS:
