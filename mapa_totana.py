@@ -889,7 +889,12 @@ def generar_html(historial, riesgo_data, ahora, dias_acum):
     semilla = [{**s, 'stations': [e for e in (s.get('stations') or [])
                                   if e and (e.get('stationID') or '').upper() not in DESACTIVADAS]}
                for s in historial[-1:]]
+    # Propietario de cada estación de Sencrop (se edita en propietarios_sencrop.json)
+    propietarios = {k: (v.get('propietario') or '').strip()
+                    for k, v in leer(os.path.join(BASE_DIR, 'propietarios_sencrop.json'), {}).items()
+                    if isinstance(v, dict) and (v.get('propietario') or '').strip()}
     js = ("var NOMBRES="+json.dumps(NOMBRES, ensure_ascii=False)+";\n"
+         +"var PROPIETARIOS="+json.dumps(propietarios, ensure_ascii=False)+";\n"
          +"var DESACTIVADAS="+json.dumps(sorted(DESACTIVADAS))+";\n"
          +"var WEBCAMS_DATA="+json.dumps(WEBCAMS, ensure_ascii=False)+";\n"
          +"var historyData="+json.dumps(semilla, ensure_ascii=False)+";\n"
@@ -3097,14 +3102,14 @@ function render(){
         +'<tr><td style="color:#888">🕒 Observación</td>'
         +'<td>'+(est.obsTimeLocal?est.obsTimeLocal.slice(11,16):'—')+'</td></tr>'
         +'</table>'
-        +'<a href="https://www.wunderground.com/dashboard/pws/'+est.stationID
+        +(esSencrop(est.stationID)?'':'<a href="https://www.wunderground.com/dashboard/pws/'+est.stationID
         +'" target="_blank" style="display:inline-block;margin-top:12px;padding:7px 16px;'
         +'background:#3498db;color:#fff;text-decoration:none;border-radius:6px;font-size:12px;">'
-        +'Ver historial en WU ↗</a>';
+        +'Ver historial en WU ↗</a>');
     }
 
     var fh='<div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:4px;">'+nm+'</div>'
-      +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+est.stationID+'</div>'+ph;
+      +'<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">'+(esSencrop(est.stationID)?lineaPropietario(est.stationID):est.stationID)+'</div>'+ph;
     // graficoEstacion12h(est.stationID) NO se añade aquí: este bloque se
     // ejecuta para las ~175 estaciones en CADA repintado del mapa
     // (cualquier parámetro, no solo al pinchar), así que construirla ya
@@ -3577,6 +3582,12 @@ function estacionesCercanas(lat,lon){
   });
   res.sort(function(a,b){ return a.km-b.km; });
   return res;
+}
+function esSencrop(sid){ return String(sid).indexOf('SC-')===0; }
+function lineaPropietario(sid){
+  var p=PROPIETARIOS[String(sid).slice(3)];
+  if(!p) return 'Estación Sencrop · Comunidad de Regantes';
+  return 'Propietario: '+String(p).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function nombreEstacion(e){
   return NOMBRES[e.stationID]||(e.neighborhood&&e.neighborhood.trim()?e.neighborhood:e.stationID);
