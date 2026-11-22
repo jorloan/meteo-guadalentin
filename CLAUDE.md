@@ -187,6 +187,10 @@ Station ID format: prefix + number (e.g., `ITOTAN8`, `ILORCA23`, `IALEDO5`, `IAL
 
 To add a station: append its WU station ID to `estaciones.txt`. It will be picked up on the next run of `mapa_totana.py`.
 
+### Estaciones del IMIDA (red SIAM, prefijo `IM-`)
+
+- `imida_descargar.py` (paso de CI, `continue-on-error`) baja a `imida.json` el informe de 24 h de cada estación de `imida_coordenadas.json` desde `siam.imida.es` (página APEX pública con sesión `0`, sin login). 30 de las 58 estaciones envían datos en tiempo real; el resto devuelve el informe vacío y se omite. `imida_a_wu.py` lo convierte al formato WU: horas en **UTC y de inicio de periodo** (el dato vale al cierre de la hora), viento m/s → km/h, lluvia de hoy = suma de las filas horarias desde la medianoche de Madrid. Sin presión ni UV. Coordenadas: UTM ETRS89 huso 30 de las fichas oficiales, convertidas a lat/lon. Pruebas: `python3 -m unittest test_imida_a_wu`.
+
 ### Estaciones que fallan: lista a mano y filtro automático (`filtro_estaciones.py`)
 
 - **`estaciones_desactivadas.txt`**: una estación por línea (`ILORCA45  # motivo y fecha`). No se descarga, el riesgo no la usa (ni como vecina) y el mapa la quita también de los históricos ya guardados (`sinDesactivadas()` / `riesgoSinDesactivadas()` en el JS, al cargar `history_24h/2d/7d.json` e `historial_riesgo.json`). **Los archivos no se tocan**: quitar su línea la reactiva con todo su historial. Es más cómodo que comentarla en `estaciones.txt`, que solo deja de descargarla y no limpia lo ya guardado.

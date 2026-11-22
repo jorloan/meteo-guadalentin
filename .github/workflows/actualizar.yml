@@ -40,6 +40,10 @@ jobs:
         continue-on-error: true
         run: python3 chs_descargar.py
 
+      - name: Descargar estaciones IMIDA (SIAM)
+        continue-on-error: true
+        run: python3 imida_descargar.py
+
       - name: Ejecutar mapa
         run: python3 mapa_totana.py
 
